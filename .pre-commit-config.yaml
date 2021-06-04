@@ -1,0 +1,19 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+    - id: check-added-large-files
+    - id: check-merge-conflict
+    - id: requirements-txt-fixer
+    - id: end-of-file-fixer
+    - id: name-tests-test
+      args: ['--django']
+-   repo: https://github.com/ambv/black
+    rev: 20.8b1
+    hooks:
+    - id: black
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.9.0
+    hooks:
+    - id: flake8
+  
