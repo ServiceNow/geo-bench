@@ -43,8 +43,8 @@ pipeline:
       - BORGY_CPU=2
       - BORGY_GPU=1
     commands:
-      - pip install --upgrade pip && pip install pytest
-      - pytest
+      - pip install --upgrade pip && pip install pytest pytest-custom-exit-code
+      - pytest --suppress-no-test-exit-code
     image: volatile-images.borgy.elementai.net/snow.rg_climate_benchmark:${DRONE_BRANCH}
 
 
