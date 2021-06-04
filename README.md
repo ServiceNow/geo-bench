@@ -1,5 +1,7 @@
 # Climate change benchmark
 
+<img src="https://snappygoat.com/b/1edabf9a25031a0eb7ac336e51f1e8975f5d87a0" />
+
 
 # Contributing
 
