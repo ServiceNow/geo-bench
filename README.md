@@ -4,7 +4,7 @@
 
 <img src="https://github.com/ElementAI/climate-change-benchmark/raw/main/banner.png" />
 
-A set of climate change tasks to benchmark self-supervised learning algorithms.
+A set of climate change tasks to benchmark self-supervised learning algorithms. 
 
 
 # Contributing
