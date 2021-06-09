@@ -1,0 +1,3 @@
+[submodule "seasonal-contrast"]
+	path = seasonal-contrast
+	url = https://github.com/ElementAI/seasonal-contrast
