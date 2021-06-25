@@ -75,7 +75,7 @@ class SiamSegment(LightningModule):
         return [optimizer], [scheduler]
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     pl.seed_everything(42)
 
     parser = ArgumentParser()
