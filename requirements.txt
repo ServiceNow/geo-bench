@@ -1,5 +1,11 @@
-numpy==1.20.3
-pandas==1.2.4
-scipy==1.6.3
-torch==1.8.1
-torchvision==0.9.1
+torch
+torchvision
+pytorch-lightning>=1.1.1, <1.2
+pytorch-lightning-bolts
+scikit-learn
+scikit-image
+earthengine-api
+rasterio
+lmdb
+pyshp
+shapely
