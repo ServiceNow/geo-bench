@@ -17,13 +17,14 @@ from models.moco2_module import MocoV2
 
 
 class SiamSegment(LightningModule):
-    def __init__(self, backbone, feature_indices, feature_channels):
+    def __init__(self, backbone, feature_indices, feature_channels, finetune):
         super().__init__()
         self.model = get_segmentation_model(backbone, feature_indices, feature_channels)
         self.criterion = BCEWithLogitsLoss()
         self.prec = Precision(num_classes=1, threshold=0.5)
         self.rec = Recall(num_classes=1, threshold=0.5)
         self.f1 = F1(num_classes=1, threshold=0.5)
+        self.finetune = finetune
 
     def forward(self, x1, x2):
         return self.model(x1, x2)
@@ -67,8 +68,11 @@ class SiamSegment(LightningModule):
         return img_1, img_2, mask, pred, loss, prec, rec, f1
 
     def configure_optimizers(self):
-        # params = self.model.parameters()
-        params = set(self.model.parameters()).difference(self.model.encoder.parameters())
+        if self.finetune:
+            params = self.model.parameters()
+        else:
+            params = set(self.model.parameters()).difference(self.model.encoder.parameters())
+
         optimizer = torch.optim.Adam(params, lr=1e-3, weight_decay=1e-4)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.95)
         return [optimizer], [scheduler]
@@ -83,6 +87,8 @@ if __name__ == "__main__":
     parser.add_argument("--patch_size", type=int, default=96)
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--ckpt_path", type=str, default=None)
+    parser.add_argument("--finetune", action="store_true")
+
     args = parser.parse_args()
 
     datamodule = ChangeDetectionDataModule(args.data_dir)
@@ -97,7 +103,9 @@ if __name__ == "__main__":
     else:
         raise ValueError()
 
-    model = SiamSegment(backbone, feature_indices=(0, 4, 5, 6, 7), feature_channels=(64, 64, 128, 256, 512))
+    model = SiamSegment(
+        backbone, feature_indices=(0, 4, 5, 6, 7), feature_channels=(64, 64, 128, 256, 512), finetune=args.finetune
+    )
     model.example_input_array = (torch.zeros((1, 3, 96, 96)), torch.zeros((1, 3, 96, 96)))
 
     experiment_name = args.backbone_type
