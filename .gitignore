@@ -1,6 +1,11 @@
+# Checkpoints
+checkpoints/*
+
 # Datasets
-*.jpg
-*.tif
+datasets/*
+
+# Logs files
+logs/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
