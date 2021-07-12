@@ -2,7 +2,10 @@
 checkpoints/*
 
 # Datasets
-datasets/*
+datasets/eurosat/
+datasets/oscd/
+*.zip
+
 
 # Logs files
 logs/*

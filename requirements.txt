@@ -1,11 +1,11 @@
-torch
-torchvision
-pytorch-lightning>=1.1.1, <1.2
-pytorch-lightning-bolts
-scikit-learn
-scikit-image
-earthengine-api
-rasterio
-lmdb
-pyshp
-shapely
+earthengine-api==0.1.269
+lmdb==1.2.1
+pyshp==2.1.3
+pytorch-lightning==1.2
+pytorch-lightning-bolts==0.3.2
+rasterio==1.2.4
+scikit-image==0.18.1
+scikit-learn==0.24.2
+Shapely==1.7.1
+torch==1.8.1
+torchvision==0.9.1
