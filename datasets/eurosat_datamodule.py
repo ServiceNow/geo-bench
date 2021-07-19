@@ -5,12 +5,14 @@ import os
 import random
 
 from datasets.eurosat_dataset import EurosatDataset
+from utils.utils import get_embeddings
 
 
 class EurosatDataModule(LightningDataModule):
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, encoder=None):
         super().__init__()
         self.data_dir = data_dir
+        self.encoder = encoder
 
     @property
     def num_classes(self):
@@ -44,6 +46,10 @@ class EurosatDataModule(LightningDataModule):
         self.train_dataset = EurosatDataset(self.data_dir, split="train", transform=T.ToTensor())
         self.val_dataset = EurosatDataset(self.data_dir, split="val", transform=T.ToTensor())
 
+        if self.encoder:
+            get_embeddings(self.encoder, self.train_dataset)
+            get_embeddings(self.encoder, self.val_dataset)
+
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=True, pin_memory=True
@@ -53,3 +59,6 @@ class EurosatDataModule(LightningDataModule):
         return DataLoader(
             self.val_dataset, batch_size=32, shuffle=False, num_workers=8, drop_last=True, pin_memory=True
         )
+
+    def add_encoder(self, encoder):
+        self.encoder = encoder
