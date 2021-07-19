@@ -1,3 +1,15 @@
+# Checkpoints
+checkpoints/*
+
+# Datasets
+datasets/eurosat/
+datasets/oscd/
+*.zip
+
+
+# Logs files
+logs/*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
