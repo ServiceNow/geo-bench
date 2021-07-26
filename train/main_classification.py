@@ -2,6 +2,9 @@ from pathlib import Path
 from copy import deepcopy
 from argparse import ArgumentParser
 
+import os
+import sys
+import pickle
 import torch
 from torch import nn, optim
 from torchvision.models import resnet
@@ -9,15 +12,25 @@ import pytorch_lightning as pl
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
+import numpy as np
 
 from datasets.eurosat_datamodule import EurosatDataModule
 from datasets.sat_datamodule import SatDataModule
-
 from models.moco2_module import MocoV2
-from models.custom_encoder import CustomEncoder
 
-import onnx
-from onnx2pytorch import ConvertModel
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+print(parentdir)
+sys.path.append(parentdir)
+
+
+# from models.custom_encoder import CustomEncoder
+
+# import onnx
+# from onnx2pytorch import ConvertModel
+
+
+sys.path.append("../datasets")
 
 
 class Permute(torch.nn.Module):
@@ -26,7 +39,6 @@ class Permute(torch.nn.Module):
         self.dims = dims
 
     def forward(self, x):
-        print(self.dims)
         return x.permute(self.dims)
 
 
@@ -37,10 +49,13 @@ class Classifier(LightningModule):
         self.classifier = nn.Linear(in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
         self.accuracy = Accuracy()
+        self.max_val_accuracy = 0
 
     def forward(self, x):
         if self.encoder:
+
             x = self.encoder(x)
+
         logits = self.classifier(x)
         return logits
 
@@ -55,6 +70,9 @@ class Classifier(LightningModule):
         loss, acc = self.shared_step(batch)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
+
+        self.max_val_accuracy = max(self.max_val_accuracy, acc.item())
+
         return loss
 
     def shared_step(self, batch):
@@ -84,10 +102,13 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--module", type=str)
+    parser.add_argument("--class_name", type=str)
+
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--dataset", type=str, default="eurosat")
     parser.add_argument("--ckpt_path", type=str, default=None)
-    parser.add_argument("--exp", type=str)
+    parser.add_argument("--exp", type=str, default="")
     parser.add_argument("--finetune", action="store_true")
 
     parser.add_argument("--lr", type=float, default=0.001)
@@ -105,14 +126,19 @@ if __name__ == "__main__":
     elif args.backbone_type == "pretrain":
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = deepcopy(model.encoder_q)
-    elif args.backbone_type == "custom":
-        backbone = CustomEncoder()
-        backbone.load_from_checkpoint(args.ckpt_path)
+    elif args.backbone_type == "dimport":
+        module = __import__(args.module, fromlist=[args.class_name])
+        model_class = getattr(module, args.class_name)
+        backbone = model_class()
+        backbone.load_state_dict(torch.load(args.ckpt_path))
+
+        # with open(args.ckpt_path, 'rb') as handle:
+        # backbone = pickle.load(handle)
 
     # elif args.backbone_type == 'onnx':
     #     model = onnx.load(args.ckpt_path)
-    #     backbone = ConvertModel(model)# , debug=True
-    #     backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
+    #     backbone = ConvertModel(model)#, experimental=True)# , debug=True
+    #     backbone = nn.Sequential(Permute((0, 2, 3, 1)),backbone, nn.Flatten())
 
     else:
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
@@ -126,16 +152,24 @@ if __name__ == "__main__":
 
     if args.finetune:
         model = Classifier(in_features=512, num_classes=datamodule.num_classes, backbone=backbone)
-        model.example_input_array = torch.zeros((1, 3, 64, 64))
+        # model.example_input_array = torch.zeros((1, 3, 64, 64))
 
     else:
         datamodule.add_encoder(backbone)
         model = Classifier(in_features=512, num_classes=datamodule.num_classes)
 
-    experiment_name = "{}-{}-{}".format(args.lr, args.bb_lr, args.finetune)
+    experiment_name = "{}-{}-{}-{}".format(args.dataset, args.lr, args.bb_lr, args.finetune)
+    if args.exp:
+        experiment_name = args.exp
 
-    logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs" / args.dataset), name=experiment_name)
+    print(args.max_epochs)
+
+    logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
     trainer = Trainer(
         gpus=args.gpus, logger=logger, checkpoint_callback=False, max_epochs=args.max_epochs, weights_summary="full"
     )
+
     trainer.fit(model, datamodule=datamodule)
+
+    with open(str(Path.cwd() / "logs" / experiment_name / "max_val_acc"), "w") as f:
+        f.write(str(model.max_val_accuracy))
