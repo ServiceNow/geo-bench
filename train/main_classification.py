@@ -14,18 +14,16 @@ from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
 
+# currentdir = os.path.dirname(os.path.realpath(__file__))
+# parentdir = os.path.dirname(currentdir)
+# print(parentdir)
+# sys.path.append(parentdir)
+
 from datasets.eurosat_datamodule import EurosatDataModule
 from datasets.sat_datamodule import SatDataModule
 from models.moco2_module import MocoV2
 
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-print(parentdir)
-sys.path.append(parentdir)
-
-
 # from models.custom_encoder import CustomEncoder
-
 # import onnx
 # from onnx2pytorch import ConvertModel
 
