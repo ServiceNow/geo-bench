@@ -6,7 +6,7 @@ import torchvision.models as models
 
 def get_embeddings(encoder, dataset, bs=128):
     embeddings = None
-    dl = DataLoader(dataset, batch_size=bs, shuffle=False, num_workers=8, drop_last=False)  # , pin_memory=True
+    dl = DataLoader(dataset, batch_size=bs, shuffle=False, num_workers=8, drop_last=False)
 
     encoder = encoder.cuda().eval()
 
@@ -23,7 +23,9 @@ def get_embeddings(encoder, dataset, bs=128):
 
 
 def hp_to_str(args):
-    return "{}-{}-{}-{}-{}".format(args.dataset, args.backbone_type, args.lr, args.bb_lr, args.finetune)
+    return "{}-{}-{}-{}-{}-{}".format(
+        args.dataset, args.backbone_type, args.lr, args.bb_lr, args.weight_decay, args.finetune
+    )
 
 
 class PretrainedModelDict:
