@@ -13,15 +13,15 @@ from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
-import clip
+
+# import clip
 
 from datasets.eurosat_datamodule import EurosatDataModule
 from datasets.sat_datamodule import SatDataModule
 from models.moco2_module import MocoV2
 from utils.utils import PretrainedModelDict, hp_to_str
-from models.clip_module import CLIPEncoder
 
-# from models.custom_encoder import CustomEncoder
+# from models.clip_module import CLIPEncoder
 # import onnx
 # from onnx2pytorch import ConvertModel
 
