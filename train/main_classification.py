@@ -42,12 +42,10 @@ class Classifier(LightningModule):
         self.classifier = nn.Linear(in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
         self.accuracy = Accuracy()
-        self.max_val_accuracy = 0
 
     def forward(self, x):
         if self.encoder:
             x = self.encoder(x)
-        print(x.shape)
         x = x.float()
         logits = self.classifier(x)
         return logits
@@ -63,8 +61,6 @@ class Classifier(LightningModule):
         loss, acc = self.shared_step(batch)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
-
-        self.max_val_accuracy = max(self.max_val_accuracy, acc.item())
 
         return loss
 
@@ -83,7 +79,7 @@ class Classifier(LightningModule):
         if self.encoder:
             optimizer_params.append({"params": self.encoder.parameters(), "lr": args.bb_lr})
 
-        optimizer = optim.Adam(optimizer_params)
+        optimizer = optim.Adam(optimizer_params, weight_decay=args.weight_decay)
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.6 * max_epochs), int(0.8 * max_epochs)])
 
         return [optimizer], [scheduler]
@@ -105,7 +101,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--bb_lr", type=float, default=0.001)
-    parser.add_argument("--max_epochs", type=int, default=20)
+    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--weight_decay", type=float, default=0)
 
     args = parser.parse_args()
 
@@ -114,8 +111,8 @@ if __name__ == "__main__":
     if args.backbone_type == "random":
         backbone = resnet.resnet18(pretrained=False)
         backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
-    if args.backbone_type == "imagenet":
-        backbone = resnet.resnet18(pretrained=False)
+    elif args.backbone_type == "imagenet":
+        backbone = resnet.resnet18(pretrained=True)
         backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
     elif args.backbone_type == "pretrain":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
@@ -140,7 +137,7 @@ if __name__ == "__main__":
     #     backbone = nn.Sequential(Permute((0, 2, 3, 1)),backbone, nn.Flatten())
 
     else:
-        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "mocov2"')
+        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
 
     if args.dataset == "eurosat":
         datamodule = EurosatDataModule(args.data_dir)
@@ -165,6 +162,7 @@ if __name__ == "__main__":
     )
 
     trainer.fit(model, datamodule=datamodule)
+    print(trainer.callback_metrics)
 
-    with open(str(Path.cwd() / "logs" / experiment_name / "max_val_acc"), "w") as f:
-        f.write(str(model.max_val_accuracy))
+    with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
+        f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"].item())))
