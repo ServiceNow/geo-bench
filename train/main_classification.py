@@ -13,22 +13,17 @@ from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
-
-# currentdir = os.path.dirname(os.path.realpath(__file__))
-# parentdir = os.path.dirname(currentdir)
-# print(parentdir)
-# sys.path.append(parentdir)
+import clip
 
 from datasets.eurosat_datamodule import EurosatDataModule
 from datasets.sat_datamodule import SatDataModule
 from models.moco2_module import MocoV2
+from utils.utils import PretrainedModelDict, hp_to_str
+from models.clip_module import CLIPEncoder
 
 # from models.custom_encoder import CustomEncoder
 # import onnx
 # from onnx2pytorch import ConvertModel
-
-
-sys.path.append("../datasets")
 
 
 class Permute(torch.nn.Module):
@@ -51,9 +46,9 @@ class Classifier(LightningModule):
 
     def forward(self, x):
         if self.encoder:
-
             x = self.encoder(x)
-
+        print(x.shape)
+        x = x.float()
         logits = self.classifier(x)
         return logits
 
@@ -106,7 +101,6 @@ if __name__ == "__main__":
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--dataset", type=str, default="eurosat")
     parser.add_argument("--ckpt_path", type=str, default=None)
-    parser.add_argument("--exp", type=str, default="")
     parser.add_argument("--finetune", action="store_true")
 
     parser.add_argument("--lr", type=float, default=0.001)
@@ -115,23 +109,30 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    pmd = PretrainedModelDict()
+
     if args.backbone_type == "random":
         backbone = resnet.resnet18(pretrained=False)
         backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
-    elif args.backbone_type == "imagenet":
-        backbone = resnet.resnet18(pretrained=True)
+    if args.backbone_type == "imagenet":
+        backbone = resnet.resnet18(pretrained=False)
         backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
-    elif args.backbone_type == "pretrain":
+    elif args.backbone_type == "pretrain":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = deepcopy(model.encoder_q)
-    elif args.backbone_type == "dimport":
-        module = __import__(args.module, fromlist=[args.class_name])
-        model_class = getattr(module, args.class_name)
-        backbone = model_class()
-        backbone.load_state_dict(torch.load(args.ckpt_path))
+    elif args.backbone_type == "custom":
+        backbone = torch.load(args.ckpt_path)
 
-        # with open(args.ckpt_path, 'rb') as handle:
-        # backbone = pickle.load(handle)
+    # elif args.backbone_type in pmd.get_available_models(): # only tested resnet18 for now
+    #     backbone = pmd.get_model(args.backbone_type)
+
+    #     # print(list(backbone.children()))
+    #     backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
+
+    # elif args.backbone_type in clip.available_models(): # currently get nan losses
+    #     # ['RN50', 'RN101', 'RN50x4', 'RN50x16', 'ViT-B/32', 'ViT-B/16']
+    #     model, preprocess = clip.load(args.backbone_type)
+    #     backbone = CLIPEncoder(model, preprocess)
 
     # elif args.backbone_type == 'onnx':
     #     model = onnx.load(args.ckpt_path)
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     #     backbone = nn.Sequential(Permute((0, 2, 3, 1)),backbone, nn.Flatten())
 
     else:
-        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
+        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "mocov2"')
 
     if args.dataset == "eurosat":
         datamodule = EurosatDataModule(args.data_dir)
@@ -156,11 +157,7 @@ if __name__ == "__main__":
         datamodule.add_encoder(backbone)
         model = Classifier(in_features=512, num_classes=datamodule.num_classes)
 
-    experiment_name = "{}-{}-{}-{}".format(args.dataset, args.lr, args.bb_lr, args.finetune)
-    if args.exp:
-        experiment_name = args.exp
-
-    print(args.max_epochs)
+    experiment_name = hp_to_str(args)
 
     logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
     trainer = Trainer(
