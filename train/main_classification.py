@@ -77,7 +77,7 @@ class Classifier(LightningModule):
         optimizer_params = [{"params": self.classifier.parameters(), "lr": args.lr}]
 
         if self.encoder:
-            optimizer_params.append({"params": self.encoder.parameters(), "lr": args.bb_lr})
+            optimizer_params.append({"params": self.encoder.parameters(), "lr": args.backbone_lr})
 
         optimizer = optim.Adam(optimizer_params, weight_decay=args.weight_decay)
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.6 * max_epochs), int(0.8 * max_epochs)])
@@ -99,9 +99,9 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
 
-    parser.add_argument("--bs", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.001)
-    parser.add_argument("--bb_lr", type=float, default=0.001)
+    parser.add_argument("--backbone_lr", type=float, default=0.001)
     parser.add_argument("--max_epochs", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0)
 

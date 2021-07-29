@@ -80,7 +80,7 @@ class SiamSegment(LightningModule):
             optimizer_params.append(
                 {
                     "params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())),
-                    "lr": args.bb_lr,
+                    "lr": args.backbone_lr,
                 }
             )
 
@@ -104,9 +104,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--patch_size", type=int, default=96)
     parser.add_argument("--max_epochs", type=int, default=100)
-    parser.add_argument("--bs", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=0.001)
-    parser.add_argument("--bb_lr", type=float, default=0.001)
+    parser.add_argument("--backbone_lr", type=float, default=0.001)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
 
     args = parser.parse_args()
