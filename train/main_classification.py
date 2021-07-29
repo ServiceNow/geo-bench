@@ -1,7 +1,6 @@
 from pathlib import Path
 from copy import deepcopy
 from argparse import ArgumentParser
-
 import os
 import sys
 import pickle
@@ -157,7 +156,12 @@ if __name__ == "__main__":
 
     experiment_name = hp_to_str(args)
 
-    logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
+    os.makedirs(os.path.join(Path.cwd(), "logs", experiment_name), exist_ok=True)
+    if args.no_logs:
+        logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
+    else:
+        logger = False
+
     trainer = Trainer(
         gpus=args.gpus, logger=logger, checkpoint_callback=False, max_epochs=args.max_epochs, weights_summary="full"
     )
