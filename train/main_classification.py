@@ -92,13 +92,14 @@ if __name__ == "__main__":
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--data_dir", type=str)
     parser.add_argument("--module", type=str)
-    parser.add_argument("--class_name", type=str)
+    parser.add_argument("--num_workers", type=int, default=8)
 
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--dataset", type=str, default="eurosat")
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
 
+    parser.add_argument("--bs", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--bb_lr", type=float, default=0.001)
     parser.add_argument("--max_epochs", type=int, default=100)
@@ -140,9 +141,9 @@ if __name__ == "__main__":
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
 
     if args.dataset == "eurosat":
-        datamodule = EurosatDataModule(args.data_dir)
+        datamodule = EurosatDataModule(args)
     elif args.dataset == "sat":
-        datamodule = SatDataModule(args.data_dir)
+        datamodule = SatDataModule(args)
     else:
         raise ValueError('dataset must be one of "sat" or "eurosat"')
 

@@ -9,10 +9,12 @@ from utils.utils import get_embeddings
 
 
 class EurosatDataModule(LightningDataModule):
-    def __init__(self, data_dir, encoder=None):
+    def __init__(self, args, encoder=None):
         super().__init__()
-        self.data_dir = data_dir
+        self.data_dir = args.data_dir
         self.encoder = encoder
+        self.bs = args.bs
+        self.num_workers = args.num_workers
 
     @property
     def num_classes(self):
@@ -52,12 +54,22 @@ class EurosatDataModule(LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=True, pin_memory=True
+            self.train_dataset,
+            batch_size=self.bs,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_dataset, batch_size=32, shuffle=False, num_workers=8, drop_last=True, pin_memory=True
+            self.val_dataset,
+            batch_size=self.bs,
+            shuffle=False,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True,
         )
 
     def add_encoder(self, encoder):
