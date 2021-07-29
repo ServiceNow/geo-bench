@@ -1,7 +1,7 @@
 from pathlib import Path
 from copy import deepcopy
 from argparse import ArgumentParser
-
+import os
 import torch
 from torch.nn import BCEWithLogitsLoss
 from torchvision.models import resnet
@@ -101,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
+    parser.add_argument("--no_logs", action="store_false")
 
     parser.add_argument("--patch_size", type=int, default=96)
     parser.add_argument("--max_epochs", type=int, default=100)
@@ -132,7 +133,12 @@ if __name__ == "__main__":
 
     experiment_name = hp_to_str(args)
 
-    logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
+    os.makedirs(os.path.join(Path.cwd(), "logs", experiment_name), exist_ok=True)
+    if args.no_logs:
+        logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
+    else:
+        logger = False
+
     checkpoint_callback = ModelCheckpoint(filename="{epoch}", save_weights_only=True)
     trainer = Trainer(
         gpus=args.gpus,

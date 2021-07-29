@@ -24,7 +24,7 @@ def get_embeddings(encoder, dataset, bs=128):
 
 def hp_to_str(args):
     return "{}-{}-{}-{}-{}-{}".format(
-        args.dataset, args.backbone_type, args.lr, args.bb_lr, args.weight_decay, args.finetune
+        args.dataset, args.backbone_type, args.lr, args.backbone_lr, args.weight_decay, args.finetune
     )
 
 
