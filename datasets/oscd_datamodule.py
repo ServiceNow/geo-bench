@@ -47,10 +47,12 @@ class Compose:
 
 
 class ChangeDetectionDataModule(LightningDataModule):
-    def __init__(self, data_dir, patch_size=96):
+    def __init__(self, args):
         super().__init__()
-        self.data_dir = data_dir
-        self.patch_size = patch_size
+        self.data_dir = args.data_dir
+        self.patch_size = args.patch_size
+        self.num_workers = args.num_workers
+        self.patch_size = args.patch_size
 
     def setup(self, stage=None):
         self.train_dataset = ChangeDetectionDataset(
@@ -65,8 +67,20 @@ class ChangeDetectionDataModule(LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=True, pin_memory=True
+            self.train_dataset,
+            batch_size=self.bs,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True,
         )
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=True, pin_memory=True)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.bs,
+            shuffle=True,
+            num_workers=self.num_workers,
+            drop_last=True,
+            pin_memory=True,
+        )

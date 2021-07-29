@@ -96,19 +96,22 @@ if __name__ == "__main__":
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--data_dir", type=str, default="datasets/oscd")
     parser.add_argument("--dataset", type=str, default="oscd")
-    parser.add_argument("--patch_size", type=int, default=96)
-    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--num_workers", type=int, default=8)
+
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
 
+    parser.add_argument("--patch_size", type=int, default=96)
+    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--bs", type=int, default=32)
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--bb_lr", type=float, default=0.001)
     parser.add_argument("--weight_decay", type=float, default=1e-4)
 
     args = parser.parse_args()
 
-    datamodule = ChangeDetectionDataModule(args.data_dir)
+    datamodule = ChangeDetectionDataModule(args)
 
     if args.backbone_type == "random":
         backbone = resnet.resnet18(pretrained=False)
