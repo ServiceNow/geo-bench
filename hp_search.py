@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--ckpt_path", type=str, default="checkpoints/seco_resnet18_1m.ckpt")
 
-    parser.add_argument("--finetune", type=str, default="lp,ft")
+    parser.add_argument("--finetune", type=str, default="lp,ft", help="lp for linear probing, ft for finetuning")
     parser.add_argument("--lr", type=str, default="0.001,0.0001")
     parser.add_argument("--bb_lr", type=str, default="0.001,0.0001")
     parser.add_argument("--weight_decay", type=str, default="0.0001")
