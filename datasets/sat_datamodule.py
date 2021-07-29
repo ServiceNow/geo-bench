@@ -14,7 +14,7 @@ class SatDataModule(LightningDataModule):
         self.data_dir = args.data_dir
         self.encoder = encoder
         self.num_workers = args.num_workers
-        self.bs = args.bs
+        self.bs = args.batch_size
 
     @property
     def num_classes(self):

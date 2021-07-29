@@ -53,6 +53,7 @@ class ChangeDetectionDataModule(LightningDataModule):
         self.patch_size = args.patch_size
         self.num_workers = args.num_workers
         self.patch_size = args.patch_size
+        self.bs = args.batch_size
 
     def setup(self, stage=None):
         self.train_dataset = ChangeDetectionDataset(
