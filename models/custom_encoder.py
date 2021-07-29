@@ -1,5 +1,5 @@
 from pytorch_lightning import LightningModule
-
+import torch
 import torch.nn as nn
 import pickle
 
@@ -17,5 +17,4 @@ class CustomEncoder(LightningModule):
 if __name__ == "__main__":
 
     ce = CustomEncoder()
-    with open("checkpoints/pickled_model.pickle", "wb") as handle:
-        pickle.dump(ce, handle)  # , protocol=pickle.HIGHEST_PROTOCOL)
+    torch.save(ce, "checkpoints/pt_model.pt")
