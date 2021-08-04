@@ -12,15 +12,17 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.metrics.classification import Precision, Recall, F1
 
 from datasets.oscd_datamodule import ChangeDetectionDataModule
-from models.segmentation import get_segmentation_model
 from models.moco2_module import MocoV2
 from utils.utils import hp_to_str
+from models.custom_encoder import SegmentationEncoder
+from models.segmentation import UNet
 
 
 class SiamSegment(LightningModule):
-    def __init__(self, backbone, feature_indices, feature_channels, finetune):
+    def __init__(self, backbone, feature_channels, finetune):
         super().__init__()
-        self.model = get_segmentation_model(backbone, feature_indices, feature_channels)
+
+        self.model = UNet(backbone, feature_channels, 1, bilinear=True, concat_mult=1, dropout_rate=0.3)
         self.criterion = BCEWithLogitsLoss()
         self.prec = Precision(num_classes=1, threshold=0.5)
         self.rec = Recall(num_classes=1, threshold=0.5)
@@ -116,19 +118,26 @@ if __name__ == "__main__":
 
     if args.backbone_type == "random":
         backbone = resnet.resnet18(pretrained=False)
+        backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), diff=True)
+
     elif args.backbone_type == "imagenet":
         backbone = resnet.resnet18(pretrained=True)
+        backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), diff=True)
+
     elif args.backbone_type == "pretrain":
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = deepcopy(model.encoder_q)
+        backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), diff=True)
+
     elif args.backbone_type == "custom":
         backbone = torch.load(args.ckpt_path)
+        # backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), feature_channels=(64, 64, 128, 256, 512), diff=True)
+
     else:
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
 
-    model = SiamSegment(
-        backbone, feature_indices=(0, 4, 5, 6, 7), feature_channels=(64, 64, 128, 256, 512), finetune=args.finetune
-    )
+    model = SiamSegment(backbone, feature_channels=(64, 64, 128, 256, 512), finetune=args.finetune)
+
     model.example_input_array = (torch.zeros((1, 3, 96, 96)), torch.zeros((1, 3, 96, 96)))
 
     experiment_name = hp_to_str(args)

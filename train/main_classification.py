@@ -12,6 +12,7 @@ from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
+from models.custom_encoder import BasicEncoder, FullModelEncoder
 
 # import clip
 
@@ -45,6 +46,7 @@ class Classifier(LightningModule):
     def forward(self, x):
         if self.encoder:
             x = self.encoder(x)
+
         x = x.float()
         logits = self.classifier(x)
         return logits
@@ -89,14 +91,16 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("--gpus", type=int, default=1)
-    parser.add_argument("--data_dir", type=str)
+    parser.add_argument("--data_dir", type=str, default="datasets/eurosat")
     parser.add_argument("--module", type=str)
     parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--no_logs", action="store_true")
 
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--dataset", type=str, default="eurosat")
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
+    parser.add_argument("--feature_size", type=int, default=512)
 
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--lr", type=float, default=0.001)
@@ -109,16 +113,16 @@ if __name__ == "__main__":
     pmd = PretrainedModelDict()
 
     if args.backbone_type == "random":
-        backbone = resnet.resnet18(pretrained=False)
-        backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
+        backbone = BasicEncoder(resnet.resnet18(pretrained=False))
+        # backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
     elif args.backbone_type == "imagenet":
-        backbone = resnet.resnet18(pretrained=True)
-        backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
+        backbone = BasicEncoder(resnet.resnet18(pretrained=True))
+        # backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
     elif args.backbone_type == "pretrain":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
-        backbone = deepcopy(model.encoder_q)
+        backbone = FullModelEncoder(deepcopy(model.encoder_q))
     elif args.backbone_type == "custom":
-        backbone = torch.load(args.ckpt_path)
+        backbone = FullModelEncoder(torch.load(args.ckpt_path))
 
     # elif args.backbone_type in pmd.get_available_models(): # only tested resnet18 for now
     #     backbone = pmd.get_model(args.backbone_type)
@@ -147,20 +151,21 @@ if __name__ == "__main__":
         raise ValueError('dataset must be one of "sat" or "eurosat"')
 
     if args.finetune:
-        model = Classifier(in_features=512, num_classes=datamodule.num_classes, backbone=backbone)
+        model = Classifier(in_features=args.feature_size, num_classes=datamodule.num_classes, backbone=backbone)
         # model.example_input_array = torch.zeros((1, 3, 64, 64))
 
     else:
         datamodule.add_encoder(backbone)
-        model = Classifier(in_features=512, num_classes=datamodule.num_classes)
+        model = Classifier(in_features=args.feature_size, num_classes=datamodule.num_classes)
 
     experiment_name = hp_to_str(args)
 
     os.makedirs(os.path.join(Path.cwd(), "logs", experiment_name), exist_ok=True)
+
     if args.no_logs:
-        logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
-    else:
         logger = False
+    else:
+        logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
 
     trainer = Trainer(
         gpus=args.gpus, logger=logger, checkpoint_callback=False, max_epochs=args.max_epochs, weights_summary="full"
