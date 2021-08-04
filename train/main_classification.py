@@ -155,7 +155,7 @@ if __name__ == "__main__":
     )
 
     trainer.fit(model, datamodule=datamodule)
-    print(trainer.callback_metrics)
+    # print(trainer.callback_metrics)
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
         f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"]).item()))
