@@ -3,6 +3,47 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torchvision.models as models
 from argparse import ArgumentParser
+from torchvision.transforms import functional as TF
+import random
+
+
+class RandomFlip:
+    def __call__(self, *xs):
+        if random.random() > 0.5:
+            xs = tuple(TF.hflip(x) for x in xs)
+        return xs
+
+
+class RandomRotation:
+    def __init__(self):
+        self.angles = [0, 90, 180, 270]
+
+    def __call__(self, *xs):
+        angle = random.choice(self.angles)
+        return tuple(TF.rotate(x, angle) for x in xs)
+
+
+class RandomSwap:
+    def __call__(self, x1, x2, y):
+        if random.random() > 0.5:
+            return x2, x1, y
+        else:
+            return x1, x2, y
+
+
+class ToTensor:
+    def __call__(self, *xs):
+        return tuple(TF.to_tensor(x) for x in xs)
+
+
+class Compose:
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, *xs):
+        for t in self.transforms:
+            xs = t(*xs)
+        return xs
 
 
 def get_embeddings(encoder, dataset, bs=128):
@@ -44,11 +85,14 @@ def get_arg_parser():
     parser.add_argument("--finetune", action="store_true")
     parser.add_argument("--feature_size", type=int, default=512)
 
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument(
+        "--batch_size", type=int, default=128, help="Baseline: 128 for clasification, 32 for segmentation"
+    )
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--backbone_lr", type=float, default=0.001)
     parser.add_argument("--max_epochs", type=int, default=5)
     parser.add_argument("--weight_decay", type=float, default=0)
+    parser.add_argument("--patch_size", type=int, default=96)
 
     return parser
 
