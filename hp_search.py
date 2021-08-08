@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 from itertools import product
 from utils.utils import hp_to_str, get_arg_parser
 import pandas as pd
-
+import os
 
 if __name__ == "__main__":
     parser = ArgumentParser()
