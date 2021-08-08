@@ -66,7 +66,6 @@ class SiamSegment(LightningModule):
         pred = torch.sigmoid(out)
         loss = self.criterion(out, mask)
 
-        print(torch.unique(mask.long()))
         prec = self.prec(pred.view(-1), mask.long().view(-1))
         rec = self.rec(pred.view(-1), mask.long().view(-1))
         f1 = self.f1(pred.view(-1), mask.long().view(-1))
@@ -81,7 +80,7 @@ class SiamSegment(LightningModule):
         if args.finetune:
             optimizer_params.append(
                 {
-                    "params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())),
+                    "params": self.model.encoder.parameters(),
                     "lr": args.backbone_lr,
                 }
             )
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--no_logs", action="store_false")
 
     parser.add_argument("--patch_size", type=int, default=96)
-    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--max_epochs", type=int, default=5)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--backbone_lr", type=float, default=0.001)

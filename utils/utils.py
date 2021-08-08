@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torchvision.models as models
+from argparse import ArgumentParser
 
 
 def get_embeddings(encoder, dataset, bs=128):
@@ -26,6 +27,30 @@ def hp_to_str(args):
     return "{}-{}-{}-{}-{}-{}".format(
         args.dataset, args.backbone_type, args.lr, args.backbone_lr, args.weight_decay, args.finetune
     )
+
+
+def get_arg_parser():
+
+    parser = ArgumentParser()
+    parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument("--data_dir", type=str, default="datasets/eurosat")
+    parser.add_argument("--module", type=str)
+    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--no_logs", action="store_true")
+
+    parser.add_argument("--backbone_type", type=str, default="imagenet")
+    parser.add_argument("--dataset", type=str, default="eurosat")
+    parser.add_argument("--ckpt_path", type=str, default=None)
+    parser.add_argument("--finetune", action="store_true")
+    parser.add_argument("--feature_size", type=int, default=512)
+
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--backbone_lr", type=float, default=0.001)
+    parser.add_argument("--max_epochs", type=int, default=5)
+    parser.add_argument("--weight_decay", type=float, default=0)
+
+    return parser
 
 
 class PretrainedModelDict:
