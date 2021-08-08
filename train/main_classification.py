@@ -13,6 +13,7 @@ from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
 from models.custom_encoder import BasicEncoder, FullModelEncoder
+from datasets.datamodule import DataModule
 
 # import clip
 
@@ -90,17 +91,14 @@ if __name__ == "__main__":
     pl.seed_everything(42)
 
     parser = get_arg_parser()
-
     args = parser.parse_args()
 
     pmd = PretrainedModelDict()
 
     if args.backbone_type == "random":
         backbone = BasicEncoder(resnet.resnet18(pretrained=False))
-        # backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
     elif args.backbone_type == "imagenet":
         backbone = BasicEncoder(resnet.resnet18(pretrained=True))
-        # backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
     elif args.backbone_type == "pretrain":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = FullModelEncoder(deepcopy(model.encoder_q))
@@ -126,12 +124,13 @@ if __name__ == "__main__":
     else:
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
 
-    if args.dataset == "eurosat":
-        datamodule = EurosatDataModule(args)
-    elif args.dataset == "sat":
-        datamodule = SatDataModule(args)
-    else:
-        raise ValueError('dataset must be one of "sat" or "eurosat"')
+    datamodule = DataModule(args)
+    # if args.dataset == "eurosat":
+    #     datamodule = EurosatDataModule(args)
+    # elif args.dataset == "sat":
+    #     datamodule = SatDataModule(args)
+    # else:
+    #     raise ValueError('dataset must be one of "sat" or "eurosat"')
 
     if args.finetune:
         model = Classifier(in_features=args.feature_size, num_classes=datamodule.num_classes, backbone=backbone)
@@ -139,7 +138,7 @@ if __name__ == "__main__":
 
     else:
         datamodule.add_encoder(backbone)
-        model = Classifier(in_features=args.feature_size, num_classes=datamodule.num_classes)
+        model = Classifier(in_features=args.feature_size, num_classes=datamodule.get_num_classes())
 
     experiment_name = hp_to_str(args)
 
@@ -155,7 +154,7 @@ if __name__ == "__main__":
     )
 
     trainer.fit(model, datamodule=datamodule)
-    # print(trainer.callback_metrics)
+    print(trainer.callback_metrics)
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
         f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"]).item()))
