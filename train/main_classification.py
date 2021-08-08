@@ -19,7 +19,7 @@ from models.custom_encoder import BasicEncoder, FullModelEncoder
 from datasets.eurosat_datamodule import EurosatDataModule
 from datasets.sat_datamodule import SatDataModule
 from models.moco2_module import MocoV2
-from utils.utils import PretrainedModelDict, hp_to_str
+from utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
 
 # from models.clip_module import CLIPEncoder
 # import onnx
@@ -89,24 +89,7 @@ class Classifier(LightningModule):
 if __name__ == "__main__":
     pl.seed_everything(42)
 
-    parser = ArgumentParser()
-    parser.add_argument("--gpus", type=int, default=1)
-    parser.add_argument("--data_dir", type=str, default="datasets/eurosat")
-    parser.add_argument("--module", type=str)
-    parser.add_argument("--num_workers", type=int, default=8)
-    parser.add_argument("--no_logs", action="store_true")
-
-    parser.add_argument("--backbone_type", type=str, default="imagenet")
-    parser.add_argument("--dataset", type=str, default="eurosat")
-    parser.add_argument("--ckpt_path", type=str, default=None)
-    parser.add_argument("--finetune", action="store_true")
-    parser.add_argument("--feature_size", type=int, default=512)
-
-    parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--lr", type=float, default=0.001)
-    parser.add_argument("--backbone_lr", type=float, default=0.001)
-    parser.add_argument("--max_epochs", type=int, default=100)
-    parser.add_argument("--weight_decay", type=float, default=0)
+    parser = get_arg_parser()
 
     args = parser.parse_args()
 
@@ -175,4 +158,4 @@ if __name__ == "__main__":
     print(trainer.callback_metrics)
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
-        f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"].item())))
+        f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"]).item()))
