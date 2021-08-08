@@ -4,7 +4,7 @@ from pytorch_lightning import LightningDataModule
 import os
 import random
 
-from datasets.datasets import SatDataset, EurosatDataset, ChangeDetectionDataset
+from datasets.datasets import SatDataset, EurosatDataset, ChangeDetectionDataset, ForestNetDataset
 from utils.utils import get_embeddings, RandomFlip, RandomRotation, Compose, ToTensor
 
 
@@ -25,16 +25,19 @@ class DataModule(LightningDataModule):
         elif self.dataset == "eurosat":
             self.train_dataset = EurosatDataset(self.data_dir, split="train", transform=T.ToTensor())
             self.val_dataset = EurosatDataset(self.data_dir, split="val", transform=T.ToTensor())
+        elif self.dataset == "forestnet":
+            self.train_dataset = ForestNetDataset(self.data_dir, split="train", transform=T.ToTensor())
+            self.val_dataset = ForestNetDataset(self.data_dir, split="val", transform=T.ToTensor())
 
         elif self.dataset == "oscd":
             self.train_dataset = ChangeDetectionDataset(
                 self.data_dir,
                 split="train",
-                transform=Compose([RandomFlip(), RandomRotation(), ToTensor()]),
+                transform=Compose([RandomFlip, RandomRotation, ToTensor]),
                 patch_size=self.patch_size,
             )
             self.val_dataset = ChangeDetectionDataset(
-                self.data_dir, split="test", transform=ToTensor(), patch_size=self.patch_size
+                self.data_dir, split="test", transform=ToTensor, patch_size=self.patch_size
             )
 
     def setup(self, stage=None):

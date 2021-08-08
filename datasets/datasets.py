@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from scipy.io import loadmat
 import os
+import pandas as pd
 
 ALL_BANDS = ["B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B8A", "B09", "B11", "B12"]
 RGB_BANDS = ["B04", "B03", "B02"]
@@ -177,9 +178,6 @@ class EurosatDataset(Dataset):
             cls_name = fn.split("_")[0]
             self.samples.append(self.root / cls_name / fn)
 
-        if shuffle:
-            random.shuffle(self.samples)
-
     def __getitem__(self, index):
 
         path = self.samples[index]
@@ -192,6 +190,7 @@ class EurosatDataset(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
+        print(img.mean())
         return img, target
 
     def __len__(self):
@@ -200,6 +199,66 @@ class EurosatDataset(Dataset):
     @property
     def num_classes(self):
         return 10
+
+    def set_embeddings(self, embeddings):
+        self.embeddings = embeddings
+
+
+class ForestNetDataset(Dataset):
+    def __init__(self, data_dir, split, transform=None, shuffle=True):
+        self.split = split
+        self.transform = transform
+
+        self.class_to_idx = {
+            "Timber plantation": 0,
+            "Other": 1,
+            "Grassland shrubland": 2,
+            "Small-scale agriculture": 3,
+            "Other large-scale plantations": 4,
+            "Small-scale mixed plantation": 5,
+            "Oil palm plantation": 6,
+            "Logging": 7,
+            "Mining": 8,
+            "Small-scale oil palm plantation": 9,
+            "Secondary forest": 10,
+            "Fish pond": 11,
+        }
+
+        self.metadata_df = pd.read_csv(os.path.join(data_dir, "{}.csv".format(split)))
+        self.samples = (
+            self.metadata_df["example_path"]
+            .apply(lambda x: os.path.join(data_dir, x, "images/visible/composite.png"))
+            .to_list()
+        )
+        self.targets = self.metadata_df["label"].apply(lambda x: self.class_to_idx[x]).to_numpy()
+
+        self.embeddings = None
+
+        if shuffle:
+            tmp = list(zip(self.samples, self.targets))
+            random.shuffle(tmp)
+            self.samples, self.targets = zip(*tmp)
+
+    def __getitem__(self, index):
+
+        target = self.targets[index]
+
+        if self.embeddings is not None:
+            return self.embeddings[index], target
+
+        path = self.samples[index]
+        img = Image.open(path)
+
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, target
+
+    def __len__(self):
+        return len(self.samples)
+
+    @property
+    def num_classes(self):
+        return 12
 
     def set_embeddings(self, embeddings):
         self.embeddings = embeddings
