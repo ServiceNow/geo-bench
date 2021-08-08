@@ -1,50 +1,89 @@
 from argparse import ArgumentParser
 from itertools import product
+from utils.utils import hp_to_str, get_arg_parser
+import pandas as pd
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
 
-    # parser.add_argument("--mode", type=str, default="generate")
-    parser.add_argument("--dataset", type=str, default="oscd")
-    parser.add_argument("--data_dir", type=str, default="datasets/oscd")
-    parser.add_argument("--backbone_type", type=str, default="imagenet")
-    parser.add_argument("--ckpt_path", type=str, default="checkpoints/seco_resnet18_1m.ckpt")
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="generate",
+        help='"generate" to generate experiment commands file or "table" to create a table from an commands file',
+    )
+    parser.add_argument("--dataset", type=str, default="eurosat", help="dataset")
+    parser.add_argument("--data_dir", type=str, default="datasets/eurosat", help="dataset directory")
+    parser.add_argument("--backbone_type", type=str, default="imagenet", help="backbone type")
+    parser.add_argument(
+        "--ckpt_path", type=str, default="checkpoints/seco_resnet18_1m.ckpt", help="backbone checkpoint path"
+    )
 
-    parser.add_argument("--ft", type=str, default="ft,lp", help="")
-    parser.add_argument("--lr", type=str, default="0.001,0.0001")
-    parser.add_argument("--bb_lr", type=str, default="0.001,0.0001")
-    parser.add_argument("--weight_decay", type=str, default="0.0001")
+    parser.add_argument("--ft", type=str, default="ft,lp", help='"ft", "lp" or "lp, ft" to include commands of both')
+    parser.add_argument(
+        "--lr", type=str, default="0.001,0.0001", help="comma separated list of learning rates to search over"
+    )
+    parser.add_argument(
+        "--bb_lr",
+        type=str,
+        default="0.001,0.0001",
+        help="comma separated list of backbone learning rates to search over",
+    )
+    parser.add_argument(
+        "--weight_decay", type=str, default="0.0001", help="comma separated list of weight decays to search over"
+    )
 
-    parser.add_argument("--out", type=str, default="hp_search.txt")
+    parser.add_argument("--out", type=str, default="hp_search.txt", help="output file path")
 
     args = parser.parse_args()
 
-    hps = ["lr", "bb_lr", "weight_decay", "ft"]
-    other_keys = ["data_dir", "backbone_type", "ckpt_path", "dataset"]
-    all_keys = hps + other_keys
+    if args.mode == "generate":
+        hps = ["lr", "bb_lr", "weight_decay", "ft"]
+        other_keys = ["data_dir", "backbone_type", "ckpt_path", "dataset"]
+        all_keys = hps + other_keys
 
-    all_combos = product(*[args.__dict__[k].split(",") for k in all_keys])
-    all_combos = [dict(zip(all_keys, combo)) for combo in all_combos]
+        all_combos = product(*[args.__dict__[k].split(",") for k in all_keys])
+        all_combos = [dict(zip(all_keys, combo)) for combo in all_combos]
 
-    for i in range(len(all_combos)):
+        for i in range(len(all_combos)):
 
-        if all_combos[i]["ft"] == "lp":
-            all_combos[i]["ft"] = ""
-        elif all_combos[i]["ft"] == "ft":
-            all_combos[i]["ft"] = "--finetune"
+            # change combo placeholders to command arguments/flags
+            if all_combos[i]["ft"] == "lp":
+                all_combos[i]["ft"] = ""
+            elif all_combos[i]["ft"] == "ft":
+                all_combos[i]["ft"] = "--finetune"
 
-        if all_combos[i]["dataset"] == "oscd":
-            all_combos[i]["task"] = "segmentation"
-        elif all_combos[i]["dataset"] in ["eurosat", "sat"]:
-            all_combos[i]["task"] = "classification"
+            if all_combos[i]["dataset"] == "oscd":
+                all_combos[i]["task"] = "segmentation"
+            elif all_combos[i]["dataset"] in ["eurosat", "sat"]:
+                all_combos[i]["task"] = "classification"
 
-    cmd = (
-        "python train/main_{task}.py --backbone_type {backbone_type} --ckpt_path {ckpt_path} --data_dir {data_dir} --dataset {dataset}"
-        + "--lr {lr} --bb_lr {bb_lr} --weight_decay {weight_decay} {ft}"
-    )
+        cmd = (
+            "python train/main_{task}.py --backbone_type {backbone_type} --ckpt_path {ckpt_path} --data_dir {data_dir} --dataset {dataset} "
+            + "--lr {lr} --backbone_lr {bb_lr} --weight_decay {weight_decay} {ft}"
+        )
 
-    all_cmds = [cmd.format_map(hp) for hp in all_combos]
+        all_cmds = [cmd.format_map(hp) for hp in all_combos]
 
-    # Save all commands into a file (one per line)
-    open(args.out, "w").write("\n".join(all_cmds))
+        open(args.out, "w").write("\n".join(all_cmds) + "\n")
+
+    elif args.mode == "table":
+
+        cmd_parser = get_arg_parser()
+
+        runs = []
+        metrics = []
+
+        for line in open(args.out):
+            args = cmd_parser.parse_args(line.split()[2:])
+            fn = hp_to_str(args)
+            f = open(os.path.join("logs", fn, "max_val"))
+
+            runs.append(fn)
+            metrics.append(f.readlines()[0].split()[1])
+
+        print(runs, metrics)
+        df = pd.DataFrame({"experiment": runs, "metric": metrics})
+        print(df)
+        # Save all commands into a file (one per line)
