@@ -1,11 +1,11 @@
 from pathlib import Path
-
+import random
 from torch.utils.data import Dataset
 from PIL import Image
 
 
 class EurosatDataset(Dataset):
-    def __init__(self, root, split, transform=None):
+    def __init__(self, root, split, transform=None, shuffle=True):
         self.root = Path(root)
         self.split = split
         self.transform = transform
@@ -21,6 +21,9 @@ class EurosatDataset(Dataset):
         for fn in filenames:
             cls_name = fn.split("_")[0]
             self.samples.append(self.root / cls_name / fn)
+
+        if shuffle:
+            random.shuffle(self.samples)
 
     def __getitem__(self, index):
 

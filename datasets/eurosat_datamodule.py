@@ -13,7 +13,7 @@ class EurosatDataModule(LightningDataModule):
         super().__init__()
         self.data_dir = args.data_dir
         self.encoder = encoder
-        self.bs = args.batch_size
+        self.batch_size = args.batch_size
         self.num_workers = args.num_workers
 
     @property

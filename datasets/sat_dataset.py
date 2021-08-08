@@ -7,7 +7,7 @@ import numpy as np
 
 
 class SatDataset(Dataset):
-    def __init__(self, data_dir, split, transform=None):
+    def __init__(self, data_dir, split, transform=None, shuffle=True):
         self.split = split
         self.transform = transform
 
@@ -36,6 +36,13 @@ class SatDataset(Dataset):
         self.targets = np.where(self.targets == 1)[1]
 
         self.embeddings = None
+
+        if shuffle:
+            print(self.data.shape, self.targets.shape)
+            idx = np.random.shuffle(np.arange(self.targets.shape[0]))
+            self.data = self.data[idx][0]
+            self.targets = self.targets[idx][0]
+            print(self.data.shape, self.targets.shape)
 
     def __getitem__(self, index):
 

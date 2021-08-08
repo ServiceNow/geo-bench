@@ -1,6 +1,6 @@
 from pathlib import Path
 from itertools import product
-
+import random
 from torch.utils.data import Dataset
 import rasterio
 import numpy as np
@@ -33,7 +33,7 @@ def read_image(path, bands, normalize=True):
 
 
 class ChangeDetectionDataset(Dataset):
-    def __init__(self, root, split="all", bands=None, transform=None, patch_size=96):
+    def __init__(self, root, split="all", bands=None, transform=None, patch_size=96, shuffle=True):
         self.root = Path(root)
         self.split = split
         self.bands = bands if bands is not None else RGB_BANDS
@@ -49,6 +49,9 @@ class ChangeDetectionDataset(Dataset):
             limits = product(range(0, img.width, patch_size), range(0, img.height, patch_size))
             for lim in limits:
                 self.samples.append((self.root / name, (lim[0], lim[1], lim[0] + patch_size, lim[1] + patch_size)))
+
+        if shuffle:
+            random.shuffle(self.samples)
 
     def __getitem__(self, index):
         path, limits = self.samples[index]
