@@ -15,25 +15,14 @@ import numpy as np
 from models.custom_encoder import BasicEncoder, FullModelEncoder
 from datasets.datamodule import DataModule
 
-# import clip
 
-from datasets.eurosat_datamodule import EurosatDataModule
-from datasets.sat_datamodule import SatDataModule
 from models.moco2_module import MocoV2
 from utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
 
+# import clip
 # from models.clip_module import CLIPEncoder
 # import onnx
 # from onnx2pytorch import ConvertModel
-
-
-class Permute(torch.nn.Module):
-    def __init__(self, dims):
-        super(Permute, self).__init__()
-        self.dims = dims
-
-    def forward(self, x):
-        return x.permute(self.dims)
 
 
 class Classifier(LightningModule):

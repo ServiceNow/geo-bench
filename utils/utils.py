@@ -7,33 +7,26 @@ from torchvision.transforms import functional as TF
 import random
 
 
-class RandomFlip:
-    def __call__(self, *xs):
-        if random.random() > 0.5:
-            xs = tuple(TF.hflip(x) for x in xs)
-        return xs
+def RandomFlip(*xs):
+    if random.random() > 0.5:
+        xs = tuple(TF.hflip(x) for x in xs)
+    return xs
 
 
-class RandomRotation:
-    def __init__(self):
-        self.angles = [0, 90, 180, 270]
-
-    def __call__(self, *xs):
-        angle = random.choice(self.angles)
-        return tuple(TF.rotate(x, angle) for x in xs)
+def RandomRotation(*xs):
+    angle = random.choice([0, 90, 180, 270])
+    return tuple(TF.rotate(x, angle) for x in xs)
 
 
-class RandomSwap:
-    def __call__(self, x1, x2, y):
-        if random.random() > 0.5:
-            return x2, x1, y
-        else:
-            return x1, x2, y
+def RandomSwap(x1, x2, y):
+    if random.random() > 0.5:
+        return x2, x1, y
+    else:
+        return x1, x2, y
 
 
-class ToTensor:
-    def __call__(self, *xs):
-        return tuple(TF.to_tensor(x) for x in xs)
+def ToTensor(*xs):
+    return tuple(TF.to_tensor(x) for x in xs)
 
 
 class Compose:
@@ -90,7 +83,7 @@ def get_arg_parser():
     )
     parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--backbone_lr", type=float, default=0.001)
-    parser.add_argument("--max_epochs", type=int, default=5)
+    parser.add_argument("--max_epochs", type=int, default=100)
     parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--patch_size", type=int, default=96)
 
