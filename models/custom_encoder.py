@@ -1,11 +1,9 @@
 from pytorch_lightning import LightningModule
 import torch
 import torch.nn as nn
-import pickle
-from abc import ABC, abstractmethod
 
 
-class BasicEncoder(LightningModule):
+class BeforeLastLayerEncoder(LightningModule):
     def __init__(self, model):
         super().__init__()
         self.backbone = nn.Sequential(*list(model.children())[:-1], nn.Flatten())
@@ -14,7 +12,7 @@ class BasicEncoder(LightningModule):
         return self.backbone(x)
 
 
-class FullModelEncoder(BasicEncoder):
+class FullModelEncoder(BeforeLastLayerEncoder):
     def __init__(self, model):
         super().__init__(model)
         self.backbone = model
@@ -32,6 +30,15 @@ class CustomEncoder(LightningModule):
 
     def forward(self, x):
         return self.encoder(x)
+
+
+class CLIPEncoder(LightningModule):
+    def __init__(self, model, preprocess):
+        super().__init__()
+        self.model = model
+
+    def forward(self, x):
+        return self.model.encode_image(x)
 
 
 class SegmentationEncoder(LightningModule):

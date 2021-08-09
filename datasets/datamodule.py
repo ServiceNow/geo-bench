@@ -23,8 +23,12 @@ class DataModule(LightningDataModule):
             self.val_dataset = SatDataset(self.data_dir, split="val", transform=T.ToTensor())
 
         elif self.dataset == "eurosat":
-            self.train_dataset = EurosatDataset(self.data_dir, split="train", transform=T.ToTensor())
-            self.val_dataset = EurosatDataset(self.data_dir, split="val", transform=T.ToTensor())
+            self.train_dataset = EurosatDataset(
+                self.data_dir, split="train", transform=T.Compose([T.Resize((224, 224)), T.ToTensor()])
+            )
+            self.val_dataset = EurosatDataset(
+                self.data_dir, split="val", transform=T.Compose([T.Resize((224, 224)), T.ToTensor()])
+            )
         elif self.dataset == "forestnet":
             self.train_dataset = ForestNetDataset(self.data_dir, split="train", transform=T.ToTensor())
             self.val_dataset = ForestNetDataset(self.data_dir, split="val", transform=T.ToTensor())
