@@ -23,6 +23,7 @@ import clip
 
 # import onnx
 # from onnx2pytorch import ConvertModel
+torch.autograd.detect_anomaly()
 
 
 class Classifier(LightningModule):
@@ -99,10 +100,10 @@ if __name__ == "__main__":
     #     # print(list(backbone.children()))
     #     backbone = nn.Sequential(*list(backbone.children())[:-1], nn.Flatten())
 
-    # elif args.backbone_type in clip.available_models(): # currently get nan losses
-    #     # ['RN50', 'RN101', 'RN50x4', 'RN50x16', 'ViT-B/32', 'ViT-B/16']
-    #     model, preprocess = clip.load(args.backbone_type)
-    #     backbone = CLIPEncoder(model, preprocess)
+    elif args.backbone_type in clip.available_models():  # currently get nan losses
+        # ['RN50', 'RN101', 'RN50x4', 'RN50x16', 'ViT-B/32', 'ViT-B/16']
+        model, preprocess = clip.load(args.backbone_type, jit=False)
+        backbone = CLIPEncoder(model.float(), preprocess)
 
     # elif args.backbone_type == 'onnx':
     #     model = onnx.load(args.ckpt_path)
@@ -132,7 +133,12 @@ if __name__ == "__main__":
         logger = TensorBoardLogger(save_dir=str(Path.cwd() / "logs"), name=experiment_name)
 
     trainer = Trainer(
-        gpus=args.gpus, logger=logger, checkpoint_callback=False, max_epochs=args.max_epochs, weights_summary="full"
+        gpus=args.gpus,
+        logger=logger,
+        checkpoint_callback=False,
+        max_epochs=args.max_epochs,
+        weights_summary="full",
+        terminate_on_nan=True,
     )
 
     trainer.fit(model, datamodule=datamodule)
