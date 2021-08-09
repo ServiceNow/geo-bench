@@ -11,7 +11,6 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.metrics.classification import Precision, Recall, F1
 
-# from datasets.oscd_datamodule import ChangeDetectionDataModule
 from models.moco2_module import MocoV2
 from utils.utils import hp_to_str, get_arg_parser
 from models.custom_encoder import SegmentationEncoder
@@ -95,22 +94,6 @@ if __name__ == "__main__":
     pl.seed_everything(42)
 
     parser = get_arg_parser()
-    # parser.add_argument("--gpus", type=int, default=1)
-    # parser.add_argument("--data_dir", type=str, default="datasets/oscd")
-    # parser.add_argument("--dataset", type=str, default="oscd")
-    # parser.add_argument("--num_workers", type=int, default=8)
-
-    # parser.add_argument("--backbone_type", type=str, default="imagenet")
-    # parser.add_argument("--ckpt_path", type=str, default=None)
-    # parser.add_argument("--finetune", action="store_true")
-    # parser.add_argument("--no_logs", action="store_false")
-
-    # parser.add_argument("--patch_size", type=int, default=96)
-    # parser.add_argument("--max_epochs", type=int, default=5)
-    # parser.add_argument("--batch_size", type=int, default=32)
-    # parser.add_argument("--lr", type=float, default=0.001)
-    # parser.add_argument("--backbone_lr", type=float, default=0.001)
-    # parser.add_argument("--weight_decay", type=float, default=1e-4)
 
     args = parser.parse_args()
 
@@ -131,7 +114,6 @@ if __name__ == "__main__":
 
     elif args.backbone_type == "custom":
         backbone = torch.load(args.ckpt_path)
-        # backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), feature_channels=(64, 64, 128, 256, 512), diff=True)
 
     else:
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')

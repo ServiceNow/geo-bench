@@ -113,12 +113,6 @@ if __name__ == "__main__":
         raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
 
     datamodule = DataModule(args)
-    # if args.dataset == "eurosat":
-    #     datamodule = EurosatDataModule(args)
-    # elif args.dataset == "sat":
-    #     datamodule = SatDataModule(args)
-    # else:
-    #     raise ValueError('dataset must be one of "sat" or "eurosat"')
 
     if args.finetune:
         model = Classifier(in_features=args.feature_size, num_classes=datamodule.get_num_classes(), backbone=backbone)
