@@ -12,15 +12,15 @@ from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.metrics import Accuracy
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
-from models.custom_encoder import BasicEncoder, FullModelEncoder
+from models.custom_encoder import BeforeLastLayerEncoder, FullModelEncoder, CLIPEncoder
 from datasets.datamodule import DataModule
 
 
 from models.moco2_module import MocoV2
 from utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
 
-# import clip
-# from models.clip_module import CLIPEncoder
+import clip
+
 # import onnx
 # from onnx2pytorch import ConvertModel
 
@@ -36,7 +36,6 @@ class Classifier(LightningModule):
     def forward(self, x):
         if self.encoder:
             x = self.encoder(x)
-
         x = x.float()
         logits = self.classifier(x)
         return logits
@@ -85,9 +84,9 @@ if __name__ == "__main__":
     pmd = PretrainedModelDict()
 
     if args.backbone_type == "random":
-        backbone = BasicEncoder(resnet.resnet18(pretrained=False))
+        backbone = BeforeLastLayerEncoder(resnet.resnet18(pretrained=False))
     elif args.backbone_type == "imagenet":
-        backbone = BasicEncoder(resnet.resnet18(pretrained=True))
+        backbone = BeforeLastLayerEncoder(resnet.resnet18(pretrained=True))
     elif args.backbone_type == "pretrain":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = FullModelEncoder(deepcopy(model.encoder_q))
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     #     raise ValueError('dataset must be one of "sat" or "eurosat"')
 
     if args.finetune:
-        model = Classifier(in_features=args.feature_size, num_classes=datamodule.num_classes, backbone=backbone)
+        model = Classifier(in_features=args.feature_size, num_classes=datamodule.get_num_classes(), backbone=backbone)
         # model.example_input_array = torch.zeros((1, 3, 64, 64))
 
     else:

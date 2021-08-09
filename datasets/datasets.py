@@ -190,7 +190,6 @@ class EurosatDataset(Dataset):
 
         if self.transform is not None:
             img = self.transform(img)
-        print(img.mean())
         return img, target
 
     def __len__(self):
