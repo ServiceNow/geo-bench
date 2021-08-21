@@ -106,7 +106,7 @@ if __name__ == "__main__":
         backbone = BeforeLastLayerEncoder(resnet.resnet18(pretrained=False))
     elif args.backbone_type == "imagenet":
         backbone = BeforeLastLayerEncoder(resnet.resnet18(pretrained=True))
-    elif args.backbone_type == "pretrain":  # to load seco
+    elif args.backbone_type == "seco":  # to load seco
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = FullModelEncoder(deepcopy(model.encoder_q))
     elif args.backbone_type == "custom":
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     #     backbone = nn.Sequential(Permute((0, 2, 3, 1)),backbone, nn.Flatten())
 
     else:
-        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
+        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "seco"')
 
     datamodule = DataModule(args)
 
