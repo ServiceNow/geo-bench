@@ -9,7 +9,10 @@ from torch import nn, optim
 from torchvision.models import resnet
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.metrics import Accuracy
+
+# from pytorch_lightning.metrics import Accuracy
+from torchmetrics import Precision, Recall, F1, Accuracy
+
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
 from models.custom_encoder import BeforeLastLayerEncoder, FullModelEncoder, CLIPEncoder
@@ -23,7 +26,7 @@ import clip
 
 # import onnx
 # from onnx2pytorch import ConvertModel
-torch.autograd.detect_anomaly()
+# torch.autograd.detect_anomaly()
 
 
 class Classifier(LightningModule):
@@ -33,6 +36,9 @@ class Classifier(LightningModule):
         self.classifier = nn.Linear(in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
         self.accuracy = Accuracy()
+        self.f1 = F1()
+        self.prec = Precision()
+        self.rec = Recall()
 
     def forward(self, x):
         if self.encoder:
@@ -43,15 +49,22 @@ class Classifier(LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        loss, acc = self.shared_step(batch)
+        loss, acc, f1, prec, rec = self.shared_step(batch)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
+        self.log("train/f1", f1, prog_bar=True)
+        self.log("train/prec", prec, prog_bar=True)
+        self.log("train/rec", rec, prog_bar=True)
+
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, acc = self.shared_step(batch)
+        loss, acc, f1, prec, rec = self.shared_step(batch)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
+        self.log("val/f1", f1, prog_bar=True)
+        self.log("val/prec", prec, prog_bar=True)
+        self.log("val/rec", rec, prog_bar=True)
 
         return loss
 
@@ -60,7 +73,11 @@ class Classifier(LightningModule):
         logits = self(x)
         loss = self.criterion(logits, y)
         acc = self.accuracy(torch.argmax(logits, dim=1), y)
-        return loss, acc
+        f1 = self.f1(torch.argmax(logits, dim=1), y)
+        prec = self.prec(torch.argmax(logits, dim=1), y)
+        rec = self.rec(torch.argmax(logits, dim=1), y)
+
+        return loss, acc, f1, prec, rec
 
     def configure_optimizers(self):
 
@@ -77,10 +94,11 @@ class Classifier(LightningModule):
 
 
 if __name__ == "__main__":
-    pl.seed_everything(42)
 
     parser = get_arg_parser()
     args = parser.parse_args()
+
+    pl.seed_everything(args.seed)
 
     pmd = PretrainedModelDict()
 

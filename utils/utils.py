@@ -71,12 +71,15 @@ def get_arg_parser():
     parser.add_argument("--module", type=str)
     parser.add_argument("--num_workers", type=int, default=8)
     parser.add_argument("--no_logs", action="store_true")
+    parser.add_argument("--seed", type=int, default=42)
 
     parser.add_argument("--backbone_type", type=str, default="imagenet")
     parser.add_argument("--dataset", type=str, default="eurosat")
     parser.add_argument("--ckpt_path", type=str, default=None)
     parser.add_argument("--finetune", action="store_true")
     parser.add_argument("--feature_size", type=int, default=512)
+    parser.add_argument("--train_frac", type=float, default=1)
+    parser.add_argument("--val_frac", type=float, default=1)
 
     parser.add_argument(
         "--batch_size", type=int, default=128, help="Baseline: 128 for clasification, 32 for segmentation"
