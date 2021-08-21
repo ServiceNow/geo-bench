@@ -158,7 +158,7 @@ if __name__ == "__main__":
         backbone = resnet.resnet18(pretrained=True)
         backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), diff=True)
 
-    elif args.backbone_type == "pretrain":
+    elif args.backbone_type == "seco":
         model = MocoV2.load_from_checkpoint(args.ckpt_path)
         backbone = deepcopy(model.encoder_q)
         backbone = SegmentationEncoder(backbone, feature_indices=(0, 4, 5, 6, 7), diff=True)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         backbone = torch.load(args.ckpt_path)
 
     else:
-        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "pretrain"')
+        raise ValueError('backbone_type must be one of "random", "imagenet", "custom" or "seco"')
 
     model = SiamSegment(
         backbone,
