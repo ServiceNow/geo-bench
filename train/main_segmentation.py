@@ -199,12 +199,13 @@ if __name__ == "__main__":
     trainer.fit(model, datamodule=datamodule)
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
-        max_idx = torch.argmax(trainer.callback_metrics["val/f1"])
+        # max_idx = torch.argmax(trainer.callback_metrics["val/f1"])
 
         f.write(
-            "max_f1_precision_recall: {} {} {}".format(
-                trainer.callback_metrics["val/f1"].item(),
-                trainer.callback_metrics["val/precision"].item(),
-                trainer.callback_metrics["val/recall"].item(),
+            "max_f1_iou_precision_recall: {} {} {} {}".format(
+                torch.max(trainer.callback_metrics["val/f1_micro"]).item(),
+                torch.max(trainer.callback_metrics["val/iou"]).item(),
+                torch.max(trainer.callback_metrics["val/precision"]).item(),
+                torch.max(trainer.callback_metrics["val/recall"]).item(),
             )
         )

@@ -163,4 +163,9 @@ if __name__ == "__main__":
     print(trainer.callback_metrics)
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
-        f.write("max_accuracy: {}".format(torch.max(trainer.callback_metrics["val/acc"]).item()))
+        f.write(
+            "max_accuracy_f1: {} {}".format(
+                torch.max(trainer.callback_metrics["val/acc"]).item(),
+                torch.max(trainer.callback_metrics["val/f1"]).item(),
+            )
+        )
