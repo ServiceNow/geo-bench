@@ -23,6 +23,7 @@ from models.moco2_module import MocoV2
 from utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
 
 import clip
+import sklearn.metrics
 
 # import onnx
 # from onnx2pytorch import ConvertModel
@@ -35,10 +36,15 @@ class Classifier(LightningModule):
         self.encoder = backbone
         self.classifier = nn.Linear(in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
-        self.accuracy = Accuracy()
-        self.f1 = F1()
-        self.prec = Precision()
-        self.rec = Recall()
+        self.accuracy = Accuracy(average="micro")
+        self.f1 = F1(num_classes=num_classes, average="macro")
+        self.prec = Precision(num_classes=num_classes, average="macro")
+        self.rec = Recall(num_classes=num_classes, average="macro")
+
+        # self.targets = torch.tensor([]).cuda()
+        # self.preds = torch.tensor([]).cuda()
+
+        self.best_epoch_metrics = None
 
     def forward(self, x):
         if self.encoder:
@@ -49,7 +55,7 @@ class Classifier(LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        loss, acc, f1, prec, rec = self.shared_step(batch)
+        loss, acc, f1, prec, rec, _, _ = self.shared_step(batch)
         self.log("train/loss", loss, prog_bar=True)
         self.log("train/acc", acc, prog_bar=True)
         self.log("train/f1", f1, prog_bar=True)
@@ -59,12 +65,18 @@ class Classifier(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, acc, f1, prec, rec = self.shared_step(batch)
+        loss, acc, f1, prec, rec, preds, targets = self.shared_step(batch)
         self.log("val/loss", loss, prog_bar=True)
         self.log("val/acc", acc, prog_bar=True)
         self.log("val/f1", f1, prog_bar=True)
         self.log("val/prec", prec, prog_bar=True)
         self.log("val/rec", rec, prog_bar=True)
+
+        # for i in range(acc.shape[0]):
+        # self.log("val/acc" + str(i), acc[i], prog_bar=True)
+
+        # self.targets = torch.cat((targets, self.targets))
+        # self.preds = torch.cat((preds, self.preds))
 
         return loss
 
@@ -72,12 +84,25 @@ class Classifier(LightningModule):
         x, y = batch
         logits = self(x)
         loss = self.criterion(logits, y)
-        acc = self.accuracy(torch.argmax(logits, dim=1), y)
-        f1 = self.f1(torch.argmax(logits, dim=1), y)
-        prec = self.prec(torch.argmax(logits, dim=1), y)
-        rec = self.rec(torch.argmax(logits, dim=1), y)
+        preds = torch.argmax(logits, dim=1)
+        acc = self.accuracy(preds, y)
+        f1 = self.f1(preds, y)
+        prec = self.prec(preds, y)
+        rec = self.rec(preds, y)
 
-        return loss, acc, f1, prec, rec
+        return loss, acc, f1, prec, rec, preds, y
+
+    def validation_epoch_end(self, validation_step_outputs):
+
+        if self.best_epoch_metrics is None:
+            self.best_epoch_metrics = trainer.logged_metrics
+
+        if trainer.logged_metrics["val/loss"] < self.best_epoch_metrics["val/loss"]:
+            self.best_epoch_metrics = trainer.logged_metrics
+        # print("=================\n", self.best_epoch_metrics, "\n-------------------------------\n", trainer.logged_metrics, "==========================\n")
+
+        # self.targets = torch.tensor([]).cuda()
+        # self.preds = torch.tensor([]).cuda()
 
     def configure_optimizers(self):
 
@@ -160,12 +185,23 @@ if __name__ == "__main__":
     )
 
     trainer.fit(model, datamodule=datamodule)
-    print(trainer.callback_metrics)
+
+    # min_loss_idx = torch.argmin(trainer.callback_metrics["val/loss"])
 
     with open(str(Path.cwd() / "logs" / experiment_name / "max_val"), "w") as f:
+        # f.write(
+        #     "max_accuracy_f1: {} {}".format(
+        #         torch.max(trainer.callback_metrics["val/acc0"]).item(),
+        #         torch.max(trainer.callback_metrics["val/f1"]).item(),
+        #     )
+        # )
+        f.write("epoch,acc,f1,rec,prec\n")
         f.write(
-            "max_accuracy_f1: {} {}".format(
-                torch.max(trainer.callback_metrics["val/acc"]).item(),
-                torch.max(trainer.callback_metrics["val/f1"]).item(),
+            "{},{},{},{},{}".format(
+                model.best_epoch_metrics["epoch"],
+                model.best_epoch_metrics["val/acc"],
+                model.best_epoch_metrics["val/f1"],
+                model.best_epoch_metrics["val/rec"],
+                model.best_epoch_metrics["val/prec"],
             )
         )

@@ -1,11 +1,42 @@
 from torch.utils.data import DataLoader
 from torchvision import transforms as T
 from pytorch_lightning import LightningDataModule
+from PIL import Image
 import os
 import random
 
-from datasets.datasets import SatDataset, EurosatDataset, ChangeDetectionDataset, ForestNetDataset
-from utils.utils import get_embeddings, RandomFlip, RandomRotation, Compose, ToTensor
+# from deepforest import main, dataset
+from datasets.datasets import (
+    SatDataset,
+    EurosatDataset,
+    ChangeDetectionDataset,
+    ForestNetDataset,
+    BigEarthNetDataset,
+    GeoClefDataset,
+    Sen12FloodDataset,
+)
+from utils.utils import get_embeddings, RandomFlip, RandomRotation, Compose, ToTensor, random_subset
+
+# import torchrs.transforms
+# from torchrs.datasets import ETCI2021
+
+# transform = Compose([ToTensor()])
+
+# dataset = ETCI2021(
+#     root="path/to/dataset/",
+#     split="train",  # or 'val', 'test'
+#     transform=transform
+# )
+
+# x = dataset[0]
+# """
+# x: dict(
+#     vv:         (3, 256, 256)
+#     vh:         (3, 256, 256)
+#     flood_mask: (1, 256, 256)
+#     water_mask: (1, 256, 256)
+# )
+# """
 
 
 class DataModule(LightningDataModule):
@@ -33,6 +64,46 @@ class DataModule(LightningDataModule):
             self.train_dataset = ForestNetDataset(self.data_dir, split="train", transform=T.ToTensor())
             self.val_dataset = ForestNetDataset(self.data_dir, split="val", transform=T.ToTensor())
 
+        elif self.dataset == "bigearthnet":
+            self.train_dataset = BigEarthNetDataset(
+                self.data_dir,
+                split="train",
+                transform=T.Compose([T.Resize((128, 128), interpolation=Image.BICUBIC), T.ToTensor()]),
+            )
+            self.val_dataset = BigEarthNetDataset(
+                self.data_dir,
+                split="val",
+                transform=T.Compose([T.Resize((128, 128), interpolation=Image.BICUBIC), T.ToTensor()]),
+            )
+        elif self.dataset == "sen12flood":
+            self.train_dataset = Sen12FloodDataset(
+                self.data_dir,
+                split="train",
+                transform=T.Compose([T.Resize((224, 224), interpolation=Image.BICUBIC), T.ToTensor()]),
+            )
+            self.val_dataset = Sen12FloodDataset(
+                self.data_dir,
+                split="val",
+                transform=T.Compose([T.Resize((224, 224), interpolation=Image.BICUBIC), T.ToTensor()]),
+            )
+
+        # elif self.dataset == "deepforest":
+        #     m = main.deepforest()
+        #     m.use_release()
+        #     print(m.config["train"])
+        #     self.train_dataset = dataset.TreeDataset(csv_file=m.config["train"]["csv_file"],
+        #                             root_dir=m.config["train"]["root_dir"],
+        #                             transforms=m.transforms(augment=True),
+        #                             label_dict=m.label_dict)
+        #     self.val_dataset = dataset.TreeDataset(csv_file=m.config["validation"]["csv_file"],
+        #                             root_dir=m.config["validation"]["root_dir"],
+        #                             transforms=m.transforms(augment=False),
+        #                             label_dict=m.label_dict)
+
+        elif self.dataset == "geoclef":
+            self.train_dataset = GeoClefDataset(self.data_dir, split="train", transform=ToTensor)
+            self.val_dataset = GeoClefDataset(self.data_dir, split="val", transform=ToTensor)
+
         elif self.dataset == "oscd":
             self.train_dataset = ChangeDetectionDataset(
                 self.data_dir,
@@ -43,6 +114,12 @@ class DataModule(LightningDataModule):
             self.val_dataset = ChangeDetectionDataset(
                 self.data_dir, split="test", transform=ToTensor, patch_size=self.patch_size
             )
+
+        if args.train_frac < 1:
+            self.train_dataset = random_subset(self.train_dataset, args.train_frac, args.seed)
+            print(len(self.train_dataset))
+        if args.val_frac < 1:
+            self.val_dataset = random_subset(self.val_dataset, args.val_frac, args.seed)
 
     def setup(self, stage=None):
 
