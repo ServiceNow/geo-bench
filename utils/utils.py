@@ -5,6 +5,29 @@ import torchvision.models as models
 from argparse import ArgumentParser
 from torchvision.transforms import functional as TF
 import random
+import numpy as np
+from torch.utils.data import Dataset
+
+
+class Subset(Dataset):
+    def __init__(self, dataset, indices):
+        self.dataset = dataset
+        self.indices = indices
+
+    def __getitem__(self, idx):
+        return self.dataset[self.indices[idx]]
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getattr__(self, name):
+        return getattr(self.dataset, name)
+
+
+def random_subset(dataset, frac, seed=None):
+    rng = np.random.default_rng(seed)
+    indices = rng.choice(range(len(dataset)), int(frac * len(dataset)))
+    return Subset(dataset, indices)
 
 
 def RandomFlip(*xs):
@@ -69,7 +92,7 @@ def get_arg_parser():
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--data_dir", type=str, default="datasets/eurosat")
     parser.add_argument("--module", type=str)
-    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--no_logs", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
 

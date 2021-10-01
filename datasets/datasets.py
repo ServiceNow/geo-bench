@@ -8,14 +8,14 @@ from PIL import Image
 from scipy.io import loadmat
 import os
 
-# import pandas as pd
+import pandas as pd
 import torch
 
 import json
 from tqdm import tqdm
 
 from torchvision.datasets.utils import download_and_extract_archive, download_url
-
+import skimage.exposure
 
 # class DeepForestDataset(Dataset):
 #     def __init__(self, data_dir, split, transform=None, shuffle=True):
@@ -306,11 +306,10 @@ class SatDataset(Dataset):
         self.embeddings = None
 
         if shuffle:
-            print(self.data.shape, self.targets.shape)
             idx = np.random.shuffle(np.arange(self.targets.shape[0]))
             self.data = self.data[idx][0]
             self.targets = self.targets[idx][0]
-            print(self.data.shape, self.targets.shape)
+        print(np.unique(self.targets))
 
     def __getitem__(self, index):
 
@@ -327,11 +326,13 @@ class SatDataset(Dataset):
         return img, target
 
     def __len__(self):
+        if self.get_embeddings:
+            return self.embeddings.shape[0]
         return self.data.shape[0]
 
     @property
     def num_classes(self):
-        return 10
+        return 6
 
     def set_embeddings(self, embeddings):
         self.embeddings = embeddings
@@ -470,64 +471,67 @@ class EurosatDataset(Dataset):
         self.embeddings = embeddings
 
 
-# class ForestNetDataset(Dataset):
-#     def __init__(self, data_dir, split, transform=None, shuffle=True):
-#         self.split = split
-#         self.transform = transform
+class ForestNetDataset(Dataset):
+    def __init__(self, data_dir, split, transform=None, shuffle=True):
+        self.split = split
+        self.transform = transform
 
-#         self.class_to_idx = {
-#             "Timber plantation": 0,
-#             "Other": 1,
-#             "Grassland shrubland": 2,
-#             "Small-scale agriculture": 3,
-#             "Other large-scale plantations": 4,
-#             "Small-scale mixed plantation": 5,
-#             "Oil palm plantation": 6,
-#             "Logging": 7,
-#             "Mining": 8,
-#             "Small-scale oil palm plantation": 9,
-#             "Secondary forest": 10,
-#             "Fish pond": 11,
-#         }
+        # self.class_to_idx = {
+        #     "Timber plantation": 0,
+        #     "Other": 1,
+        #     "Grassland shrubland": 2,
+        #     "Small-scale agriculture": 3,
+        #     "Other large-scale plantations": 4,
+        #     "Small-scale mixed plantation": 5,
+        #     "Oil palm plantation": 6,
+        #     "Logging": 7,
+        #     "Mining": 8,
+        #     "Small-scale oil palm plantation": 9,
+        #     "Secondary forest": 10,
+        #     "Fish pond": 11,
+        # }
 
-#         self.metadata_df = pd.read_csv(os.path.join(data_dir, "{}.csv".format(split)))
-#         self.samples = (
-#             self.metadata_df["example_path"]
-#             .apply(lambda x: os.path.join(data_dir, x, "images/visible/composite.png"))
-#             .to_list()
-#         )
-#         self.targets = self.metadata_df["label"].apply(lambda x: self.class_to_idx[x]).to_numpy()
+        self.class_to_idx = {"Plantation": 0, "Other": 1, "Grassland shrubland": 2, "Smallholder agriculture": 3}
 
-#         self.embeddings = None
+        self.metadata_df = pd.read_csv(os.path.join(data_dir, "{}.csv".format(split)))
+        self.samples = (
+            self.metadata_df["example_path"]
+            .apply(lambda x: os.path.join(data_dir, x, "images/visible/composite.png"))
+            .to_list()
+        )
+        # print(self.metadata_df["merged_label"].unique(), "===============")
 
-#         if shuffle:
-#             tmp = list(zip(self.samples, self.targets))
-#             random.shuffle(tmp)
-#             self.samples, self.targets = zip(*tmp)
+        self.targets = self.metadata_df["merged_label"].apply(lambda x: self.class_to_idx[x]).to_numpy()
+        self.embeddings = None
 
-#     def __getitem__(self, index):
+        if shuffle:
+            tmp = list(zip(self.samples, self.targets))
+            random.shuffle(tmp)
+            self.samples, self.targets = zip(*tmp)
 
-#         target = self.targets[index]
+    def __getitem__(self, index):
 
-#         if self.embeddings is not None:
-#             return self.embeddings[index], target
+        target = self.targets[index]
 
-#         path = self.samples[index]
-#         img = Image.open(path)
+        if self.embeddings is not None:
+            return self.embeddings[index], target
 
-#         if self.transform is not None:
-#             img = self.transform(img)
-#         return img, target
+        path = self.samples[index]
+        img = Image.open(path)
 
-#     def __len__(self):
-#         return len(self.samples)
+        if self.transform is not None:
+            img = self.transform(img)
+        return img, target
 
-#     @property
-#     def num_classes(self):
-#         return 12
+    def __len__(self):
+        return len(self.samples)
 
-#     def set_embeddings(self, embeddings):
-#         self.embeddings = embeddings
+    @property
+    def num_classes(self):
+        return 4
+
+    def set_embeddings(self, embeddings):
+        self.embeddings = embeddings
 
 
 class GeoClefDataset(Dataset):
@@ -641,6 +645,84 @@ class GeoClefDataset(Dataset):
     @property
     def num_classes(self):
         return 17
+
+    def set_embeddings(self, embeddings):
+        self.embeddings = embeddings
+
+
+class Sen12FloodDataset(Dataset):
+    def __init__(self, root, split, transform=None, shuffle=True):
+        self.root = Path(root)
+        self.split = split
+        self.transform = transform
+        self.embeddings = None
+
+        im_paths = []
+        for fn in os.listdir(self.root):
+            if fn == "train.txt" or fn == "val.txt" or fn == "collection.json":
+                continue
+            if "B01.tif" not in os.listdir(os.path.join(self.root, fn)):
+                continue
+            im_paths.append(fn)
+
+        random.shuffle(im_paths)
+
+        train_paths = im_paths[: int(len(im_paths) * 0.6)]
+        val_paths = im_paths[int(len(im_paths) * 0.6) :]
+
+        with open(os.path.join(root, "train.txt"), "w") as f:
+            for p in train_paths:
+                f.write(p + "\n")
+
+        with open(os.path.join(root, "val.txt"), "w") as f:
+            for p in val_paths:
+                f.write(p + "\n")
+
+        with open(self.root / f"{split}.txt") as f:
+            filenames = f.read().splitlines()
+
+        self.samples = []
+        self.targets = []
+
+        for fn in filenames:
+            self.samples.append(os.path.join(self.root, fn))
+            with open(os.path.join(self.root, fn, "labels.geojson").replace("source", "labels")) as f:
+                label_d = json.load(f)
+                label = label_d["properties"]["FLOODING"]
+                if label:
+                    self.targets.append(1)
+                else:
+                    self.targets.append(0)
+
+    def __getitem__(self, index):
+
+        path = self.samples[index]
+        target = self.targets[index]
+        if self.embeddings is not None:
+            return self.embeddings[index], target
+
+        r = rasterio.open(path + "/B04.tif").read()
+        g = rasterio.open(path + "/B03.tif").read()
+        b = rasterio.open(path + "/B02.tif").read()
+
+        img = np.concatenate((r, g, b), 0)
+        img = skimage.exposure.rescale_intensity(img, out_range=(0, 255)).astype(np.uint8)
+        img = np.transpose(img, (1, 2, 0))
+
+        print(img.shape)
+
+        img = Image.fromarray(img)
+        if self.transform is not None:
+            img = self.transform(img)
+
+        return img, target
+
+    def __len__(self):
+        return len(self.samples)
+
+    @property
+    def num_classes(self):
+        return 2
 
     def set_embeddings(self, embeddings):
         self.embeddings = embeddings
