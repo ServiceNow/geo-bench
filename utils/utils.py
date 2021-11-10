@@ -2,6 +2,64 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import torchvision.models as models
+from argparse import ArgumentParser
+from torchvision.transforms import functional as TF
+import random
+import numpy as np
+from torch.utils.data import Dataset
+
+
+class Subset(Dataset):
+    def __init__(self, dataset, indices):
+        self.dataset = dataset
+        self.indices = indices
+
+    def __getitem__(self, idx):
+        return self.dataset[self.indices[idx]]
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getattr__(self, name):
+        return getattr(self.dataset, name)
+
+
+def random_subset(dataset, frac, seed=None):
+    rng = np.random.default_rng(seed)
+    indices = rng.choice(range(len(dataset)), int(frac * len(dataset)))
+    return Subset(dataset, indices)
+
+
+def RandomFlip(*xs):
+    if random.random() > 0.5:
+        xs = tuple(TF.hflip(x) for x in xs)
+    return xs
+
+
+def RandomRotation(*xs):
+    angle = random.choice([0, 90, 180, 270])
+    return tuple(TF.rotate(x, angle) for x in xs)
+
+
+def RandomSwap(x1, x2, y):
+    if random.random() > 0.5:
+        return x2, x1, y
+    else:
+        return x1, x2, y
+
+
+def ToTensor(*xs):
+    return tuple(TF.to_tensor(x) for x in xs)
+
+
+class Compose:
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, *xs):
+        for t in self.transforms:
+            xs = t(*xs)
+        return xs
 
 
 def get_embeddings(encoder, dataset, bs=128):
@@ -26,6 +84,36 @@ def hp_to_str(args):
     return "{}-{}-{}-{}-{}-{}".format(
         args.dataset, args.backbone_type, args.lr, args.backbone_lr, args.weight_decay, args.finetune
     )
+
+
+def get_arg_parser():
+
+    parser = ArgumentParser()
+    parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument("--data_dir", type=str, default="datasets/eurosat")
+    parser.add_argument("--module", type=str)
+    parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--no_logs", action="store_true")
+    parser.add_argument("--seed", type=int, default=42)
+
+    parser.add_argument("--backbone_type", type=str, default="imagenet")
+    parser.add_argument("--dataset", type=str, default="eurosat")
+    parser.add_argument("--ckpt_path", type=str, default=None)
+    parser.add_argument("--finetune", action="store_true")
+    parser.add_argument("--feature_size", type=int, default=512)
+    parser.add_argument("--train_frac", type=float, default=1)
+    parser.add_argument("--val_frac", type=float, default=1)
+
+    parser.add_argument(
+        "--batch_size", type=int, default=128, help="Baseline: 128 for clasification, 32 for segmentation"
+    )
+    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--backbone_lr", type=float, default=0.001)
+    parser.add_argument("--max_epochs", type=int, default=100)
+    parser.add_argument("--weight_decay", type=float, default=0)
+    parser.add_argument("--patch_size", type=int, default=96)
+
+    return parser
 
 
 class PretrainedModelDict:
