@@ -79,6 +79,7 @@ class Sample:
         # add no data value
         # discuss post-processing
         # discuss perband resolution
+        #       Store different resolution in different files (or at least document the resolution)
         # CRS: make sure we use the same CRS used in the dataset we're converting from.
         self.image = image
         self.label = label
