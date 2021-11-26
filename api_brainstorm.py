@@ -1,9 +1,6 @@
 
-from my_module import MyBackBone, Classifier, SemanticSegmenter
-import pl
+import pytorch_lightning as pl
 import toolbox
-
-backbone = MyBackBone(model_path="path_to_my_model")
 
 
 #####
@@ -96,6 +93,11 @@ def train_loss_generator(task_specs, hyperparams):
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
 
+def hparams_to_string(list_of_hp_configs):
+    """
+    Introspect the list of hyperparms configurations to find the hyperparameters that changes during the experiment e.g.,
+    there might be 8 hyperparameters but only 2 that changes. For each hyperparameter that changes 
+    """
 
 ####
 # Userside: 
@@ -129,7 +131,9 @@ class ModelGenerator:
 
     def hp_search(self, task_specs, max_num_configs=10):
         """The user can provide a set of `max_num_configs` hyperparameters configuration to search for, based on task_specs"""
-        return [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
+        hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
+
+        return hparams_to_string(hp_configs)
 
     def generate(self, task_specs, hyperparams):
         backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his 
@@ -190,11 +194,10 @@ def experiment_generator(model_generator, experiment_dir, task_filter=None, max_
             if not task_filter(dataset.task_specs):
                 continue
 
-        for hyperparams in model_generator.hp_search(dataset.task_specs, max_num_configs):
-            hyperparams_string = toolbox.hyperparams_to_string(hyperparams)
+        for hyperparams, hyperparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
             # TODO 
-            # * create directory with name reflecting hyperparameter configuration
-            # * generate a short bash script to execute the job. File name should reflect hyperparams configuration 
+            # * create directory with name reflecting hyperparameter configuration using hyperparams_string
+            # * generate a short bash script to execute the job. File name should contain hyperparams_string
             # * write hyperparams and task_specs in a json 
             pass
 
@@ -234,7 +237,13 @@ trainer.fit(model, train_dataloaders=train_loader) # how to manage early stoppin
 # TODO(mehmet)
 #####
 # * make a very small convenet backbone with random init.
-# * wrap it in a Model with a classifier head as a pseudo-user implementation. 
+# * wrap it in a Model with a classifier head to mockup a user implementation. 
 # * generate experiments with 2 hyperparam configurations and 1 dataset: MNIST
-# * Train for e.g. 10 steps
-# * assert that traces and results look ok-ish
+# * Execute all experiments with a simple script that execute sequentially on local machine
+#       * Train for e.g. 10 steps or until there is at least 2-3 points in the training_trace. 
+#       * Run the eval procedure and write all result files.
+# * preform a few sanity checks to make sure that all files that should be there are there
+#       and that they are readable and contains the expected information.
+# 
+# Hopefully this test could run in less than a minute without the need of GPU. If not maybe we can
+# generate a dataset even smaller and configure the writing to training_traces every step. 
