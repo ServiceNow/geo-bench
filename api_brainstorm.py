@@ -42,7 +42,7 @@ class TaskSpecifications:
         task_type: One of Classification, Semantic Segmentation, Counting ...
         n_classes: ...
         dataset_name: The name of the dataset.
-        eval_loss: string specifying the type olf loss function used to evaluate the model on the validation set and the training set.
+        eval_loss: string specifying the type olf loss function used to evaluate the model on the validation set and the test set.
             (we should implement a dict mapping this string to loss_functions).
     """
     def __init__(self, shape=None, spatial_resolution=None, temporal_resolution=None, band_names=None,
