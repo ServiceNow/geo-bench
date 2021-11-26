@@ -7,8 +7,10 @@ backbone = MyBackBone(model_path="path_to_my_model")
 
 
 #####
-# fine_tuning.py
-# TODO(pau, mehmet)
+# toolbox.py
+# Can be split across various files
+# 
+# TODO add data loaders.
 #######
 
 
@@ -16,7 +18,7 @@ class Model(pl.LightningModule):
     """
     Default Model class provided by the toolbox.
 
-    TODO(pau)
+    TODO(pau-pow)
     """
     def __init__(self, back_bone, head, loss_function, hyperparams):
         pass
@@ -31,7 +33,6 @@ class Model(pl.LightningModule):
         pass
 
 
-
 class TaskSpecifications:
     """
     Attributes:
@@ -44,6 +45,8 @@ class TaskSpecifications:
         task_type: One of Classification, Semantic Segmentation, Counting ...
         n_classes: ...
         dataset_name: The name of the dataset.
+        eval_loss: string specifying the type olf loss function used to evaluate the model on the validation set and the training set.
+            (we should implement a dict mapping this string to loss_functions).
     """
     def __init__(self, shape=None, spatial_resolution=None, temporal_resolution=None, band_names=None,
                  band_wevelength=None, task_type=None, dataset_name=None) -> None:
@@ -61,7 +64,41 @@ class TaskSpecifications:
     def from_dict(self, **kwargs):
         self.__dict__ = kwargs
 
+
+def head_generator(task_specs, hyperparams, input_shape):
+    """
+    Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow: 
+        classification: 2 layer MLP with softmax activation
+        semantic_segmentation: U-Net decoder. 
+    we can also do something special for a specific dataet using task_specs.dataset_name. Hyperparams and input_shape 
+    can also be used to adapt the head.
+
+    Args:
+        task_specs: object of type TaskSpecifications providing information on what type of task we are solving
+        hyperparams: dict of hyperparameters.
+        input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
+            the input itself? should it be a dict of shapes? 
+    """
+    pass
+
+
+
+def vit_head_generator(task_specs, hyperparams, input_shape):
+    """
+    ViT architectures may require different type of heads. In which case, we should provide this to the users as well. TO BE DISCUSSED. 
+    """
+    pass
+
+
+def train_loss_generator(task_specs, hyperparams):
+    """
+    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
+    following attributes: task_specs.task_type and task_specs.eval_loss
+    """
+
+
 ####
+# Userside: 
 # example_model_generator.py
 # 
 # Module defined by the user to specify how to wrap the pre-trained model and how to adapt it for each task, depending on task_specs.
@@ -69,8 +106,18 @@ class TaskSpecifications:
 ####
 
 class MyBackBone:
-    pass
+    def __init__(self, model_path, task_specs, hyperparams) -> None:
+        self.model_path = model_path
+        self.task_specs = task_specs
+        self.hyperparams = hyperparams
 
+    def forward(self, data_dict):
+        # data_dict is a collection of tensors returned by the data loader.
+		# The user is responsible to implement something that will map
+		# the information from the dataset and encode it into a list of tensors.
+		# Returns: the encoded representation or a list of representations for 
+		#    models like u-net.
+        pass
 
 class ModelGenerator:
     """
@@ -87,7 +134,7 @@ class ModelGenerator:
     def generate(self, task_specs, hyperparams):
         backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his 
         head = head_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
-        loss = loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
+        loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
         return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
 
 model_geberator = ModelGenerator(model_path)                                           
@@ -95,15 +142,16 @@ model_geberator = ModelGenerator(model_path)
 ####
 # experiment_generator.py
 ####
-
 #
 # TODO(Dr. Ouin)
+# * materilaze this pseudocode
+# * implement experiment_generator_test.py, which would generate a fake structure in /tmp and verify the
+#     content of it. (no need to verify every details, but a quick checkup)
 # 
 # Script that takes as argument the user defined model generator e.g.: 
 #   $ experiment_generator.py path/to/my/model/example_model_genartor.py
 # 
 # The model generator is loaded through dynamic import (to be discussed: is this good practice?)
-
 # Example of directory structure: 
 # 
 # experiment-name_dd-mm-yy
@@ -146,7 +194,7 @@ def experiment_generator(model_generator, experiment_dir, task_filter=None, max_
             hyperparams_string = toolbox.hyperparams_to_string(hyperparams)
             # TODO 
             # * create directory with name reflecting hyperparameter configuration
-            # * create short bash script to execute the job. File name should reflect hyperparams configuration 
+            # * generate a short bash script to execute the job. File name should reflect hyperparams configuration 
             # * write hyperparams and task_specs in a json 
             pass
 
@@ -156,7 +204,6 @@ experiment_generator(model_generator, experiment_dir)
 # trainer.py
 # TODO(mehmet, pau)
 #####
-
 # script that dynamically load the user's model generator from arguments. Responsible for fine-tuning, validation,
 # and writing results to the directory. 
 
@@ -180,3 +227,14 @@ trainer.fit(model, train_dataloaders=train_loader) # how to manage early stoppin
 # * make sure some training statists are written to a training_trace 
 #     this trace should be viewable in tensorboard or other tools such as weight an bias maybe
 # * 
+
+
+######
+#  Integration test
+# TODO(mehmet)
+#####
+# * make a very small convenet backbone with random init.
+# * wrap it in a Model with a classifier head as a pseudo-user implementation. 
+# * generate experiments with 2 hyperparam configurations and 1 dataset: MNIST
+# * Train for e.g. 10 steps
+# * assert that traces and results look ok-ish
