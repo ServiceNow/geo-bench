@@ -63,7 +63,7 @@ if __name__ == "__main__":
             if all_combos[i]["ft"] == "lp":
                 all_combos[i]["ft"] = ""
                 all_combos[i]["bb_lr"] = "0"
-                
+
             elif all_combos[i]["ft"] == "ft":
                 all_combos[i]["ft"] = "--finetune"
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 all_combos[i]["task"] = "segmentation"
             elif all_combos[i]["dataset"] in ["eurosat", "sat", "forestnet", "sen12flood"]:
                 all_combos[i]["task"] = "classification"
-        
+
         cmd = (
             "python ccb/tasks/train/main_{task}.py --backbone_type {backbone_type} --ckpt_path {ckpt_path} --data_dir {data_dir} --dataset {dataset} "
             + "--train_frac {train_frac} --val_frac {val_frac} "
