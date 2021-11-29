@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from itertools import product
-from utils.utils import hp_to_str, get_arg_parser
+from ccb.utils.utils import hp_to_str, get_arg_parser
 import pandas as pd
 import os
 
@@ -33,39 +33,52 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weight_decay", type=str, default="0.0001", help="comma separated list of weight decays to search over"
     )
+    parser.add_argument(
+        "--batch_size", type=str, default="128", help="batch size"
+    )
 
+    parser.add_argument(
+        "--feature_size", type=str, default="512", help="feature map size"
+    )
+    parser.add_argument(
+        "--train_frac", type=str, default="1", help="fraction of training set to use"
+    )
+    parser.add_argument(
+        "--val_frac", type=str, default="1", help="fraction of training set to use"
+    )
     parser.add_argument("--out", type=str, default="hp_search.txt", help="output file path")
 
     args = parser.parse_args()
 
     if args.mode == "generate":
-        hps = ["lr", "bb_lr", "weight_decay", "ft"]
-        other_keys = ["data_dir", "backbone_type", "ckpt_path", "dataset"]
+        hps = ["lr", "bb_lr", "weight_decay", "ft", "batch_size", "feature_size"]
+        other_keys = ["data_dir", "backbone_type", "ckpt_path", "dataset", "val_frac", "train_frac"]
         all_keys = hps + other_keys
 
         all_combos = product(*[args.__dict__[k].split(",") for k in all_keys])
         all_combos = [dict(zip(all_keys, combo)) for combo in all_combos]
 
         for i in range(len(all_combos)):
-
             # change combo placeholders to command arguments/flags
             if all_combos[i]["ft"] == "lp":
                 all_combos[i]["ft"] = ""
+                all_combos[i]["bb_lr"] = "0"
+
             elif all_combos[i]["ft"] == "ft":
                 all_combos[i]["ft"] = "--finetune"
 
-            if all_combos[i]["dataset"] == "oscd":
+            if all_combos[i]["dataset"] in ["oscd", "geoclef"]:
                 all_combos[i]["task"] = "segmentation"
-            elif all_combos[i]["dataset"] in ["eurosat", "sat"]:
+            elif all_combos[i]["dataset"] in ["eurosat", "sat", "forestnet", "sen12flood"]:
                 all_combos[i]["task"] = "classification"
 
         cmd = (
-            "python train/main_{task}.py --backbone_type {backbone_type} --ckpt_path {ckpt_path} --data_dir {data_dir} --dataset {dataset} "
-            + "--lr {lr} --backbone_lr {bb_lr} --weight_decay {weight_decay} {ft}"
+            "python ccb/tasks/train/main_{task}.py --backbone_type {backbone_type} --ckpt_path {ckpt_path} --data_dir {data_dir} --dataset {dataset} "
+            + "--train_frac {train_frac} --val_frac {val_frac} "
+            + "--lr {lr} --backbone_lr {bb_lr} --batch_size {batch_size} --feature_size {feature_size} --weight_decay {weight_decay} {ft}"
         )
 
-        all_cmds = [cmd.format_map(hp) for hp in all_combos]
-
+        all_cmds = sorted(list(set([cmd.format_map(hp) for hp in all_combos])))
         open(args.out, "w").write("\n".join(all_cmds) + "\n")
 
     elif args.mode == "table":
