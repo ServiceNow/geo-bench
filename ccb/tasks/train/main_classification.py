@@ -15,12 +15,12 @@ from torchmetrics import Precision, Recall, F1, Accuracy
 
 from pytorch_lightning.loggers import TensorBoardLogger
 import numpy as np
-from models.custom_encoder import BeforeLastLayerEncoder, FullModelEncoder, CLIPEncoder
-from datasets.datamodule import DataModule
+from ccb.models.custom_encoder import BeforeLastLayerEncoder, FullModelEncoder, CLIPEncoder
+from ccb.datasets.datamodule import DataModule
 
 
-from models.moco2_module import MocoV2
-from utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
+from ccb.models.moco2_module import MocoV2
+from ccb.utils.utils import PretrainedModelDict, hp_to_str, get_arg_parser
 
 import clip
 import sklearn.metrics
