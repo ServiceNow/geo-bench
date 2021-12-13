@@ -74,6 +74,14 @@ def train_loss_generator(task_specs, hyperparams):
     Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
+    if task_specs.task_type == 'classification':
+        if hyperparams['loss_type'] == 'crossentropy':
+            return torch.nn.CrossEntropyLoss()
+        else:
+            raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
+    else:
+        raise ValueError(f"Unrecognized task: {task_specs.task_type}")
+    
 
 def hparams_to_string(list_of_hp_configs):
     """
