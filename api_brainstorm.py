@@ -6,7 +6,7 @@ import toolbox
 #####
 # toolbox.py
 # Can be split across various files
-# 
+#
 # TODO add data loaders.
 #######
 
@@ -17,6 +17,7 @@ class Model(pl.LightningModule):
 
     TODO(pau-pow)
     """
+
     def __init__(self, back_bone, head, loss_function, hyperparams):
         pass
 
@@ -45,6 +46,7 @@ class TaskSpecifications:
         eval_loss: string specifying the type olf loss function used to evaluate the model on the validation set and the test set.
             (we should implement a dict mapping this string to loss_functions).
     """
+
     def __init__(self, shape=None, spatial_resolution=None, temporal_resolution=None, band_names=None,
                  band_wevelength=None, task_type=None, dataset_name=None) -> None:
         self.shape = shape
@@ -76,8 +78,25 @@ def head_generator(task_specs, hyperparams, input_shape):
         input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
             the input itself? should it be a dict of shapes? 
     """
-    pass
+    if task_specs.task_type.lower() == "classification":
+        return LinearHead(input_shape[-1], output_size=task_specs.n_classes)
+    elif task_specs.task_type.lower() == "segmentation":
+        pass  # TODO do something for segmentation, but later.
+    else:
+        raise NotImplemented(f"Unknown task type {task_specs.task_type}.")
 
+
+class LinearHead(pl.LightningModule):
+
+    def __init__(self, input_size, output_size):
+        super.__init__()
+        self._build(input_size, output_size)
+
+    def _build(sefl, input_size, output_size):
+        pass
+
+    def forward(self, input):
+        pass
 
 
 def vit_head_generator(task_specs, hyperparams, input_shape):
@@ -93,6 +112,7 @@ def train_loss_generator(task_specs, hyperparams):
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
 
+
 def hparams_to_string(list_of_hp_configs):
     """
     Generate a string respresentation of the meaningful hyperparameters. This string will be used for file names and job names, to be able
@@ -103,12 +123,13 @@ def hparams_to_string(list_of_hp_configs):
     """
 
 ####
-# Userside: 
+# Userside:
 # example_model_generator.py
-# 
+#
 # Module defined by the user to specify how to wrap the pre-trained model and how to adapt it for each task, depending on task_specs.
 # This module will be dynacmically loaded and our code will search for the variable model_generator, which sould implement hp_search and generate.
 ####
+
 
 class MyBackBone:
     def __init__(self, model_path, task_specs, hyperparams) -> None:
@@ -118,16 +139,18 @@ class MyBackBone:
 
     def forward(self, data_dict):
         # data_dict is a collection of tensors returned by the data loader.
-		# The user is responsible to implement something that will map
-		# the information from the dataset and encode it into a list of tensors.
-		# Returns: the encoded representation or a list of representations for 
-		#    models like u-net.
+        # The user is responsible to implement something that will map
+        # the information from the dataset and encode it into a list of tensors.
+        # Returns: the encoded representation or a list of representations for
+        #    models like u-net.
         pass
+
 
 class ModelGenerator:
     """
     Class implemented by the user. The goal is to specify how to connect the backbone with the head and the loss function.
     """
+
     def __init__(self, model_path) -> None:
         """This should not load the model at this point"""
         self.model_path = model_path
@@ -139,12 +162,15 @@ class ModelGenerator:
         return hparams_to_string(hp_configs)
 
     def generate(self, task_specs, hyperparams):
-        backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his 
-        head = head_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
-        loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
-        return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
+        # Implemented by the user so that he can wrap his
+        backbone = MyBackBone(self.model_path, task_specs, hyperparams)
+        head = head_generator(task_specs, hyperparams)  # provided by the toolbox or the user can implement his own
+        # provided by the toolbox or the user can implement his own
+        loss = train_loss_generator(task_specs, hyperparams)
+        return Model(backbone, head, loss, hyperparams)  # base model provided by the toolbox
 
-model_generator = ModelGenerator(model_path)                                           
+
+model_generator = ModelGenerator(model_path)
 
 ####
 # experiment_generator.py
@@ -154,13 +180,13 @@ model_generator = ModelGenerator(model_path)
 # * materilaze this pseudocode
 # * implement experiment_generator_test.py, which would generate a fake structure in /tmp and verify the
 #     content of it. (no need to verify every details, but a quick checkup)
-# 
-# Script that takes as argument the user defined model generator e.g.: 
+#
+# Script that takes as argument the user defined model generator e.g.:
 #   $ experiment_generator.py path/to/my/model/example_model_genartor.py
-# 
+#
 # The model generator is loaded through dynamic import (to be discussed: is this good practice?)
-# Example of directory structure: 
-# 
+# Example of directory structure:
+#
 # experiment-name_dd-mm-yy
 # 	dataset-name1
 # 		hp1=value1_hp2=value1_date=dd-mm-yy
@@ -198,11 +224,12 @@ def experiment_generator(model_generator, experiment_dir, task_filter=None, max_
                 continue
 
         for hyperparams, hyperparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
-            # TODO 
+            # TODO
             # * create directory with name reflecting hyperparameter configuration using hyperparams_string
             # * generate a short bash script to execute the job. File name should contain hyperparams_string
-            # * write hyperparams and task_specs in a json 
+            # * write hyperparams and task_specs in a json
             pass
+
 
 experiment_generator(model_generator, experiment_dir)
 
@@ -211,12 +238,12 @@ experiment_generator(model_generator, experiment_dir)
 # TODO(mehmet, pau)
 #####
 # script that dynamically load the user's model generator from arguments. Responsible for fine-tuning, validation,
-# and writing results to the directory. 
+# and writing results to the directory.
 
 model_generator_path = argparser.model_generator_path
 model_generator = dynamic_import(model_generator_path).model_genarator
 
-job_specs = json.load('job_specs.json') # job_specs.json is supposed to be in the current directory
+job_specs = json.load('job_specs.json')  # job_specs.json is supposed to be in the current directory
 task_specs = job_specs["task_specs"]
 hyperparms = job_specs["hyperparams"]
 
@@ -225,14 +252,14 @@ train_loader, val_loader, test_loader = toolbox.data_loaders(task_specs.dataset_
 model = model_generator.generate(task_specs, hyperparms)
 
 trainer = pl.Trainer()
-trainer.fit(model, train_dataloaders=train_loader) # how to manage early stopping? can we pass the val_loader as well?
+trainer.fit(model, train_dataloaders=train_loader)  # how to manage early stopping? can we pass the val_loader as well?
 
-# TODO 
+# TODO
 # * valid and test
 # * write metrics in the results.json in the current directory
-# * make sure some training statists are written to a training_trace 
+# * make sure some training statists are written to a training_trace
 #     this trace should be viewable in tensorboard or other tools such as weight an bias maybe
-# * 
+# *
 
 
 ######
@@ -240,13 +267,13 @@ trainer.fit(model, train_dataloaders=train_loader) # how to manage early stoppin
 # TODO(mehmet)
 #####
 # * make a very small convenet backbone with random init.
-# * wrap it in a Model with a classifier head to mockup a user implementation. 
+# * wrap it in a Model with a classifier head to mockup a user implementation.
 # * generate experiments with 2 hyperparam configurations and 1 dataset: MNIST
 # * Execute all experiments with a simple script that execute sequentially on local machine
-#       * Train for e.g. 10 steps or until there is at least 2-3 points in the training_trace. 
+#       * Train for e.g. 10 steps or until there is at least 2-3 points in the training_trace.
 #       * Run the eval procedure and write all result files.
 # * preform a few sanity checks to make sure that all files that should be there are there
 #       and that they are readable and contains the expected information.
-# 
+#
 # Hopefully this test could run in less than a minute without the need of GPU. If not maybe we can
-# generate a dataset even smaller and configure the writing to training_traces every step. 
+# generate a dataset even smaller and configure the writing to training_traces every step.
