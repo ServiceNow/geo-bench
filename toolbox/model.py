@@ -48,7 +48,9 @@ class Model(LightningModule):
 
     def configure_optimizers(self):
         backbone_parameters = self.backbone.parameters()
+        backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
         head_parameters = self.head.parameters()
+        head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
         lr_backbone = self.hyperparameters['lr_backbone']
         lr_head = self.hyperparameters['lr_head']
         optimizer = torch.optim.Adam([{'params': backbone_parameters, 
