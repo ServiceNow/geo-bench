@@ -67,7 +67,7 @@ def head_generator(task_specs, hyperparams, input_shape):
     Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow: 
         classification: 2 layer MLP with softmax activation
         semantic_segmentation: U-Net decoder. 
-    we can also do something special for a specific dataet using task_specs.dataset_name. Hyperparams and input_shape 
+    we can also do something special for a specific dataset using task_specs.dataset_name. Hyperparams and input_shape 
     can also be used to adapt the head.
 
     Args:
@@ -95,8 +95,11 @@ def train_loss_generator(task_specs, hyperparams):
 
 def hparams_to_string(list_of_hp_configs):
     """
-    Introspect the list of hyperparms configurations to find the hyperparameters that changes during the experiment e.g.,
-    there might be 8 hyperparameters but only 2 that changes. For each hyperparameter that changes 
+    Generate a string respresentation of the meaningful hyperparameters. This string will be used for file names and job names, to be able
+    to distinguish them easily.
+
+    TODO: Introspect the list of hyperparms configurations to find the hyperparameters that changes during the experiment e.g.,
+    there might be 8 hyperparameters but only 2 that changes. Format the changing hyperparamters into a short string that can be used for filenames. 
     """
 
 ####
@@ -141,7 +144,7 @@ class ModelGenerator:
         loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
         return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
 
-model_geberator = ModelGenerator(model_path)                                           
+model_generator = ModelGenerator(model_path)                                           
 
 ####
 # experiment_generator.py
@@ -219,7 +222,7 @@ hyperparms = job_specs["hyperparams"]
 
 train_loader, val_loader, test_loader = toolbox.data_loaders(task_specs.dataset_name)
 
-model = model_generator(task_specs, hyperparms)
+model = model_generator.generate(task_specs, hyperparms)
 
 trainer = pl.Trainer()
 trainer.fit(model, train_dataloaders=train_loader) # how to manage early stopping? can we pass the val_loader as well?
