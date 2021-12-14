@@ -5,12 +5,14 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
 
+
 class Model(LightningModule):
     """
     Default Model class provided by the toolbox.
 
     TODO(pau-pow)
     """
+
     def __init__(self, backbone, head, loss_function, hyperparameters):
         super().__init__()
         self.backbone = backbone
@@ -33,7 +35,7 @@ class Model(LightningModule):
         self.log("train_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
         self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
         return loss_train
-    
+
     def eval_step(self, batch, batch_idx, prefix):
         images, target = batch
         output = self(images)
@@ -51,15 +53,14 @@ class Model(LightningModule):
         backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
         head_parameters = self.head.parameters()
         head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
-        lr_backbone = self.hyperparameters['lr_backbone']
-        lr_head = self.hyperparameters['lr_head']
-        optimizer = torch.optim.Adam([{'params': backbone_parameters, 
-                                        'lr': lr_backbone},
-                                       {'params': head_parameters,
-                                        'lr': lr_head}])
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, 
-                        milestones=self.hyperparameters['lr_milestones'], 
-                        gamma=self.hyperparameters['lr_gamma'])
+        lr_backbone = self.hyperparameters["lr_backbone"]
+        lr_head = self.hyperparameters["lr_head"]
+        optimizer = torch.optim.Adam(
+            [{"params": backbone_parameters, "lr": lr_backbone}, {"params": head_parameters, "lr": lr_head}]
+        )
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
+        )
         return [optimizer], [scheduler]
 
     @staticmethod
@@ -79,19 +80,20 @@ class Model(LightningModule):
                 res.append(correct_k.mul_(100.0 / batch_size))
             return res
 
+
 class ModelGenerator:
     """
     Class implemented by the user. The goal is to specify how to connect the backbone with the head and the loss function.
     """
+
     def __init__(self, model_path) -> None:
         """This should not load the model at this point"""
         self.model_path = model_path
 
     def hp_search(self, task_specs, max_num_configs=10):
         """The user can provide a set of `max_num_configs` hyperparameters configuration to search for, based on task_specs"""
-        hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
-
-        return hparams_to_string(hp_configs)
+        # hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
+        # return hparams_to_string(hp_configs)
 
     def generate(self, task_specs, hyperparams):
         """Generate a Model to train
@@ -104,7 +106,7 @@ class ModelGenerator:
             NotImplementedError
 
         Example:
-            backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his 
+            backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his
             head = head_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
             loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
