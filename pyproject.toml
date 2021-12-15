@@ -1,3 +1,38 @@
+[tool.poetry]
+name = "climate-change-benchmark"
+version = "0.0.1"
+description = ""
+authors = ["ATG Vision <atg-vision@servicenow.com>"]
+packages = [
+    { include = "ccb" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.7.1,<3.8.0"
+earthengine-api = "0.1.269"
+clip = { git = "https://github.com/openai/CLIP.git", rev = "8cad3a736a833bc4c9b4dd34ef12b52ec0e68856" }
+regex = "2021.8.3"
+ftfy = "6.0.3"
+lightning-bolts = "0.3.4"
+lmdb = "1.2.1"
+onnx = "1.9.0"
+onnx2pytorch= "0.3.0"
+pandas = "1.3.1"
+pyshp = "2.1.3"
+pytorch-lightning = "1.4.0"
+pytorch-lightning-bolts = "0.3.2"
+rasterio = "1.2.4"
+scikit-image = "0.18.1"
+scikit-learn = "0.24.2"
+Shapely = "1.7.1"
+torchvision = "0.9.1"
+torchmetrics = "0.5.0"
+torch = "1.8.1"
+
+[tool.poetry.dev-dependencies]
+black = "*"
+pytest = "*"
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
@@ -14,3 +49,8 @@ exclude = '''
   | dist
 )/
 '''
+
+[tool.poetry.scripts]
+hyper-parameter-search = "ccb.tasks.hp_search.generate:start"
+train-classification = "ccb.tasks.train.classification:start"
+train-segmentation = "ccb.tasks.train.segmentation:start"

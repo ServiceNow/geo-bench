@@ -43,8 +43,7 @@ pipeline:
       - BORGY_CPU=2
       - BORGY_GPU=1
     commands:
-      - pip install --upgrade pip && pip install pytest
-      - sh -c 'python -m pytest .; ret=$?; [ $ret = 5 ] && exit 0 || exit $ret'
+      - poetry config virtualenvs.create false && poetry run pytest
     image: volatile-images.borgy.elementai.net/snow.rg_climate_benchmark:${DRONE_BRANCH}
 
 
@@ -56,7 +55,7 @@ pipeline:
       - BORGY_RAM=16
       - BORGY_CPU=2
     commands:
-      - pip install --upgrade pip && pip install flake8
+      - pip install flake8
       - export PATH=$PATH:"/home/_drone/.local/bin"
       - flake8 .
     image: volatile-images.borgy.elementai.net/snow.rg_climate_benchmark:${DRONE_BRANCH}

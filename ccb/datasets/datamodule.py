@@ -6,7 +6,7 @@ import os
 import random
 
 # from deepforest import main, dataset
-from datasets.datasets import (
+from ccb.datasets.datasets import (
     SatDataset,
     EurosatDataset,
     ChangeDetectionDataset,
@@ -15,7 +15,7 @@ from datasets.datasets import (
     GeoClefDataset,
     Sen12FloodDataset,
 )
-from utils.utils import get_embeddings, RandomFlip, RandomRotation, Compose, ToTensor, random_subset
+from ccb.utils.utils import get_embeddings, RandomFlip, RandomRotation, Compose, ToTensor, random_subset
 
 # import torchrs.transforms
 # from torchrs.datasets import ETCI2021

@@ -22,7 +22,7 @@ class Sample:
         If the label is a 2d array of shape (height, width), e.g., semantic segmentation, it should
         be stored as a band, the label should be "band_%d" % band_index, and the band name should
         be "label".
-    spatial_resolution: float number. The spatial resolution in meters per pixel. 
+    spatial_resolution: float number. The spatial resolution in meters per pixel.
     band_names: List of strings of len n_bands. Describe the name of each bands in image
     band_wavelength: List of float of len n_bands. Central wavelenth for each band in um (micrometers). Use 0 for not a wavelength.
     transform: Affine transformation mapping from pixel coordinates to georeferenced coordinates.
@@ -31,7 +31,7 @@ class Sample:
         form_gcps: When the coordinates of the 4 corners of the image are required to specify its
             affine transformation (this implies a rotation).
         from_origin: When the top-left corner and pixel size are known.
-    crs: Coordinate reference system used for transform. Defaults to 'EPSG:4326'. Make sure to provide the same CRS used in 
+    crs: Coordinate reference system used for transform. Defaults to 'EPSG:4326'. Make sure to provide the same CRS used in
         the original dataset.
     meta_info: Any extra information that will be stored in tags. Will be serialized using json.dumps.
     """
