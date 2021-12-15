@@ -31,9 +31,11 @@ import sklearn.metrics
 
 
 class Classifier(LightningModule):
-    def __init__(self, in_features, num_classes, backbone=None):
+    def __init__(self, in_features, num_classes, backbone=None, trainer=None, args=None):
         super().__init__()
+        self.args = args
         self.encoder = backbone
+        self.trainer = trainer
         self.classifier = nn.Linear(in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
         self.accuracy = Accuracy(average="micro")
@@ -95,37 +97,35 @@ class Classifier(LightningModule):
     def validation_epoch_end(self, validation_step_outputs):
 
         if self.best_epoch_metrics is None:
-            self.best_epoch_metrics = trainer.logged_metrics
+            self.best_epoch_metrics = self.trainer.logged_metrics
 
-        if trainer.logged_metrics["val/loss"] < self.best_epoch_metrics["val/loss"]:
-            self.best_epoch_metrics = trainer.logged_metrics
+        if self.trainer.logged_metrics["val/loss"] < self.best_epoch_metrics["val/loss"]:
+            self.best_epoch_metrics = self.trainer.logged_metrics
         # print("=================\n", self.best_epoch_metrics, "\n-------------------------------\n", trainer.logged_metrics, "==========================\n")
 
         # self.targets = torch.tensor([]).cuda()
         # self.preds = torch.tensor([]).cuda()
 
     def configure_optimizers(self):
-
         max_epochs = self.trainer.max_epochs
-        optimizer_params = [{"params": self.classifier.parameters(), "lr": args.lr}]
+        optimizer_params = [{"params": self.classifier.parameters(), "lr": self.args.lr}]
 
         if self.encoder:
-            optimizer_params.append({"params": self.encoder.parameters(), "lr": args.backbone_lr})
+            optimizer_params.append({"params": self.encoder.parameters(), "lr": self.args.backbone_lr})
 
-        optimizer = optim.Adam(optimizer_params, weight_decay=args.weight_decay)
+        optimizer = optim.Adam(optimizer_params, weight_decay=self.args.weight_decay)
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(0.6 * max_epochs), int(0.8 * max_epochs)])
 
         return [optimizer], [scheduler]
 
 
-if __name__ == "__main__":
-
+def start():
     parser = get_arg_parser()
     args = parser.parse_args()
 
     pl.seed_everything(args.seed)
 
-    pmd = PretrainedModelDict()
+    # pmd = PretrainedModelDict()
 
     if args.backbone_type == "random":
         backbone = BeforeLastLayerEncoder(resnet.resnet18(pretrained=False))

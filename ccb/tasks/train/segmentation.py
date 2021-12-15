@@ -21,9 +21,9 @@ from datasets.datamodule import DataModule
 
 
 class SiamSegment(LightningModule):
-    def __init__(self, backbone, feature_channels, finetune, num_classes):
+    def __init__(self, backbone, feature_channels, finetune, num_classes, args=None):
         super().__init__()
-
+        self.args = args
         self.model = UNet(backbone, feature_channels, num_classes, bilinear=True, concat_mult=1, dropout_rate=0.3)
 
         if num_classes == 1:
@@ -125,24 +125,23 @@ class SiamSegment(LightningModule):
     def configure_optimizers(self):
 
         optimizer_params = [
-            {"params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())), "lr": args.lr}
+            {"params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())), "lr": self.args.lr}
         ]
 
-        if args.finetune:
+        if self.args.finetune:
             optimizer_params.append(
                 {
                     "params": self.model.encoder.parameters(),
-                    "lr": args.backbone_lr,
+                    "lr": self.args.backbone_lr,
                 }
             )
 
-        optimizer = torch.optim.Adam(optimizer_params, weight_decay=args.weight_decay)
+        optimizer = torch.optim.Adam(optimizer_params, weight_decay=self.args.weight_decay)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.95)
         return [optimizer], [scheduler]
 
 
-if __name__ == "__main__":
-
+def start():
     parser = get_arg_parser()
     args = parser.parse_args()
 

@@ -4,7 +4,8 @@ from ccb.utils.utils import hp_to_str, get_arg_parser
 import pandas as pd
 import os
 
-if __name__ == "__main__":
+
+def start():
     parser = ArgumentParser()
 
     parser.add_argument(

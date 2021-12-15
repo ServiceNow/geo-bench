@@ -32,8 +32,10 @@ def test_toolbox_mnist():
                   hyperparameters=hyperparameters)
 
     t = tt.ToTensor()
-    train_dataset = torchvision.datasets.MNIST('/mnt/public/datasets/mnist',
-                                               transform=t)
+    train_dataset = torchvision.datasets.MNIST(
+        '/tmp/datasets/mnist',
+        transform=t,
+        download=True)
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=1)
 
     trainer = pl.Trainer(gpus=0, max_epochs=1, max_steps=hyperparameters['train_iters'], logger=False)

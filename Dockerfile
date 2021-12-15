@@ -3,6 +3,8 @@ FROM nvidia/cuda:10.2-cudnn7-devel as base
 
 # >>> Base system configuration
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONIOENCODING=utf-8
+
 # -- Install system packages
 RUN apt-get update  -y --fix-missing && \
     apt-get install -y --no-install-recommends \
@@ -27,12 +29,19 @@ RUN add-apt-repository -y ppa:deadsnakes/ppa && \
 # -- Enable GPU access from ssh login into the Docker container
 RUN echo "ldconfig" >> /etc/profile
 
-# >>> Python configuration and dependencies
-# -- Install requirements
-COPY requirements.txt /tmp/requirements.txt
 RUN python3.7 -m pip install --upgrade pip setuptools wheel
-RUN python3.7 -m pip install --default-timeout=100 -r /tmp/requirements.txt
 
 # -- Make Python 3 the default
 RUN update-alternatives --install /usr/bin/python3 python /usr/bin/python3.7 10
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 10
+
+# Install the specified `poetry` version.
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | \
+        POETRY_HOME=/usr/local/poetry python - --version 1.1.12 \
+    && chmod 755 /usr/local/poetry/bin/poetry \
+    && ln -sf /usr/local/poetry/bin/poetry /usr/local/bin/poetry
+
+# >>> Python configuration and dependencies
+# -- Install requirements
+COPY pyproject.toml ./
+RUN poetry config virtualenvs.create false && poetry install --no-root
