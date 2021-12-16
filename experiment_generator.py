@@ -18,39 +18,6 @@ from toolbox.model import ModelGenerator
 from toolbox.utils import get_model_generator, hparams_to_string
 
 
-# def _raise_error(msg):
-#     print(msg)
-#     exit(1)
-
-
-# def get_model_generator(path):
-#     """
-#     Parameters:
-#     -----------
-#     path: str
-#         The path of the model generator module.
-
-#     Returns:
-#     --------
-#     model_generator: a model_generator function loaded from the module.
-
-#     """
-#     # Preprocess path
-#     model_generator_path = path.replace(".py", "")  # Need module name, not file
-
-#     # Try to load user-provided module
-#     try:
-#         model_generator = importlib.import_module(model_generator_path).model_generator
-#     except AttributeError:
-#         _raise_error(
-#             f"Error: The model generator ({model_generator_path}) does not contain a 'model_generator' function."
-#         )
-#     except ModuleNotFoundError:
-#         _raise_error(f"Error: The model generator module ({model_generator_path}) cannot be found.")
-
-#     return model_generator
-
-
 def experiment_generator(
     model_generator: ModelGenerator,
     model_generator_path: str,
@@ -66,7 +33,6 @@ def experiment_generator(
     experiment_dir = Path(experiment_dir)
     experiment_dir /= str(uuid4())
 
-    # TODO create experiment directory and append date in the dir name.
     for dataset in iter_datasets():
         if task_filter is not None:
             if not task_filter(dataset.task_specs):
