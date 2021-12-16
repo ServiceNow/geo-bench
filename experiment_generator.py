@@ -1,9 +1,7 @@
 """
 Generate experiment directory structure
 
-Arguments: a user-defined model generator
-
-Usage: experiment_generator.py path/to/my/model/example_model_genartor.py
+Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 
 """
 import argparse
