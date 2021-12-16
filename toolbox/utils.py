@@ -1,4 +1,24 @@
+from importlib import import_module
 from itertools import chain
+
+
+def get_model_generator(path):
+    """
+    Parameters:
+    -----------
+    path: str
+        The path of the model generator module.
+
+    Returns:
+    --------
+    model_generator: a model_generator function loaded from the module.
+
+    """
+    # Preprocess path
+    model_generator_path = path.replace(".py", "")  # Need module name, not file
+
+    # Load user-provided module
+    return import_module(model_generator_path).model_generator
 
 
 def hparams_to_string(hp_configs):
