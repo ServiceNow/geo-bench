@@ -10,7 +10,7 @@ class TaskSpecifications:
         temporal_resolution: Time difference between each frame in seconds. If time dimension > 1.
             (this feature might not make it into final version)
         band_names: Text describing each band in the dataset
-        band_wavelenth: The central wavelength of each band.
+        band_wavelength: The central wavelength of each band.
         task_type: One of Classification, Semantic Segmentation, Counting ...
         n_classes: ...
         dataset_name: The name of the dataset.
@@ -25,7 +25,7 @@ class TaskSpecifications:
         spatial_resolution=None,
         temporal_resolution=None,
         band_names=None,
-        band_wevelength=None,
+        band_wavelength=None,
         task_type=None,
         n_classes=None,
         dataset_name=None,
@@ -35,7 +35,7 @@ class TaskSpecifications:
         self.spatial_resolution = spatial_resolution
         self.temporal_resolution = temporal_resolution
         self.band_names = band_names
-        self.band_wevelength = band_wevelength
+        self.band_wevelength = band_wavelength
         self.task_type = task_type
         self.dataset_name = dataset_name
         self.n_classes = n_classes
