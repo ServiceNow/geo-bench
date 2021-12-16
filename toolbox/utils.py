@@ -1,3 +1,6 @@
+import os
+import sys
+
 from importlib import import_module
 from itertools import chain
 
@@ -14,11 +17,11 @@ def get_model_generator(path):
     model_generator: a model_generator function loaded from the module.
 
     """
-    # Preprocess path
-    model_generator_path = path.replace(".py", "")  # Need module name, not file
+    # Add the module to the PYTHONPATH
+    sys.path.append(os.path.dirname(path))
 
-    # Load user-provided module
-    return import_module(model_generator_path).model_generator
+    # Load the module and extract the model generator
+    return import_module(os.path.basename(path).replace(".py", "")).model_generator
 
 
 def hparams_to_string(hp_configs):
