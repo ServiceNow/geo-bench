@@ -50,18 +50,17 @@ def experiment_generator(
         for hparams, hparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
 
             # Create experiment directory
-            path = experiment_dir / dataset.name / hparams_string
-            os.makedirs(path, exist_ok=False)
+            job_dir = experiment_dir / dataset.name / hparams_string
+            job_dir.mkdir(exist_ok=False)
 
             # Dump HPs
-            hp_path = path / "hps.json"
-            json.dump(hparams, open(hp_path, "w"))
+            json.dump(hparams, open(job_dir / "hparams.json", "w"))
 
             # Dump task specification
             json.dump(dataset.task_specs.to_dict(), open("task_specs.json", "w"))
 
             # Experiment launch file
-            with open(path / "run.sh", "w") as f_cmd:
+            with open(job_dir / "run.sh", "w") as f_cmd:
                 f_cmd.write("#!/bin/bash\n")
                 f_cmd.write(f'cd $(dirname "$0"); {TRAINER_CMD} >log.out 2>err.out')
 
