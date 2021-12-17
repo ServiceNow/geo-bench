@@ -36,15 +36,15 @@ def experiment_generator(
             if not task_filter(dataset.task_specs):
                 continue
 
-        for hyperparams, hyperparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
+        for hparams, hparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
 
             # Create experiment directory
-            path = experiment_dir / dataset.name / hyperparams_string
+            path = experiment_dir / dataset.name / hparams_string
             os.makedirs(path, exist_ok=False)
 
             # Dump HPs
             hp_path = path / "hps.json"
-            json.dump(hyperparams, open(hp_path, "w"))
+            json.dump(hparams, open(hp_path, "w"))
 
             # Dump task specification files
             with open(path / "run.sh", "w") as f_cmd:
