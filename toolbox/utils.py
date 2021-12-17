@@ -1,11 +1,11 @@
-import os
 import sys
 
 from importlib import import_module
 from itertools import chain
+from pathlib import Path
 
 
-def get_model_generator(path):
+def get_model_generator(path: str):
     """
     Parameters:
     -----------
@@ -17,11 +17,13 @@ def get_model_generator(path):
     model_generator: a model_generator function loaded from the module.
 
     """
+    path = Path(path)
+
     # Add the module to the PYTHONPATH
-    sys.path.append(os.path.dirname(path))
+    sys.path.append(str(path.parent))
 
     # Load the module and extract the model generator
-    return import_module(os.path.basename(path).replace(".py", "")).model_generator
+    return import_module(path.name.replace(".py", "")).model_generator
 
 
 def hparams_to_string(hp_configs):
@@ -44,7 +46,13 @@ def hparams_to_string(hp_configs):
     active_keys = [k for k in keys if len(set(combo[k] for combo in hp_configs)) > 1]
 
     # Pretty print a HP combination
-    def _format_combo(hps):
-        return "_".join(f"{k}={hps[k]}" for k in active_keys)
+    def _format_combo(trial_id, hps):
+        # XXX: we include a trial_id prefix to deal with duplicate combinations or the case where active_keys is empty
+        return (
+            f"trial_{trial_id}" + ("__" + "_".join(f"{k}={hps[k]}" for k in active_keys))
+            if len(active_keys) > 0
+            else ""
+        )
 
-    return [(hps, _format_combo(hps)) for hps in hp_configs]
+    # XXX: append i
+    return [(hps, _format_combo(i, hps)) for i, hps in enumerate(hp_configs)]
