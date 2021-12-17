@@ -116,11 +116,12 @@ def get_rect(sample):
 def leaflet_map(samples):
 
     map = Map(center=center_coord(samples[0]), zoom=7)
+    map.layout.height = '800px'
 
     for sample in tqdm(samples):
 
         map.add_layer(Marker(location=center_coord(sample), draggable=False,
-                             opacity=0.5, title="allo", alt="mon coco"))
+                             opacity=0.5, title=sample.name, alt=sample.name))
         map.add_layer(get_rect(sample))
 
     return map
