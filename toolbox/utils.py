@@ -48,10 +48,8 @@ def hparams_to_string(hp_configs):
     # Pretty print a HP combination
     def _format_combo(trial_id, hps):
         # XXX: we include a trial_id prefix to deal with duplicate combinations or the case where active_keys is empty
-        return (
-            f"trial_{trial_id}" + ("__" + "_".join(f"{k}={hps[k]}" for k in active_keys))
-            if len(active_keys) > 0
-            else ""
+        return f"trial_{trial_id}" + (
+            "__" + "_".join(f"{k}={hps[k]}" for k in active_keys) if len(active_keys) > 0 else ""
         )
 
     # XXX: append i
