@@ -62,7 +62,8 @@ def experiment_generator(
             # Experiment launch file
             with open(job_dir / "run.sh", "w") as f_cmd:
                 f_cmd.write("#!/bin/bash\n")
-                f_cmd.write(f'cd $(dirname "$0"); {TRAINER_CMD} >log.out 2>err.out')
+                f_cmd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
+                f_cmd.write(f'cd $(dirname "$0") && {TRAINER_CMD} --model-generator $1 >log.out 2>err.out')
 
 
 if __name__ == "__main__":
