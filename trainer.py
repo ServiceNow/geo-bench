@@ -37,7 +37,9 @@ if __name__ == "__main__":
     # Load hyperparameters and task specification
     hparams = json.load(open("hparams.json", "r"))
     task_specs = json.load(open("task_specs.json", "r"))
-    print(hparams)
-    print(task_specs)
+
+    print("Model generator path:", args.model_generator)
+    print("Hyperparameters:", hparams)
+    print("Task specifications:", task_specs)
 
     # TODO: Training
