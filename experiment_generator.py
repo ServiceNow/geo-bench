@@ -51,7 +51,7 @@ def experiment_generator(
 
             # Create experiment directory
             job_dir = experiment_dir / dataset.name / hparams_string
-            job_dir.mkdir(exist_ok=False)
+            job_dir.mkdir(parents=True, exist_ok=False)
 
             # Dump HPs
             json.dump(hparams, open(job_dir / "hparams.json", "w"))
