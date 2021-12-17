@@ -16,9 +16,11 @@ from toolbox.model import ModelGenerator
 from toolbox.utils import get_model_generator, hparams_to_string
 
 
+TRAINER_CMD = "python trainer.py"
+
+
 def experiment_generator(
     model_generator: ModelGenerator,
-    model_generator_path: str,
     experiment_dir: str,
     task_filter: callable = None,
     max_num_configs: int = 10,
@@ -26,6 +28,15 @@ def experiment_generator(
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
     According to model_generator.hp_search.
+
+    Parameters:
+    -----------
+    model_generator: ModelGenerator
+        The generator associated with the current model. Used to get hyperparameter combinations.
+    experiment_dir: str
+        The directory in which to create the experiment directories.
+    task_filter: callable(TaskSpecification)
+        A function that takes as input a task specification instance and returns False if it should be skipped.
 
     """
     experiment_dir = Path(experiment_dir)
@@ -46,20 +57,13 @@ def experiment_generator(
             hp_path = path / "hps.json"
             json.dump(hparams, open(hp_path, "w"))
 
-            # Dump task specification files
+            # Dump task specification
+            json.dump(dataset.task_specs.to_dict(), open("task_specs.json", "w"))
+
+            # Experiment launch file
             with open(path / "run.sh", "w") as f_cmd:
                 f_cmd.write("#!/bin/bash\n")
-
-                for i, task in enumerate(dataset.task_specs):
-
-                    # Write task specification
-                    task_path = path / f"task_{i}.json"
-                    json.dump(task.to_dict(), open(task_path, "w"))
-
-                    # Add command to the launcher
-                    f_cmd.write(
-                        f"python trainer.py --model-generator {model_generator_path} --hps {hp_path} --task-spec {task_path}\n"
-                    )
+                f_cmd.write(f'cd $(dirname "$0"); {TRAINER_CMD} >log.out 2>err.out')
 
 
 if __name__ == "__main__":
@@ -76,4 +80,4 @@ if __name__ == "__main__":
     model_generator = get_model_generator(args.model_generator)
 
     # Generate experiments
-    experiment_generator(model_generator, args.model_generator, args.experiment_dir)
+    experiment_generator(model_generator, args.experiment_dir)
