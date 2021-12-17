@@ -74,9 +74,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model-generator",
         help="Path to a Python file that defines a model generator (expects a model_generator variable to exist).",
+        required=True,
     )
     parser.add_argument(
-        "--experiment-dir", help="The based directory in which experiment-related files should be created."
+        "--experiment-dir",
+        help="The based directory in which experiment-related files should be created.",
+        required=True,
     )
     args = parser.parse_args()
 
