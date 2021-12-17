@@ -71,8 +71,13 @@ if __name__ == "__main__":
         prog="experiment_generator.py",
         description="Generate experiment directory structure based on user-defined model generator",
     )
-    parser.add_argument("--model-generator")
-    parser.add_argument("--experiment-dir")
+    parser.add_argument(
+        "--model-generator",
+        help="Path to a Python file that defines a model generator (expects a model_generator variable to exist).",
+    )
+    parser.add_argument(
+        "--experiment-dir", help="The based directory in which experiment-related files should be created."
+    )
     args = parser.parse_args()
 
     # Load the user-specified model generator
