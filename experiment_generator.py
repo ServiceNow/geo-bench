@@ -57,7 +57,7 @@ def experiment_generator(
             json.dump(hparams, open(job_dir / "hparams.json", "w"))
 
             # Dump task specification
-            json.dump(dataset.task_specs.to_dict(), open("task_specs.json", "w"))
+            json.dump(dataset.task_specs.to_dict(), open(job_dir / "task_specs.json", "w"))
 
             # Experiment launch file
             with open(job_dir / "run.sh", "w") as f_cmd:
