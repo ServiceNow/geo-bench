@@ -1,5 +1,6 @@
+import os
 import unittest
-from toolbox.utils import hparams_to_string
+from toolbox.utils import get_model_generator, hparams_to_string
 
 
 class TestHParamStringFormatting(unittest.TestCase):
@@ -45,3 +46,32 @@ class TestHParamStringFormatting(unittest.TestCase):
         hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}])))[1]
         assert len(hp_str) == 1
         assert hp_str[0] == "trial_0"
+
+
+class TestGetModelGenerator(unittest.TestCase):
+    def test_load_module(self):
+        """
+        Test loading an existing model generator from a user-specified path.
+
+        """
+        path = "tmp_testing_model_generator.py"
+        open(path, "w").write("def model_generator():\n    return 'it works!'")
+        assert get_model_generator(path)() == "it works!"
+        os.remove(path)
+
+    def test_unexisting_path(self):
+        """
+        Test trying to load from an unexisting module path.
+
+        """
+        self.assertRaises(ModuleNotFoundError, get_model_generator, "1234_unexisting_path.py")
+
+    def test_missing_generator_instance(self):
+        """
+        Test trying to load when the module exists, but the variable is not defined.
+
+        """
+        path = "tmp_testing_model_generator_broken.py"
+        open(path, "w").write("def model_generator_():\n    pass")  # So model_generator doesn't exist
+        self.assertRaises(AttributeError, get_model_generator, path)
+        os.remove(path)
