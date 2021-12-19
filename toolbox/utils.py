@@ -52,5 +52,4 @@ def hparams_to_string(hp_configs):
             "__" + "_".join(f"{k}={hps[k]}" for k in active_keys) if len(active_keys) > 0 else ""
         )
 
-    # XXX: append i
     return [(hps, _format_combo(i, hps)) for i, hps in enumerate(hp_configs)]
