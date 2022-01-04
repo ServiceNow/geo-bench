@@ -1,4 +1,4 @@
-# flake8: noqa
+
 import pytorch_lightning as pl
 import toolbox
 
@@ -164,7 +164,8 @@ class ModelGenerator:
     def generate(self, task_specs, hyperparams):
         # Implemented by the user so that he can wrap his
         backbone = MyBackBone(self.model_path, task_specs, hyperparams)
-        head = head_generator(task_specs, hyperparams)  # provided by the toolbox or the user can implement his own
+        # provided by the toolbox or the user can implement his own
+        head = head_generator(task_specs, hyperparams, backbone.out_shape)
         # provided by the toolbox or the user can implement his own
         loss = train_loss_generator(task_specs, hyperparams)
         return Model(backbone, head, loss, hyperparams)  # base model provided by the toolbox
@@ -266,9 +267,9 @@ trainer.fit(model, train_dataloaders=train_loader)  # how to manage early stoppi
 #  Integration test
 # TODO(mehmet)
 #####
-# * make a very small convenet backbone with random init.
-# * wrap it in a Model with a classifier head to mockup a user implementation.
-# * generate experiments with 2 hyperparam configurations and 1 dataset: MNIST
+# * make a very small convenet backbone with random init. (backbone.Conv4Example)
+# * wrap it in a Model with a classifier head to mockup a user implementation (test_model_generator_module.py).
+# * generate experiments with 2 hyperparam configurations and 1 dataset: MNIST (assuming the experement generator is coded)
 # * Execute all experiments with a simple script that execute sequentially on local machine
 #       * Train for e.g. 10 steps or until there is at least 2-3 points in the training_trace.
 #       * Run the eval procedure and write all result files.
