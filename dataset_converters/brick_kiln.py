@@ -107,8 +107,8 @@ if __name__ == "__main__":
                 )
                 bands.append(band_data)
 
-            sample = io.Sample(bands, label=int(label))
-            sample.save_sample(Path(dataset_dir, sample_name))
+            sample = io.Sample(bands, label=int(label), sample_name=sample_name)
+            sample.save_sample(dataset_dir)
 
             if img_idx > 100:
                 break
