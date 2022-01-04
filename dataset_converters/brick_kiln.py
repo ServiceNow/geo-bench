@@ -1,4 +1,6 @@
 # Downloaded from "https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg13/brick_kiln.html"
+# Try this command for downloading on headless server:
+#   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx" -O brick_kiln_v1.0.tar.gz && rm -rf /tmp/cookies.txt
 
 # Questions to authors:
 # * what are indices in the csv file
