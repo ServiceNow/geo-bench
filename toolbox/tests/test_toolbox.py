@@ -2,9 +2,10 @@ import pytest
 import torch
 import torchvision
 import torchvision.transforms as tt
-from toolbox.model import Model
-from toolbox import TaskSpecifications, head_generator, train_loss_generator
-from toolbox.backbone import Conv4Example
+from toolbox.core.model import Model
+from toolbox.core.task_specs import TaskSpecifications
+from toolbox.core.functions import head_generator, train_loss_generator
+from toolbox.core.backbone import Conv4Example
 import pytorch_lightning as pl
 
 

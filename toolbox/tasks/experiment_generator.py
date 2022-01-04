@@ -11,9 +11,9 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from toolbox.dataset import Dataset, iter_datasets
-from toolbox.model import ModelGenerator
-from toolbox.utils import get_model_generator, hparams_to_string
+from toolbox.core.dataset import Dataset, iter_datasets
+from toolbox.core.model import ModelGenerator
+from toolbox.core.utils import get_model_generator, hparams_to_string
 
 
 TRAINER_CMD = "python trainer.py"
@@ -66,7 +66,7 @@ def experiment_generator(
                 f_cmd.write(f'cd $(dirname "$0") && {TRAINER_CMD} --model-generator $1 >log.out 2>err.out')
 
 
-if __name__ == "__main__":
+def start():
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="experiment_generator.py",

@@ -1,6 +1,5 @@
 from typing import List
-
-from . import TaskSpecifications
+from toolbox.core.task_specs import TaskSpecifications
 
 
 class Dataset(object):

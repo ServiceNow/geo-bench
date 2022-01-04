@@ -1,6 +1,6 @@
 import os
 import unittest
-from toolbox.utils import get_model_generator, hparams_to_string
+from toolbox.core.utils import get_model_generator, hparams_to_string
 
 
 class TestHParamStringFormatting(unittest.TestCase):
