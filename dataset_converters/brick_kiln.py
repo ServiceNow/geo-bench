@@ -23,20 +23,20 @@ dataset_dir.mkdir(exist_ok=True, parents=True)
 
 def load_examples_bloc(file_path):
     """Load a .h5py bloc of images with their labels."""
-    file_id = file_path.stem.split('_')[1]
+    file_id = file_path.stem.split("_")[1]
 
     with h5py.File(file_path) as data:
 
-        images = data['images'][:]
-        labels = data['labels'][:]
-        bounds = data['bounds'][:]
+        images = data["images"][:]
+        labels = data["labels"][:]
+        bounds = data["bounds"][:]
 
         return images, labels, bounds, file_id
 
 
 def read_list_eval_partition(csv_file):
     with open(csv_file) as fd:
-        reader = csv.reader(fd, delimiter=',')
+        reader = csv.reader(fd, delimiter=",")
         data = []
         for i, row in enumerate(reader):
             if i == 0:
@@ -65,14 +65,14 @@ def read_list_eval_partition(csv_file):
 
 if __name__ == "__main__":
 
-    _, partition_id, _, _, _, _, id_map = read_list_eval_partition(Path(src_dataset_dir, 'list_eval_partition.csv'))
+    _, partition_id, _, _, _, _, id_map = read_list_eval_partition(Path(src_dataset_dir, "list_eval_partition.csv"))
 
     file_list = list(src_dataset_dir.iterdir())
-    partition = io.Partition(map={0: 'train', 1: 'valid', 2: 'test'})
+    partition = io.Partition(map={0: "train", 1: "valid", 2: "test"})
 
     pbar = tqdm(file_list)
     for file_idx, file_path in enumerate(pbar):
-        if file_path.suffix != '.hdf5':
+        if file_path.suffix != ".hdf5":
             continue
 
         images, labels, bounds, file_id = load_examples_bloc(file_path)
@@ -85,22 +85,56 @@ if __name__ == "__main__":
 
         data = list(zip(images, labels, bounds))
         for img_idx in tqdm(range(len(data)), leave=False):
-            image, label, box = data[img_idx]
+            all_bands, label, box = data[img_idx]
 
-            img_path = Path(dataset_dir, 'examples_%s_%d.tif' % (file_id, img_idx))
+            sample_name = f"examples_{file_id}_{img_idx}"
 
-            image = io.swap_band_axes_to_last(image)
-
-            partition.add(partition_id[id_map[(int(file_id), img_idx)]], img_path.name)
+            partition.add(partition_id[id_map[(int(file_id), img_idx)]], sample_name)
             # box = lon_top_left,lat_top_left,lon_bottom_right,lat_bottom_right
             # from_bounds = west, south, east, north
             transform = rasterio.transform.from_bounds(
-                box[0], box[3], box[2], box[1], image.shape[0], image.shape[1])
-            sample = io.Sample(img_path.stem, image, int(label), 10, util.SENTINEL2_BAND_NAMES,
-                               util.SENTINEL2_CENTRAL_WAVELENGTHS, transform)
+                box[0], box[3], box[2], box[1], all_bands.shape[1], all_bands.shape[2]
+            )
 
-            sample.to_geotiff(dataset_dir)
+            bands = []
+            for i, band in enumerate(all_bands):
+                band_data = io.Band(
+                    data=band,
+                    band_info=io.sentinel2_13_bands[i],
+                    spatial_resolution=10,
+                    transform=transform,
+                    crs="EPSG:4326",
+                )
+                bands.append(band_data)
+
+            sample = io.Sample(bands, label=int(label))
+            sample.save_sample(Path(dataset_dir, sample_name))
+
             if img_idx > 100:
                 break
 
-    partition.save(Path(dataset_dir, 'original_partition.json'))
+    partition.save(Path(dataset_dir, "original_partition.json"))
+
+
+# for img_idx in tqdm(range(len(data)), leave=False):
+#         image, label, box = data[img_idx]
+
+#         img_name = f"examples_{file_id}_{img_idx}"
+
+#         image = io.swap_band_axes_to_last(image)
+
+#         partition.add(partition_id[id_map[(int(file_id), img_idx)]], img_name)
+#         # box = lon_top_left,lat_top_left,lon_bottom_right,lat_bottom_right
+#         # from_bounds = west, south, east, north
+#         transform = rasterio.transform.from_bounds(box[0], box[3], box[2], box[1], image.shape[0], image.shape[1])
+#         sample = io.GeoTIFF(
+#             img_name,
+#             image,
+#             int(label),
+#             10,
+#             util.SENTINEL2_13_BAND_NAMES,
+#             util.SENTINEL2_13_CENTRAL_WAVELENGTHS,
+#             transform,
+#         )
+
+#         sample.to_geotiff(dataset_dir)
