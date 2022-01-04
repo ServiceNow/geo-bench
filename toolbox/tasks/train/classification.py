@@ -12,13 +12,13 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from toolbox import TaskSpecifications
-from toolbox.dataset import Dataset, iter_datasets
-from toolbox.model import ModelGenerator
-from toolbox.utils import get_model_generator, hparams_to_string
+from toolbox.core.task_specs import TaskSpecifications
+from toolbox.core.dataset import Dataset, iter_datasets
+from toolbox.core.model import ModelGenerator
+from toolbox.core.utils import get_model_generator, hparams_to_string
 
 
-if __name__ == "__main__":
+def start():
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="trainer.py",

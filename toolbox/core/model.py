@@ -4,7 +4,7 @@ import torchvision.transforms as tt
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
-from toolbox.utils import hparams_to_string
+from toolbox.core.utils import hparams_to_string
 
 
 class Model(LightningModule):
