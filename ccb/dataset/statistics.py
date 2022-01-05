@@ -12,13 +12,13 @@ def compare(a, b, name, src_a, src_b):
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def dataset_statistics(dataset_iterator, n_value_per_images=1000, iterator_len=None):
+def dataset_statistics(dataset_iterator, n_value_per_images=1000):
 
     label_counter = Counter()
 
     band_stats = defaultdict(list)
 
-    for i, sample in enumerate(tqdm(dataset_iterator)):
+    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
 
         for band in sample.bands:
             band_name = band.band_info.name
@@ -42,27 +42,34 @@ def print_stats(label_counter):
         print(f"{key}: {count}.")
 
 
-def plot_band_stats(band_values):
-    items = list(band_values.items())
-    items.sort(key=lambda item: item[0])
-    keys, values = zip(*items)
-    fig1, ax = plt.subplots()
-    ax.set_title("Band Statistics")
-    ax.violinplot(dataset=values, vert=False)
-    plt.xlabel("uint16 value")
-    ax.set_yticks(np.arange(len(keys)) + 1)
-    ax.set_yticklabels(labels=keys)
+# def plot_band_stats_violin(band_values):
+#     items = list(band_values.items())
+#     items.sort(key=lambda item: item[0])
+#     keys, values = zip(*items)
+#     fig1, ax = plt.subplots()
+#     ax.set_title("Band Statistics")
+#     ax.violinplot(dataset=values, vert=False)
+#     plt.xlabel("uint16 value")
+#     ax.set_yticks(np.arange(len(keys)) + 1)
+#     ax.set_yticklabels(labels=keys)
 
 
-def plot_band_stats2(band_values, n_cols=4):
+def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
+    """Plot a histogram of band values for each band.
+
+    Args:
+        band_values: dict of 1d arryay representing flattenned values for each band.
+        n_cols: number of columns in the histogram gird
+        n_hist_bins: number of bins to use for histograms. See pyplot.hist's bins argument for more details
+    """
     items = list(band_values.items())
     items.sort(key=lambda item: item[0])
     n_rows = int(math.ceil(len(items) / n_cols))
     fig1, ax_matrix = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(20, 10))
-    for i, (key, value) in enumerate(tqdm(items)):
+    for i, (key, value) in enumerate(tqdm(items, desc="Plotting statistics")):
         ax = ax_matrix.flat[i]
         ax.set_title(key)
-        ax.hist(value, bins="auto")
+        ax.hist(value, bins=n_hist_bins)
     plt.tight_layout()
 
 
@@ -139,6 +146,9 @@ def get_rect(band):
 
 
 def leaflet_map(samples):
+    """Position all samples on a world map using ipyleaflet. Experimental feature."""
+    # TODO need to use reproject to increse compatibility
+    # https://github.com/jupyter-widgets/ipyleaflet/blob/master/examples/Numpy.ipynb
 
     map = Map(center=center_coord(samples[0].bands[0]), zoom=7)
     map.layout.height = "800px"
@@ -150,3 +160,12 @@ def leaflet_map(samples):
         map.add_layer(get_rect(band))
 
     return map
+
+
+def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100):
+    """High level function. Loads samples, perform some statistics and plot histograms."""
+    dataset = io.Dataset(dataset_dir)
+    samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
+    band_stats, label_counter = dataset_statistics(samples, n_value_per_images=1000)
+    plot_band_stats(band_values=band_stats, n_hist_bins=n_hist_bins)
+    return samples
