@@ -1,3 +1,4 @@
+from toolbox.core.task_specs import TaskSpecifications
 from ccb.dataset import io
 from collections import Counter, defaultdict
 import numpy as np
@@ -5,6 +6,9 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 from ipyleaflet import Map, Marker, projections, Rectangle
 import math
+from matplotlib import cm
+from typing import List
+from warnings import warn
 
 
 def compare(a, b, name, src_a, src_b):
@@ -12,28 +16,29 @@ def compare(a, b, name, src_a, src_b):
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def dataset_statistics(dataset_iterator, n_value_per_images=1000):
+def dataset_statistics(dataset_iterator, n_value_per_image=1000):
 
-    label_counter = Counter()
-
-    band_stats = defaultdict(list)
+    accumulator = defaultdict(list)
 
     for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
 
         for band in sample.bands:
-            band_name = band.band_info.name
-            band_stats[band_name].append(np.random.choice(band.data.flat, size=n_value_per_images, replace=False))
+            accumulator[band.band_info.name].append(
+                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+            )
 
         if isinstance(sample.label, io.Band):
-            band_stats["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_images, replace=False))
+            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
         else:
-            label_counter[sample.label] += 1
+            accumulator["label"].append(sample.label)
 
     band_values = {}
-    for band_name, values in band_stats.items():
-        band_values[band_name] = np.hstack(values)
+    band_stats = {}
+    for name, values in accumulator.items():
+        band_values[name] = np.hstack(values)
+        band_stats[name] = io.compute_stats(values)
 
-    return band_values, label_counter
+    return band_values, band_stats
 
 
 def print_stats(label_counter):
@@ -73,7 +78,7 @@ def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
     plt.tight_layout()
 
 
-def float_image_to_uint8(images, percentile_max=99.9):
+def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True):
     """Convert a batch of images to uint8 such that 99.9% of values fit in the range (0,255)."""
     images = np.asarray(images)
     if images.dtype == np.uint8:
@@ -88,6 +93,11 @@ def float_image_to_uint8(images, percentile_max=99.9):
     new_images = []
     for image in images:
         image = np.clip(image * (255 / mx), 0, 255)
+        if ensure_3_channels:
+            if image.ndim == 2:
+                image = np.stack((image, image, image), axis=2)
+            if image.shape[2] == 1:
+                image = np.concatenate((image, image, image), axis=2)
         new_images.append(image.astype(np.uint8))
     return new_images
 
@@ -108,10 +118,16 @@ def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=
 def extract_label_as_image(samples, percentile_max=99.9):
     images = []
     for sample in samples:
-        if not isinstance(sample.label, io.Band):
+        label = sample.label
+        if not isinstance(label, io.Band):
             raise ValueError("sample.label must be of type Band")
 
-        images.append(sample.label.data)
+        if isinstance(label.band_info, io.SegmentationClasses):
+            image = map_class_id_to_color(label.data, label.band_info.n_classes)
+        else:
+            image = label.data
+        images.append(image)
+
     return float_image_to_uint8(images, percentile_max)
 
 
@@ -121,7 +137,7 @@ def extract_bands(samples):
     labels = []
     for i, band_name in enumerate(band_names):
         images, _ = extract_images(samples, band_names=(band_name,))
-        images = [image[:, :, 0] for image in images]
+        # images = [image[:, :, 0] for image in images]
         all_images.extend(images)
         labels.extend((band_name,) * len(images))
 
@@ -166,6 +182,35 @@ def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100):
     """High level function. Loads samples, perform some statistics and plot histograms."""
     dataset = io.Dataset(dataset_dir)
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
-    band_stats, label_counter = dataset_statistics(samples, n_value_per_images=1000)
-    plot_band_stats(band_values=band_stats, n_hist_bins=n_hist_bins)
-    return samples
+    band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
+    plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
+    return dataset, samples, band_values, band_stats
+
+
+def map_class_id_to_color(id_array, n_classes, background_id=0, background_color=(0, 0, 0)):
+    colors = cm.hsv(np.linspace(0, 1, n_classes + 1))
+    colors = colors[:, :-1]  # drop the last column since it corresponds to alpha channel.
+    colors = colors[:-1]  # drop the last color since it's almost the same as the 1st color.
+    colors[background_id, :] = background_color
+    image = np.array([map[id_array] for map in colors.T])
+    return np.moveaxis(image, 0, 2)
+
+
+def check_integrity(samples: List[io.Sample], task_specs: TaskSpecifications, assert_dense=True):
+    for sample in samples:
+        assert len(task_specs.bands_info) == len(sample.band_info_list)
+        assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"
+
+        shapes = []
+        for band in sample.bands:
+            band.band_info.assert_valid(band)
+            shapes.append(band.data.shape)
+        max_shape = np.array(shapes).max(axis=0)
+        assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
+
+        assert isinstance(task_specs.label_type, io.Label)
+        task_specs.label_type.assert_valid(sample.label)
+
+        if assert_dense:
+            assert np.all(sample.band_array != None)
+

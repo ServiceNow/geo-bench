@@ -1,6 +1,7 @@
 import ast
 import pathlib
 import numpy as np
+from numpy.lib.function_base import percentile
 import rasterio
 import json
 from pathlib import Path
@@ -9,6 +10,8 @@ from typing import Union
 import os
 from scipy.ndimage import zoom
 import pickle
+from functools import cached_property, lru_cache
+from warnings import warn
 
 # TODO replace by environment variable CC_BENCHMARK_SOURCE_DATASETS
 src_datasets_dir = os.path.expanduser("~/dataset/")
@@ -56,6 +59,18 @@ class BandInfo(object):
     def __lt__(self, other):
         return self.__key() < other.__key()
 
+    def assert_valid(self, band):
+        assert isinstance(band, Band)
+        assert band.band_info == self, f"{str(band.band_info)} vs {str(self)}"
+        assert isinstance(band.data, np.ndarray)
+        if not (band.data.dtype == np.int16):
+            warn(f"band.data is expected to be int16, but has type {band.data.dtype}")
+        if band.transform is None:
+            warn(f"No geotransformation specified for band {band.band_info.name}.")
+
+    def __str__(self):
+        return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
+
 
 class SpectralBand(BandInfo):
     def __init__(self, name=None, alt_names=(), spatial_resolution=None, wavelength=None) -> None:
@@ -82,21 +97,46 @@ class CloudProbability(Mask):
 class Label(object):
     pass
 
+    def assert_valid(self):
+        raise NotImplemented()
+
 
 class Classification(Label):
-    def __init__(self, n_classes) -> None:
+    def __init__(self, n_classes, class_names) -> None:
         super().__init__()
         self.n_classes = n_classes
+        self.class_name = class_names
+
+    def assert_valid(self, value):
+        assert isinstance(value, int)
+        assert value >= 0, f"{value} is smaller than 0."
+        assert value < self.n_classes, f"{value} is >= to {self.n_classes}."
 
 
 class Regression(Label):
-    pass
+    def __init__(self, min_val=None, max_val=None) -> None:
+        super().__init__()
+        self.min_val = min_val
+        self.max_val = max_val
+
+    def assert_valid(self, value):
+        assert isinstance(value, float)
+        if self.min_val is not None:
+            assert value >= self.min_val
+        if self.max_val is not None:
+            assert value <= self.max_val
 
 
 class SegmentationClasses(BandInfo, Label):
     def __init__(self, name, spatial_resolution, n_classes) -> None:
         super().__init__(name=name, spatial_resolution=spatial_resolution)
         self.n_classes = n_classes
+
+    def assert_valid(self, value):
+        assert isinstance(value, Band)
+        assert value.band_info == self
+        assert np.all(value.data >= 0)
+        assert np.all(value.data < self.n_classes)
 
 
 sentinel2_13_bands = [
@@ -413,6 +453,8 @@ class Partition(dict):
 
 
 class GeneratorWithLength(object):
+    """A generator containing its length. Useful for e.g., tqdm."""
+
     def __init__(self, generator, length):
         self.generator = generator
         self.length = length
@@ -425,34 +467,104 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir) -> None:
+    def __init__(self, dataset_dir, active_partition="default") -> None:
         self.dataset_dir = Path(dataset_dir)
-        self._load_meta_info()
+        self._task_specs_path = None
+        self.active_partition = active_partition
+        self._load_path_list()
+        self._load_partition()
 
-    def _load_meta_info(self) -> None:
-        self._partition_path_list = []
-        self._task_specification_path = None
+    def _load_path_list(self) -> None:
+        self._partition_path_dict = {}
         self._sample_path_list = []
         for p in self.dataset_dir.iterdir():
-            if p.name.endswith("partition.json"):
-                self._partition_path_list.append(p)
+            if p.name.endswith("_partition.json"):
+                partition_name = p.name.split("_partition.json")[0]
+                self._partition_path_dict[partition_name] = p
             elif p.name == "task_specifications.pkl":
-                self._task_specification_path = p
+                self._task_specs_path = p
             else:
                 self._sample_path_list.append(p)
 
+    def _load_partition(self):
+        if len(self._partition_path_dict) == 0:
+            warn(f"No partition found for dataset {self.dataset_dir.name}.")
+            return
+
+        if "default" not in self._partition_path_dict:
+            partition_name = None
+            if "original" in self._partition_path_dict:
+                partition_name = "original"
+            else:
+                partition_name = self._partition_path_dict.keys()[0]
+
+            self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
+            warn(f"No default partition found for dataset {self.dataset_dir.name}. Using {partition_name} as default.")
+
+        self.set_active_partition(partition_name="default")
+
     def _iter_dataset(self, max_count=None):
+        path_list = np.random.choice(self._sample_path_list, size=max_count, replace=False)
+        for directory in path_list:
+            yield load_sample(directory)
+
+    def iter_dataset(self, max_count=None):
         n = len(self._sample_path_list)
         if max_count is None:
             max_count = n
         else:
             max_count = min(n, max_count)
 
-        path_list = np.random.choice(self._sample_path_list, size=max_count, replace=False)
-        for directory in path_list:
-            yield load_sample(directory)
-
-    def iter_dataset(self, max_count=None):
-        if max_count is None:
-            max_count = len(self._sample_path_list)
         return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
+
+    @cached_property
+    def task_specs(self):
+        if self._task_specs_path is None:
+            raise ValueError(f"The file 'task_specifications.pkl' does not exist for dataset {self.dataset_dir.name}.")
+        with open(self._task_specs_path, "rb") as fd:
+            return pickle.load(fd)
+
+    def list_partitions(self):
+        return self._partition_path_dict.keys()
+
+    def set_active_partition(self, partition_name="default"):
+        if partition_name not in self._partition_path_dict:
+            raise ValueError(f"Unknown partition {partition_name}.")
+        self.active_partition_name = partition_name
+        self.active_partition = self.get_partition(partition_name)
+
+    @lru_cache(maxsize=3)
+    def get_partition(self, partition_name="default"):
+        with open(self._partition_path_dict[partition_name], "r") as fd:
+            return json.load(fd)
+
+
+class Stats:
+    def __init__(
+        self, min, max, mean, std, median, percentile_0_1, percentile_1, percentile_99, percentile_99_9
+    ) -> None:
+        self.min = min
+        self.max = max
+        self.mean = mean
+        self.std = std
+        self.median = median
+        self.percentile_0_1 = percentile_0_1
+        self.percentile_1 = percentile_1
+        self.percentile_99 = percentile_99
+        self.percentile_99_9 = percentile_99_9
+
+
+def compute_stats(values):
+    q_0_1, q_1, median, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 50, 99, 99.9])
+    stats = Stats(
+        min=np.min(values),
+        max=np.max(values),
+        mean=np.mean(values),
+        std=np.std(values),
+        median=median,
+        percentile_0_1=q_0_1,
+        percentile_1=q_1,
+        percentile_99=q_99,
+        percentile_99_9=q_99_9,
+    )
+    return stats
