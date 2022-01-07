@@ -9,11 +9,12 @@ class TaskSpecifications:
     Attributes:
         dataset_name: The name of the dataset.
         patch_size: maximum image patch size across bands (width, height).
+        n_time_steps: integer specifying the number of time steps for each sample. 
+            This should be 1 for most dataset unless it's time series.
+        bands_info: list of object of type BandInfo descrbing the type of each band.
+        label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
+        eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
         spatial_resolution: physical distance between pixels in meters.
-        bands_info: list of object of type BandInfo descrbing the type of each band
-        label_type: One of Classification, Semantic Segmentation, Counting ...
-        eval_loss: string specifying the type of loss function used to evaluate the model on the validation set and the test set.
-            (we should implement a dict mapping this string to loss_functions).
     """
 
     def __init__(

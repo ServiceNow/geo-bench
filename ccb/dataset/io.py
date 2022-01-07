@@ -18,28 +18,16 @@ src_datasets_dir = os.path.expanduser("~/dataset/")
 dst_datasets_dir = os.path.expanduser("~/converted_dataset/")
 
 
-def _format_date(date: Union[datetime.date, datetime.datetime]):
-    if isinstance(date, datetime.date):
-        return date.strftime("%Y-%m-%d")
-    elif isinstance(date, datetime.datetime):
-        return date.strftime("%Y-%m-%d_%H-%M-%S-%Z")
-    elif date is None:
-        return "NoDate"
-    else:
-        raise ValueError(f"Unknown date of type: {type(date)}.")
-
-
-def _date_from_str(date_str):
-    if date_str == "NoDate":
-        return None
-    elif len(date_str) <= 12:
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-    else:
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S-%Z")
-
-
 class BandInfo(object):
+    """Base class for storing non pixel information about bands such as band name, wavelenth and spatial resolution."""
+
     def __init__(self, name=None, alt_names=(), spatial_resolution=None) -> None:
+        """
+        Args:
+            name: The main name of the band. This name is used for sorting the band and providing an order.
+            alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
+            spatial_resolution: original spatial resolution of this band.
+        """
         self.name = name
         self.alt_names = alt_names
         self.spatial_resolution = spatial_resolution
@@ -73,6 +61,8 @@ class BandInfo(object):
 
 
 class SpectralBand(BandInfo):
+    """Extends BandInfo to provide wavelength of the band."""
+
     def __init__(self, name=None, alt_names=(), spatial_resolution=None, wavelength=None) -> None:
         super().__init__(name, alt_names, spatial_resolution)
         self.wavelength = wavelength
@@ -102,9 +92,11 @@ class Label(object):
 
 
 class Classification(Label):
-    def __init__(self, n_classes, class_names) -> None:
+    def __init__(self, n_classes, class_names=None) -> None:
         super().__init__()
         self.n_classes = n_classes
+        if class_names is not None:
+            assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
         self.class_name = class_names
 
     def assert_valid(self, value):
@@ -157,22 +149,38 @@ sentinel2_13_bands = [
 
 
 class Band:
+    """Group Band information and provide function for saving to geotiff"""
+
     def __init__(
         self,
         data,
         band_info,
         spatial_resolution,
         date=None,
+        date_id=None,
         transform=None,
         crs=None,
         meta_info=None,
         convert_to_int16=True,
     ) -> None:
-
+        """
+        Args:
+            data: 2d array of data containing the pixels of the band
+            band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
+            spatial_resolution: current Spatial resolution of the pixels in meters.
+            date: The data this data was acquired
+            date_id: used for odering and group the dates when dataset contain time series.
+            transform: georeferncing transformation as provided by rasterio. See rasterio.transform.from_bounds for example.
+            crs: coordinate refenence system for the transformation.
+            meta_info: A dict of any information that might be useful.
+            convert_to_int16: By default, data will be converted to int16 when saved to_geotiff. ValueError will be raised if conversion is 
+                not possible. Set this flag to False to bypass this mechanism.
+        """
         self.data = data
         self.band_info = band_info
         self.spatial_resolution = spatial_resolution
         self.date = date
+        self.date_id = date if date_id is None else date_id
         self.transform = transform
         self.crs = crs
         self.meta_info = meta_info
@@ -229,7 +237,8 @@ class Band:
         ) as dst:
 
             tags = dict(
-                date=_format_date(self.date),
+                date=self.date,
+                date_id=self.date_id,
                 spatial_resolution=self.spatial_resolution,
                 band_info=self.band_info,
                 meta_info=self.meta_info,
@@ -252,7 +261,8 @@ def load_band_data(file_path):
             data=image[0],
             band_info=band_info,
             spatial_resolution=data["spatial_resolution"],
-            date=_date_from_str(data["date"]),
+            date=data["date"],
+            date_id=data["date_id"],
             transform=src.transform,
             crs=src.crs,
             meta_info=data["meta_info"],
@@ -285,11 +295,10 @@ def _map_bands(band_info_set, band_order):
 
 
 class Sample(object):
-    def __init__(self, bands, label, sample_name, band_order=None) -> None:
+    def __init__(self, bands, label, sample_name) -> None:
         super().__init__()
         self.bands = bands
         self.label = label
-        self.band_info_list = band_order  # TODO band_order is currently not saved
         self.sample_name = sample_name
         self._build_index()
 
@@ -468,6 +477,11 @@ class GeneratorWithLength(object):
 
 class Dataset:
     def __init__(self, dataset_dir, active_partition="default") -> None:
+        """
+        Args:
+            dataset_dir: the path containing the samples of the dataset.
+            active_parition: Each dataset can have more than 1 partiiton. Use this field to specify the active_partition.
+        """
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.active_partition = active_partition
@@ -568,3 +582,23 @@ def compute_stats(values):
         percentile_99_9=q_99_9,
     )
     return stats
+
+
+def _format_date(date: Union[datetime.date, datetime.datetime]):
+    if isinstance(date, datetime.date):
+        return date.strftime("%Y-%m-%d")
+    elif isinstance(date, datetime.datetime):
+        return date.strftime("%Y-%m-%d_%H-%M-%S-%Z")
+    elif date is None:
+        return "NoDate"
+    else:
+        raise ValueError(f"Unknown date of type: {type(date)}.")
+
+
+def _date_from_str(date_str):
+    if date_str == "NoDate":
+        return None
+    elif len(date_str) <= 12:
+        return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+    else:
+        return datetime.datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S-%Z")

@@ -84,6 +84,18 @@ def make_sample(src_bands, label, coord_box, sample_name):
 
 if __name__ == "__main__":
 
+    task_specs = TaskSpecifications(
+        dataset_name="brick_kiln_v1.0",
+        patch_size=(64, 64),
+        n_time_steps=1,
+        bands_info=io.sentinel2_13_bands,
+        bands_stats=None,  # Will be automatically written with the inspect script
+        label_type=io.Classification(2, ("not brick kiln", "Brick kiln")),
+        eval_loss=Accuracy,
+        spatial_resolution=10,
+    )
+    task_specs.save(dataset_dir)
+
     _, partition_id, _, _, _, _, id_map = read_list_eval_partition(Path(src_dataset_dir, "list_eval_partition.csv"))
 
     file_list = list(src_dataset_dir.iterdir())
@@ -113,17 +125,5 @@ if __name__ == "__main__":
             if img_idx > 10:
                 break
 
-    task_specs = TaskSpecifications(
-        dataset_name="brick_kiln_v1.0",
-        patch_size=(64, 64),
-        n_time_steps=1,
-        bands_info=io.sentinel2_13_bands,
-        bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(2),
-        eval_loss=Accuracy,
-        spatial_resolution=10,
-    )
-
-    task_specs.save(dataset_dir)
     partition.save(dataset_dir, "original_partition")
 
