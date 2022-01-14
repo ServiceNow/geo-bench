@@ -9,6 +9,8 @@ import math
 from matplotlib import cm
 from typing import List
 from warnings import warn
+from rasterio.crs import CRS
+from rasterio import warp
 
 
 def compare(a, b, name, src_a, src_b):
@@ -29,13 +31,19 @@ def dataset_statistics(dataset_iterator, n_value_per_image=1000):
 
         if isinstance(sample.label, io.Band):
             accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+        elif isinstance(sample.label, (list, tuple)):
+            for obj in sample.label:
+                if isinstance(obj, dict):
+                    for key, val in obj.items():
+                        accumulator[f"label_{key}"].append(val)
         else:
             accumulator["label"].append(sample.label)
 
     band_values = {}
     band_stats = {}
     for name, values in accumulator.items():
-        band_values[name] = np.hstack(values)
+        values = np.hstack(values)
+        band_values[name] = values
         band_stats[name] = io.compute_stats(values)
 
     return band_values, band_stats
@@ -131,15 +139,17 @@ def extract_label_as_image(samples, percentile_max=99.9):
     return float_image_to_uint8(images, percentile_max)
 
 
-def extract_bands(samples):
-    band_names = samples[0].band_names
+def extract_bands(samples, band_groups=None):
+    if band_groups is None:
+        band_groups = [(band_name,) for band_name in samples[0].band_names]
     all_images = []
     labels = []
-    for i, band_name in enumerate(band_names):
-        images, _ = extract_images(samples, band_names=(band_name,))
+    for i, band_group in enumerate(band_groups):
+        images, _ = extract_images(samples, band_names=band_group)
         # images = [image[:, :, 0] for image in images]
         all_images.extend(images)
-        labels.extend((band_name,) * len(images))
+        group_name = '-'.join(band_group)
+        labels.extend((group_name,) * len(images))
 
     if isinstance(samples[0].label, io.Band):
         label_images = extract_label_as_image(samples)
@@ -152,12 +162,23 @@ def extract_bands(samples):
 def center_coord(band):
     # TODO why do I have to reverse lon,lat ?
     center = np.array(band.data.shape[:2]) / 2.0
-    return tuple((band.transform * center)[::-1])
+    center = transform_to_4326(band, center)
+    return tuple(center[::-1])
+
+
+def transform_to_4326(band, coord):
+    coord = band.transform * coord
+    if band.crs != CRS.from_epsg(4326):
+        xs = np.array([coord[0]])
+        ys = np.array([coord[1]])
+        xs, ys = warp.transform(src_crs=band.crs, dst_crs=CRS.from_epsg(4326), xs=xs, ys=ys)
+        coord = (xs[0], ys[0])
+    return coord
 
 
 def get_rect(band):
-    sw = band.transform * (0, 0)
-    ne = band.transform * band.data.shape[:2]
+    sw = transform_to_4326(band, (0, 0))
+    ne = transform_to_4326(band, band.data.shape[:2])
     return Rectangle(bounds=(sw[::-1], ne[::-1]))
 
 
@@ -171,7 +192,10 @@ def leaflet_map(samples):
 
     for sample in tqdm(samples):
         band = sample.bands[0]
-        name = ""
+        if band.crs is None or band.transform is None:
+            warn("Unknown transformation or crs.")
+            continue
+        name = sample.sample_name
         map.add_layer(Marker(location=center_coord(band), draggable=False, opacity=0.5, title=name, alt=name))
         map.add_layer(get_rect(band))
 
@@ -213,4 +237,3 @@ def check_integrity(samples: List[io.Sample], task_specs: TaskSpecifications, as
 
         if assert_dense:
             assert np.all(sample.band_array != None)
-
