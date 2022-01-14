@@ -70,7 +70,7 @@ if __name__ == "__main__":
         label = tg_sample["label"]
 
         sample = make_sample(images, int(label), sample_name)
-        sample.save_sample(dataset_dir)
+        sample.write(dataset_dir)
 
         # temporary for creating small datasets for development purpose
         if i > 100:
