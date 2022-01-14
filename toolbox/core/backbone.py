@@ -23,7 +23,7 @@ class MyBackBone(torch.nn.Module):
 class Conv4Example(MyBackBone):
     def __init__(self, model_path, task_specs, hyperparams):
         super().__init__(model_path, task_specs, hyperparams)
-        h, w, c, t = task_specs.input_shape
+        h, w, c, t = task_specs.patch_size
         self.conv0 = torch.nn.Conv2d(c, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)

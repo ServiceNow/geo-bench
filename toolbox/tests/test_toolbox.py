@@ -2,6 +2,7 @@ import pytest
 import torch
 import torchvision
 import torchvision.transforms as tt
+from ccb.dataset import io
 from toolbox.core.model import Model
 from toolbox.core.task_specs import TaskSpecifications
 from toolbox.core.functions import head_generator, train_loss_generator
@@ -16,13 +17,13 @@ def test_toolbox_mnist():
                        'lr_head': 1e-3,
                        'head_type': 'linear',
                        'train_iters': 100,
+                       'features_shape': (64,),
                        'loss_type': 'crossentropy'
                        }
-    specs = TaskSpecifications((28, 28, 1, 1),
-                               features_shape=(64,),
-                               task_type='classification',
-                               dataset_name='MNIST',
-                               n_classes=10)
+                       
+    specs = TaskSpecifications(patch_size = (28, 28, 1, 1),
+                               label_type=io.Classification(10),
+                               dataset_name='MNIST')
 
     head = head_generator(specs, hyperparameters)
     backbone = Conv4Example('./', specs, hyperparameters)
