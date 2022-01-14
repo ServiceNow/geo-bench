@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
             partition.add(partition_id[id_map[(int(file_id), img_idx)]], sample_name)
             sample = make_sample(all_bands, label, coord_box, sample_name)
-            sample.save_sample(dataset_dir)
+            sample.write(dataset_dir)
 
             # temporary for creating small datasets for development purpose
             if img_idx > 10:
