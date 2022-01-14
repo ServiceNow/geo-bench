@@ -11,6 +11,7 @@ from typing import List
 from warnings import warn
 from rasterio.crs import CRS
 from rasterio import warp
+import ipyplot
 
 
 def compare(a, b, name, src_a, src_b):
@@ -121,6 +122,49 @@ def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=
 
     images = float_image_to_uint8(images, percentile_max)
     return images, labels
+
+
+def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_width=128):
+
+    def callback(center, width):
+        rgb_extractor = make_rgb_extractor(center, width)
+        images = hyperspectral_to_rgb(samples, band_name, rgb_extractor, percentile_max)
+        return ipyplot.plot_images(images=images, img_width=img_width, max_images=len(samples))
+
+    return callback
+
+
+def make_rgb_extractor(center, width):
+
+    def callback(hs_data):
+
+        def _extrac_band(start, stop):
+            return hs_data[:, :, int(start):int(stop)].mean(axis=2)
+
+        h, w, d = hs_data.shape
+        _center = max(0, center - width * 1.5) + width * 1.5
+        _center = min(d, _center + width * 1.5) - width * 1.5
+
+        red = _extrac_band(_center - width * 1.5, _center - width * 0.5)
+        green = _extrac_band(_center - width * 0.5, _center + width * 0.5)
+        blue = _extrac_band(_center + width * 0.5, _center + width * 1.5)
+
+        return np.dstack((red, green, blue))
+
+    return callback
+
+
+def hyperspectral_to_rgb(samples: List[io.Sample], band_name, rgb_extract, percentile_max=99.9):
+    images = []
+    for sample in samples:
+        band_array, _, _ = sample.get_band_array(band_names=(band_name,))
+        assert band_array.shape == (1, 1), f"Got shape: {band_array.shape}."
+        band = band_array[0, 0]
+        assert isinstance(band.band_info, io.HyperSpectralBands), f"Got type: {type(band.band_info)}."
+        hs_data = band.data
+        images.append(rgb_extract(hs_data))
+
+    return float_image_to_uint8(images, percentile_max)
 
 
 def extract_label_as_image(samples, percentile_max=99.9):
