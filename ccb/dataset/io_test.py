@@ -56,6 +56,6 @@ def test_write_read():
         sample_ = list(dataset.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
-    for band, band_ in zip(sample.bands, sample_.bands):
-        assert band.band_info == band_.band_info
+    for band in sample.bands:
+        len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
 
