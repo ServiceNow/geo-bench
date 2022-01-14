@@ -71,8 +71,7 @@ def convert_dataset(src_dataset_dir, dataset_dir):
                 print(f"Skipping {name}. Exists: {exists}")
                 continue
 
-            sample = make_sample(name, rgb_path, chm_path, hs_path, boxes)
-            sample.write(dataset_dir)
+            make_sample(name, rgb_path, chm_path, hs_path, boxes)
 
         else:
             print(f"Unknown file {label_path}.")
@@ -98,6 +97,7 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes) -> io.Sample:
     target_shapes = ((400, 400, 3), (40, 40, 1), (40, 40, 426))
     if shapes != target_shapes:
         warn(f"skipping {name}, shapes (rgb, chm, hyperspectrao) = {shapes} != {target_shapes}")
+        return
 
     bands = []
     for i in range(3):
@@ -112,7 +112,8 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes) -> io.Sample:
     bands.append(io.Band(chm_data, band_info=BAND_INFO_LIST[3], spatial_resolution=1, transform=chm_transform, crs=crs))
     bands.append(io.Band(hs_data, band_info=BAND_INFO_LIST[4], spatial_resolution=1, transform=hs_transform, crs=crs))
 
-    return io.Sample(bands, label=boxes, sample_name=name)
+    sample = io.Sample(bands, label=boxes, sample_name=name)
+    sample.write(dataset_dir)
 
 
 def main():
