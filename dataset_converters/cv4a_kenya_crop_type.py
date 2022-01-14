@@ -146,7 +146,7 @@ if __name__ == "__main__":
         print(set_count)
 
         sample = make_sample(images, mask, sample_name)
-        sample.save_sample(dataset_dir)
+        sample.write(dataset_dir)
 
         j += 1
         # temporary for creating small datasets for development purpose
