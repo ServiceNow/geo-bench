@@ -6,7 +6,7 @@ import rasterio
 import json
 from pathlib import Path
 import datetime
-from typing import Union
+from typing import List, Union, Set, Dict, Tuple, Optional
 import os
 from scipy.ndimage import zoom
 import pickle
@@ -59,6 +59,9 @@ class BandInfo(object):
     def __str__(self):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
+    def expand_name(self):
+        return [self.name]
+
 
 class SpectralBand(BandInfo):
     """Extends BandInfo to provide wavelength of the band."""
@@ -72,11 +75,32 @@ class SpectralBand(BandInfo):
 
 
 class Sentinel2(SpectralBand):
-    pass
+    "Spectral band of type Sentinel2"
 
 
 class Mask(BandInfo):
     pass
+
+
+class Height(BandInfo):
+    pass
+
+
+class MultiBand(BandInfo):
+    """Contains a 3d object with multiple band of the same resolution e.g. HyperSpectralBands"""
+
+    def __init__(self, name=None, alt_names=(), spatial_resolution=None, n_bands=None) -> None:
+        super().__init__(name=name, alt_names=alt_names, spatial_resolution=spatial_resolution)
+        self.n_bands = n_bands
+
+    def expand_name(self):
+        return [self.name] * self.n_bands
+
+
+class HyperSpectralBands(MultiBand):
+    def __init__(self, name=None, alt_names=(), spatial_resolution=None, n_bands=None, wavelength_range=None) -> None:
+        super().__init__(name=name, alt_names=alt_names, spatial_resolution=spatial_resolution, n_bands=n_bands)
+        self.wavelength_range = wavelength_range
 
 
 class CloudProbability(Mask):
@@ -131,6 +155,22 @@ class SegmentationClasses(BandInfo, Label):
         assert np.all(value.data < self.n_classes)
 
 
+class Detection(Label):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def assert_valid(self, value: List[dict]):
+        assert isinstance(value, (list, tuple))
+        for box in value:
+            assert isinstance(box, dict)
+            assert len(box) == 4
+            for key in ("xmin", "ymin", "xmax", "ymax"):
+                assert key in box
+                assert box[key] >= 0
+            assert box["xmin"] < box["xmax"]
+            assert box["ymin"] < box["ymax"]
+
+
 sentinel2_13_bands = [
     Sentinel2("01 - Coastal aerosol", ("1", "01"), 60, 0.443),
     Sentinel2("02 - Blue", ("2", "02", "blue"), 10, 0.49),
@@ -153,23 +193,25 @@ class Band:
 
     def __init__(
         self,
-        data,
-        band_info,
-        spatial_resolution,
-        date=None,
+        data: np.ndarray,
+        band_info: BandInfo,
+        spatial_resolution: float,
+        date: Union[datetime.datetime, datetime.date] = None,
         date_id=None,
         transform=None,
         crs=None,
         meta_info=None,
-        convert_to_int16=True,
+        convert_to_int16: bool = True,
     ) -> None:
         """
         Args:
-            data: 2d array of data containing the pixels of the band
+            data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands) 
             band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
-            spatial_resolution: current Spatial resolution of the pixels in meters.
+            spatial_resolution: current Spatial resolution of the pixels in meters. Note: Band.band_info.spatial_resolution  contains
+                the original spatial resolution of the sensor. If data is a resampled version of the original data, Band.spatial_resolution
+                must contain the new spatial resolution.
             date: The data this data was acquired
-            date_id: used for odering and group the dates when dataset contain time series.
+            date_id: used for odering and group the dates when dataset contains time series.
             transform: georeferncing transformation as provided by rasterio. See rasterio.transform.from_bounds for example.
             crs: coordinate refenence system for the transformation.
             meta_info: A dict of any information that might be useful.
@@ -192,7 +234,7 @@ class Band:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
 
-    def to_geotiff(self, directory):
+    def write_to_geotiff(self, directory):
         """
         Write an image from an array to a geotiff file with its label.
 
@@ -208,6 +250,15 @@ class Band:
             ValueError: when values of image are not in range (-32768, 32767)
         """
         data = self.data
+        assert type(data) == np.ndarray, f"got type {type(data)}."
+
+        if data.ndim == 2:
+            data = np.expand_dims(data, 2)
+
+        # if data.ndim == 3 and data.shape[2] == 1:
+        #     if not isinstance(self.band_info, MultiBand):
+        #         data = np.squeeze(data, axis=2)
+        #         warn("data has a 3rd dimension of size 1. Squeezing it out and continuing.")
 
         if self.convert_to_int16:
 
@@ -228,7 +279,7 @@ class Band:
             driver="GTiff",
             height=data.shape[0],
             width=data.shape[1],
-            count=1,
+            count=data.shape[2],
             dtype=data.dtype,
             crs=self.crs,
             compress="zstd",
@@ -246,29 +297,32 @@ class Band:
             dst.update_tags(data=str(pickle.dumps(tags)))
 
             dst.nodata = 0  # we use 0 as the nodata value.
-            dst.write(data[:, :], 1)
-            dst.set_band_description(1, self.band_info.name)
+
+            dst.write(np.moveaxis(data, 2, 0))
+
+            if data.shape[2] == 1:
+                dst.set_band_description(1, self.band_info.name)
+            else:
+                for i in range(data.shape[2]):
+                    dst.set_band_description(i + 1, f"{i:03d}_{self.band_info.name}")
+
+        return file_path
 
 
-def load_band_data(file_path):
+def load_band(file_path):
     with rasterio.open(file_path) as src:
-        data = pickle.loads(ast.literal_eval(src.tags()["data"]))
+        tags = pickle.loads(ast.literal_eval(src.tags()["data"]))
+        data = src.read()
+        if data.ndim == 3:
+            data = np.moveaxis(data, 0, 2)
 
-        band_info = data["band_info"]
-        image = src.read()
-        assert image.shape[0] == 1
-        band_data = Band(
-            data=image[0],
-            band_info=band_info,
-            spatial_resolution=data["spatial_resolution"],
-            date=data["date"],
-            date_id=data["date_id"],
-            transform=src.transform,
-            crs=src.crs,
-            meta_info=data["meta_info"],
-        )
+        band_info = tags["band_info"]
+        if not isinstance(band_info, MultiBand) and data.ndim == 3:
+            assert data.shape[2] == 1, f"Got shape: {data.shape}."
+            data = np.squeeze(data, axis=2)
+        band = Band(data=data, transform=src.transform, crs=src.crs, **tags)
 
-    return band_data
+    return band
 
 
 def _make_map(elements):
@@ -278,12 +332,9 @@ def _make_map(elements):
     return element_map, elements
 
 
-def _map_bands(band_info_set, band_order):
-    if band_order is not None:
-        band_info_list = band_order
-    else:
-        band_info_list = list(band_info_set)
-        band_info_list.sort()
+def _map_bands(band_info_set):
+    band_info_list = list(band_info_set)
+    band_info_list.sort()
 
     band_name_map = {}
     for band_idx, band_info in enumerate(band_info_list):
@@ -294,8 +345,9 @@ def _map_bands(band_info_set, band_order):
     return band_name_map, band_info_list
 
 
+# TODO need to make sure that band order is consistant through the dataset
 class Sample(object):
-    def __init__(self, bands, label, sample_name) -> None:
+    def __init__(self, bands: List[Band], label: Union[Label, float, int], sample_name: str) -> None:
         super().__init__()
         self.bands = bands
         self.label = label
@@ -310,11 +362,10 @@ class Sample(object):
 
         for band in bands:
             dates.add(band.date)
-            if self.band_info_list is None:
-                band_info_set.add(band.band_info)
+            band_info_set.add(band.band_info)
 
         self.date_map, self.dates = _make_map(dates)
-        self.band_name_map, self.band_info_list = _map_bands(band_info_set, self.band_info_list)
+        self.band_name_map, self.band_info_list = _map_bands(band_info_set)
         self.band_names = [band_info.name for band_info in self.band_info_list]
 
         self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=np.object)
@@ -330,33 +381,69 @@ class Sample(object):
     def is_time_series(self):
         return len(self.dates) > 1
 
-    def pack_to_4d(self, dates=None, band_names=None, resample=False, fill_value=None, resample_order=3):
+    def pack_to_4d(
+        self,
+        dates=None,
+        band_names: Tuple[str] = None,
+        resample: bool = False,
+        fill_value: float = None,
+        resample_order: int = 3,
+    ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
+        """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands). If it contains MultiBands, the final
+        dimension 
+
+        Args:
+            dates: Selects a subset of dates. Defaults to None, which selects all dates.
+            band_names: Selects a subset of bands with a list of string. Defaults to None, which selects all bands.
+                Will search into band_info.name and band_info.alt_names. You cen use, e.g., ('red', 'green', 'blue').
+            resample: will enable resampling bands to match the largest shape. Defaults to False and raises an error
+                if bands are not all the same shape. Resampling is performed using scipy.ndimage.zoom with order `resample_order`
+            fill_value: Fills missing bands with this value. Defaults to None, which will raise an error for missing bands. 
+                The type or np.dtype of fill_value may influence the numerical precision of the returned array. See numpy.array's documentation.
+            resample_order: passed to scipy.ndimage.zoom when resampling.
+
+        Returns:
+            array: 4d array of (n_dates, height, width, n_bands) containing the packed data.
+            dates: selected dates
+            band_names: selected bands
+        """
         band_array, dates, band_names = self.get_band_array(dates, band_names)
-        shape, dtype = _largest_shape(band_array)
+        shape = _largest_shape(band_array)
         data_grid = []
         for i in range(band_array.shape[0]):
             data_list = []
-            data_grid.append(data_list)
             for j in range(band_array.shape[1]):
                 band = band_array[i, j]
+
                 if band is None:
                     if fill_value is not None:
-                        data_list.append(np.zeros(shape, dtype=dtype) + fill_value)
+                        # TODO doesn't work yet with MultiBand will raise an error when concatenating
+                        data_list.append(np.zeros(shape, dtype=np.int16) + fill_value)
                     else:
                         raise ValueError(f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None.")
                 else:
-                    if band.data.shape != shape:
+                    data = band.data
+                    if data.ndim == 2:
+                        data = np.expand_dims(data, 2)
+                    if data.shape[:2] != shape:
                         if resample:
-                            zoom_factor = np.array(shape) / np.array(band.data.shape)
-                            data_list.append(zoom(band.data, zoom=zoom_factor, order=resample_order))
+                            zoom_factor = np.concatenate((np.array(shape) / np.array(data.shape[:2]), [1]))
+                            assert zoom_factor[0] == zoom_factor[1]
+                            data_list.append(zoom(data, zoom=zoom_factor, order=resample_order))
                         else:
                             raise ValueError(
-                                f"Band {band_names[j]} has shape {band.shape:s}, max shape is {shape:s}, but resample is set to False."
+                                f"Band {band_names[j]} has shape {data.shape:s}, max shape is {shape:s}, but resample is set to False."
                             )
                     else:
-                        data_list.append(band.data)
-        array = np.moveaxis(np.array(data_grid), 1, 3)
-        return array, dates, band_names
+                        data_list.append(data)
+            data_grid.append(np.concatenate(data_list, axis=2))
+
+        nand_names_ = []
+        for name in band_names:
+            nand_names_.extend(self.get_band_info(name).expand_name())
+
+        array = np.array(data_grid)
+        return array, dates, nand_names_
 
     def get_band_array(self, dates=None, band_names=None):
         band_array = self.band_array
@@ -382,35 +469,56 @@ class Sample(object):
         assert data_4d.shape[0] == 1
         return data_4d[0], band_names
 
-    def save_sample(self, dataset_dir):
+    def write(self, dataset_dir):
 
         dst_dir = pathlib.Path(dataset_dir, self.sample_name)
         dst_dir.mkdir(exist_ok=True, parents=True)
+
+        file_set = set()
         for band in self.bands:
-            band.to_geotiff(dst_dir)
+            file_set.add(band.write_to_geotiff(dst_dir))
+        if len(file_set) != len(self.bands):
+            raise ValueError(f"Duplicate band description in bands.")
 
         if self.label is not None:
             if isinstance(self.label, Band):
                 if not isinstance(self.label.band_info, Label):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
-                self.label.to_geotiff(dst_dir)
+                self.label.write_to_geotiff(dst_dir)
             else:
                 with open(Path(dst_dir, "label.json"), "w") as fd:
                     json.dump(self.label, fd)
 
 
+def load_sample(sample_dir):
+    sample_dir = Path(sample_dir)
+    band_list = []
+    label = None
+    for file in sample_dir.iterdir():
+        if file.name == "label.json":
+            with open(file, "r") as fd:
+                label = json.load(fd)
+        elif file.name.endswith(".aux.xml"):
+            continue
+        else:
+            band_list.append(load_band(file))
+
+    if label is None:
+        label = _extract_label(band_list)
+    return Sample(band_list, label, sample_name=sample_dir.name)
+
+
 def _largest_shape(band_array):
+    """Extract the largest shape and the dtype from an array of bands. 
+    Assertion error is raised if there is more than one type."""
     shape = [0, 0]
-    type_set = set()
     for band in band_array.flat:
         if band is None:
             continue
         shape[0] = max(shape[0], band.data.shape[0])
         shape[1] = max(shape[1], band.data.shape[1])
-        type_set.add(band.data.dtype)
 
-    assert len(type_set) == 1
-    return tuple(shape), type_set.pop()
+    return tuple(shape)
 
 
 def _extract_label(band_list):
@@ -424,22 +532,6 @@ def _extract_label(band_list):
     if len(labels) != 1:
         raise ValueError(f"Found {len(labels)} label while expecting exactly 1 label.")
     return labels.pop()
-
-
-def load_sample(sample_dir):
-    sample_dir = Path(sample_dir)
-    band_list = []
-    label = None
-    for file in sample_dir.iterdir():
-        if file.name == "label.json":
-            with open(file, "r") as fd:
-                label = json.load(fd)
-        else:
-            band_list.append(load_band_data(file))
-
-    if label is None:
-        label = _extract_label(band_list)
-    return Sample(band_list, label, sample_name=sample_dir.name)
 
 
 class Partition(dict):
