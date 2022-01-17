@@ -1,6 +1,12 @@
 # Smallholder Cashew Dataset will be downloaded by torchgeo
-# This requires Radiant MLHub package and API token
-# pip install radiant_mlhub
+#
+# 1) This requires Radiant MLHub package and API token
+#   pip install radiant_mlhub
+# 2) Sign up for a MLHub account here: https://mlhub.earth/
+# 3) Type this in your terminal:
+#   mlhub configure
+# and enter your API key.
+#
 # More info on the dataset: https://mlhub.earth/10.34911/rdnt.hfv20i
 
 from ccb.dataset import io
