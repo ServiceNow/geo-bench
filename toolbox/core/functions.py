@@ -1,4 +1,5 @@
 import torch
+from ccb.dataset import io
 from toolbox.core.task_specs import TaskSpecifications
 
 def head_generator(task_specs, hyperparams):
@@ -14,11 +15,11 @@ def head_generator(task_specs, hyperparams):
         hyperparams: dict of hyperparameters.
         input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
             the input itself? should it be a dict of shapes?
-    """
-    if task_specs.task_type == "classification":
+    """    
+    if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
-            (in_ch,) = task_specs.features_shape
-            out_ch = task_specs.n_classes
+            (in_ch,) = hyperparams['features_shape']
+            out_ch = task_specs.label_type.n_classes
             return torch.nn.Linear(in_ch, out_ch)
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
@@ -38,13 +39,13 @@ def train_loss_generator(task_specs, hyperparams):
     Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
-    if task_specs.task_type == "classification":
+    if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["loss_type"] == "crossentropy":
             return torch.nn.CrossEntropyLoss()
         else:
             raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
     else:
-        raise ValueError(f"Unrecognized task: {task_specs.task_type}")
+        raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
 def hparams_to_string(list_of_hp_configs):

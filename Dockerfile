@@ -22,18 +22,19 @@ RUN apt-get update  -y --fix-missing && \
 RUN add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update  -y --fix-missing && \
     apt-get install -y --no-install-recommends \
-    python3.7 \
-    python3.7-dev \
+    python3.9 \
+    python3.9-dev \
+    python3.9-distutils \
     python3-pip && \
     apt-get clean -y
 # -- Enable GPU access from ssh login into the Docker container
 RUN echo "ldconfig" >> /etc/profile
 
-RUN python3.7 -m pip install --upgrade pip setuptools wheel
+RUN python3.9 -m pip install --upgrade pip setuptools wheel
 
 # -- Make Python 3 the default
-RUN update-alternatives --install /usr/bin/python3 python /usr/bin/python3.7 10
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 10
+RUN update-alternatives --install /usr/bin/python3 python /usr/bin/python3.9 10
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.9 10
 
 # Install the specified `poetry` version.
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | \
@@ -44,5 +45,4 @@ RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
 # >>> Python configuration and dependencies
 # -- Install requirements
 COPY pyproject.toml ./
-COPY poetry.lock ./
 RUN poetry config virtualenvs.create false && poetry install --no-root
