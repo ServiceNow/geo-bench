@@ -107,8 +107,8 @@ class ModelGenerator:
 
         Example:
             backbone = MyBackBone(self.model_path, task_specs, hyperparams) # Implemented by the user so that he can wrap his
-            head = head_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
-            loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement his own
+            head = head_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement their own
+            loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement their own
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
         """
         raise NotImplementedError()
