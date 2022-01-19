@@ -164,9 +164,9 @@ class ModelGenerator:
     def generate(self, task_specs, hyperparams):
         # Implemented by the user so that he can wrap his
         backbone = MyBackBone(self.model_path, task_specs, hyperparams)
-        # provided by the toolbox or the user can implement his own
+        # provided by the toolbox or the user can implement their own
         head = head_generator(task_specs, hyperparams, backbone.out_shape)
-        # provided by the toolbox or the user can implement his own
+        # provided by the toolbox or the user can implement their own
         loss = train_loss_generator(task_specs, hyperparams)
         return Model(backbone, head, loss, hyperparams)  # base model provided by the toolbox
 
