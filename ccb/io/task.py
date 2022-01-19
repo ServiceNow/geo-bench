@@ -61,14 +61,14 @@ class SegmentationAccuracy(Loss):
     pass
 
 
-class Label(object):
+class LabelType(object):
     pass
 
     def assert_valid(self):
         raise NotImplemented()
 
 
-class Classification(Label):
+class Classification(LabelType):
     def __init__(self, n_classes, class_names=None) -> None:
         super().__init__()
         self.n_classes = n_classes
@@ -82,7 +82,7 @@ class Classification(Label):
         assert value < self.n_classes, f"{value} is >= to {self.n_classes}."
 
 
-class Regression(Label):
+class Regression(LabelType):
     def __init__(self, min_val=None, max_val=None) -> None:
         super().__init__()
         self.min_val = min_val
@@ -96,7 +96,7 @@ class Regression(Label):
             assert value <= self.max_val
 
 
-class Detection(Label):
+class Detection(LabelType):
     def __init__(self) -> None:
         super().__init__()
 
