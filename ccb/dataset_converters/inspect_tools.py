@@ -1,5 +1,4 @@
-from ccb.io.task import TaskSpecifications
-from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, Label, compute_stats
+from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
