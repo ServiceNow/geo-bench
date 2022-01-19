@@ -12,7 +12,7 @@ from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
 from warnings import warn
-from ccb.io.task import Label
+from ccb.io.task import LabelType
 
 
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -109,10 +109,13 @@ class CloudProbability(Mask):
         super().__init__("Cloud Probability", alt_names=alt_names, spatial_resolution=spatial_resolution)
 
 
-class SegmentationClasses(BandInfo, Label):
-    def __init__(self, name, spatial_resolution, n_classes) -> None:
+class SegmentationClasses(BandInfo, LabelType):
+    def __init__(self, name, spatial_resolution, n_classes, class_names=None) -> None:
         super().__init__(name=name, spatial_resolution=spatial_resolution)
         self.n_classes = n_classes
+        if class_names is not None:
+            assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
+        self.class_name = class_names
 
     def assert_valid(self, value):
         assert isinstance(value, Band)
@@ -297,7 +300,7 @@ def _map_bands(band_info_set):
 
 # TODO need to make sure that band order is consistant through the dataset
 class Sample(object):
-    def __init__(self, bands: List[Band], label: Union[Label, float, int], sample_name: str) -> None:
+    def __init__(self, bands: List[Band], label: Union[LabelType, float, int], sample_name: str) -> None:
         super().__init__()
         self.bands = bands
         self.label = label
@@ -432,7 +435,7 @@ class Sample(object):
 
         if self.label is not None:
             if isinstance(self.label, Band):
-                if not isinstance(self.label.band_info, Label):
+                if not isinstance(self.label.band_info, LabelType):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
                 self.label.write_to_geotiff(dst_dir)
             else:
@@ -475,7 +478,7 @@ def _extract_label(band_list):
     """Extract the label information from the band_list. *Note, the band_list is modified.*"""
     labels = set()
     for idx in range(len(band_list) - 1, -1, -1):  # iterate backward to avoid changing list index when popping
-        if isinstance(band_list[idx].band_info, Label):
+        if isinstance(band_list[idx].band_info, LabelType):
             labels.add(band_list.pop(idx))
 
     labels.discard(None)
@@ -667,7 +670,7 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
         max_shape = np.array(shapes).max(axis=0)
         assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
 
-        assert isinstance(task_specs.label_type, Label)
+        assert isinstance(task_specs.label_type, LabelType)
         task_specs.label_type.assert_valid(sample.label)
 
         if assert_dense:
