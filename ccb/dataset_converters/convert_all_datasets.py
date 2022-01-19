@@ -1,4 +1,4 @@
-# TODO the tqdm process bars will not work properly. Perhaps, we should revert to simple logging instead of tqdm + prints. 
+# TODO the tqdm process bars will not work properly. Perhaps, we should revert to simple logging instead of tqdm + prints.
 
 import multiprocessing
 import shutil
@@ -21,11 +21,15 @@ def convert(module_name):
 
 if __name__ == "__main__":
 
-    jobs = []
-    for converter in CONVERTERS:
-        job = multiprocessing.Process(target=convert, args=(converter,))
-        jobs.append(job)
-        job.start()
+    response = input(f"This will first delete all datasets in {io.datasets_dir}. To proceed, press 'y'.")
+    if response.lower() == 'y':
+        jobs = []
+        for converter in CONVERTERS:
+            job = multiprocessing.Process(target=convert, args=(converter,))
+            jobs.append(job)
+            job.start()
 
-    for job in jobs:
-        job.join()
+        for job in jobs:
+            job.join()
+    else:
+        print("No dataset deleted.")
