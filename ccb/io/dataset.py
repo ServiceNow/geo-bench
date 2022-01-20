@@ -12,7 +12,8 @@ from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
 from warnings import warn
-from ccb.io.task import LabelType
+from ccb.io.task import LabelType, TaskSpecifications
+from collections import OrderedDict
 
 
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -187,7 +188,7 @@ class Band:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
 
-    def write_to_geotiff(self, directory):
+    def write_to_geotiff(self, directory, band_idx):
         """
         Write an image from an array to a geotiff file with its label.
 
@@ -225,7 +226,7 @@ class Band:
 
             data = np.round(data).astype(np.int16)
 
-        file_path = Path(directory, f"{self.get_descriptor()}.tif")
+        file_path = Path(directory, f"{band_idx:02}_{self.get_descriptor()}.tif")
         with rasterio.open(
             file_path,
             "w",
@@ -287,7 +288,7 @@ def _make_map(elements):
 
 def _map_bands(band_info_set):
     band_info_list = list(band_info_set)
-    band_info_list.sort()
+    # band_info_list.sort()
 
     band_name_map = {}
     for band_idx, band_info in enumerate(band_info_list):
@@ -310,15 +311,15 @@ class Sample(object):
     def _build_index(self):
 
         dates = set()
-        band_info_set = set()
+        band_info_set = OrderedDict()  # using it as an ordered set
         bands = self.bands
 
         for band in bands:
             dates.add(band.date)
-            band_info_set.add(band.band_info)
+            band_info_set[band.band_info] = None
 
         self.date_map, self.dates = _make_map(dates)
-        self.band_name_map, self.band_info_list = _map_bands(band_info_set)
+        self.band_name_map, self.band_info_list = _map_bands(band_info_set.keys())
         self.band_names = [band_info.name for band_info in self.band_info_list]
 
         self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=np.object)
@@ -428,8 +429,8 @@ class Sample(object):
         dst_dir.mkdir(exist_ok=True, parents=True)
 
         file_set = set()
-        for band in self.bands:
-            file_set.add(band.write_to_geotiff(dst_dir))
+        for i, band in enumerate(self.bands):
+            file_set.add(band.write_to_geotiff(dst_dir, i))
         if len(file_set) != len(self.bands):
             raise ValueError(f"Duplicate band description in bands.")
 
@@ -437,7 +438,7 @@ class Sample(object):
             if isinstance(self.label, Band):
                 if not isinstance(self.label.band_info, LabelType):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
-                self.label.write_to_geotiff(dst_dir)
+                self.label.write_to_geotiff(dst_dir, -1)
             else:
                 with open(Path(dst_dir, "label.json"), "w") as fd:
                     json.dump(self.label, fd)
@@ -454,7 +455,12 @@ def load_sample(sample_dir):
         elif file.name.endswith(".aux.xml"):
             continue
         else:
-            band_list.append(load_band(file))
+            band_idx = int(file.name.split('_')[0])
+            band_list.append((band_idx, load_band(file)))
+
+    band_list.sort(key=lambda x: x[0])  # sort according to band_idx
+    _, band_list = zip(*band_list)  # discard band_idx
+    band_list = list(band_list)
 
     if label is None:
         label = _extract_label(band_list)
@@ -577,7 +583,7 @@ class Dataset:
         return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
 
     @cached_property
-    def task_specs(self):
+    def task_specs(self) -> TaskSpecifications:
         if self._task_specs_path is None:
             raise ValueError(f"The file 'task_specifications.pkl' does not exist for dataset {self.dataset_dir.name}.")
         with open(self._task_specs_path, "rb") as fd:
@@ -662,6 +668,9 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
     for sample in samples:
         assert len(task_specs.bands_info) == len(sample.band_info_list)
         assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"
+
+        for task_band_info, sample_band_info in zip(task_specs.bands_info, sample.band_info_list):
+            assert task_band_info == sample_band_info
 
         shapes = []
         for band in sample.bands:
