@@ -22,8 +22,6 @@
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}",
-                "CC_BENCHMARK_SOURCE_DATASETS": "/mnt/public/datasets/cc_benchmark/source",
-                "CC_BENCHMARK_CONVERTED_DATASETS": "/mnt/public/datasets/cc_benchmark/converted"
             }
         }
     ]
