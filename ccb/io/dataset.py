@@ -76,6 +76,10 @@ class SpectralBand(BandInfo):
         return (self.name, self.wavelength)
 
 
+class Sentinel1(SpectralBand):
+    pass
+
+
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
 
@@ -123,6 +127,18 @@ class SegmentationClasses(BandInfo, LabelType):
         assert value.band_info == self
         assert np.all(value.data >= 0)
         assert np.all(value.data < self.n_classes)
+
+
+sentinel1_8_bands = [
+    Sentinel1("01 - VH.Real"),
+    Sentinel1("02 - VH.Imaginary"),
+    Sentinel1("03 - VV.Real"),
+    Sentinel1("04 - VV.Imaginary"),
+    Sentinel1("05 - VH.LEE Filtered"),
+    Sentinel1("06 - VV.LEE Filtered"),
+    Sentinel1("07 - VH.LEE Filtered.Real"),
+    Sentinel1("08 - VV.LEE Filtered.Imaginary")
+]
 
 
 sentinel2_13_bands = [
