@@ -12,6 +12,7 @@ from rasterio.crs import CRS
 from rasterio import warp
 import ipyplot
 from ccb import io
+from PIL import Image, ImageDraw
 
 
 def compare(a, b, name, src_a, src_b):
@@ -170,13 +171,37 @@ def extract_label_as_image(samples, percentile_max=99.9):
     return float_image_to_uint8(images, percentile_max)
 
 
-def extract_bands(samples, band_groups=None):
+def overlay_label(image, label, label_patch_size, opacity=0.5):
+    if label_patch_size is not None:
+        scale = np.array(image.shape[:2]) / np.array(label_patch_size)
+    else:
+        scale = np.array([1., 1.])
+    if isinstance(label, (list, tuple)):
+        im = Image.fromarray(image)
+        ctxt = ImageDraw.Draw(im)
+        for obj in label:
+            if isinstance(obj, dict) and 'xmin' in obj:
+                coord = np.array([[obj['xmin'], obj['ymin']], [obj['xmax'], obj['ymax']]])
+                ctxt.rectangle(list((coord * scale).flat), outline=(255, 0, 0))
+            elif isinstance(obj, (tuple, list)) and len(obj) == 2:
+                size = 5 * scale
+                coord = [obj[0] - size[0], obj[1] - size[1], obj[0] + size[1], obj[1] + size[1]]
+                ctxt.rectangle(coord, outline=(255, 0, 0))
+        return np.array(im) * opacity + (1 - opacity) * image
+    else:
+        return image
+
+
+def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None):
     if band_groups is None:
         band_groups = [(band_name,) for band_name in samples[0].band_names]
     all_images = []
     labels = []
     for i, band_group in enumerate(band_groups):
         images, _ = extract_images(samples, band_names=band_group)
+        if draw_label:
+            images = [overlay_label(image, sample.label, label_patch_size) for image, sample in zip(images, samples)]
+
         all_images.extend(images)
         group_name = '-'.join(band_group)
         labels.extend((group_name,) * len(images))
@@ -233,10 +258,10 @@ def leaflet_map(samples):
     return map
 
 
-def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True):
+def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
     dataset = Dataset(dataset_dir)
-    samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
+    samples = list(tqdm(dataset.iter_dataset(n_samples, split=split), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
     band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
