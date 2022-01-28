@@ -1,4 +1,5 @@
 import ast
+from multiprocessing.sharedctypes import Value
 import pathlib
 import numpy as np
 from numpy.lib.function_base import percentile
@@ -6,7 +7,7 @@ import rasterio
 import json
 from pathlib import Path
 import datetime
-from typing import List, Union, Set, Dict, Tuple, Optional
+from typing import List, Union, Set, Dict, Tuple
 import os
 from scipy.ndimage import zoom
 import pickle
@@ -141,6 +142,14 @@ sentinel1_8_bands = [
 ]
 
 
+def make_rgb_bands(spatial_resolution):
+    return [
+        SpectralBand("Red", (), spatial_resolution, 0.665),
+        SpectralBand("Green", (), spatial_resolution, 0.56),
+        SpectralBand("Blue", (), spatial_resolution, 0.49),
+    ]
+
+
 sentinel2_13_bands = [
     Sentinel2("01 - Coastal aerosol", ("1", "01"), 60, 0.443),
     Sentinel2("02 - Blue", ("2", "02", "blue"), 10, 0.49),
@@ -204,7 +213,7 @@ class Band:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
 
-    def write_to_geotiff(self, directory, band_idx):
+    def write_to_geotiff(self, directory):
         """
         Write an image from an array to a geotiff file with its label.
 
@@ -242,7 +251,10 @@ class Band:
 
             data = np.round(data).astype(np.int16)
 
-        file_path = Path(directory, f"{band_idx:02}_{self.get_descriptor()}.tif")
+        elif data.dtype == np.float64:
+            data = data.astype(np.float32)  # see https://github.com/rasterio/rasterio/issues/2384
+
+        file_path = Path(directory, f"{self.get_descriptor()}.tif")
         with rasterio.open(
             file_path,
             "w",
@@ -445,41 +457,54 @@ class Sample(object):
         dst_dir.mkdir(exist_ok=True, parents=True)
 
         file_set = set()
+
+        # the band index ensure to keep band order and loading by band name.
+        band_index = OrderedDict()  # TODO maybe replace this band_index with a structure similar to band array.
         for i, band in enumerate(self.bands):
-            file_set.add(band.write_to_geotiff(dst_dir, i))
+            file = band.write_to_geotiff(dst_dir)
+            band_name = band.band_info.name
+            if band_name not in band_index:
+                band_index[band_name] = [file.name]
+            else:
+                band_index[band_name].append(file.name)
+            file_set.add(file)
+
         if len(file_set) != len(self.bands):
-            raise ValueError(f"Duplicate band description in bands.")
+            raise ValueError(f"Duplicate band description in bands. Perhaps date is missing?")
+
+        with open(Path(dst_dir, "band_index.json"), 'w') as fd:
+            json.dump(tuple(band_index.items()), fd)
 
         if self.label is not None:
             if isinstance(self.label, Band):
                 if not isinstance(self.label.band_info, LabelType):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
-                self.label.write_to_geotiff(dst_dir, -1)
+                self.label.write_to_geotiff(dst_dir)
             else:
                 with open(Path(dst_dir, "label.json"), "w") as fd:
                     json.dump(self.label, fd)
 
 
-def load_sample(sample_dir):
+def load_sample(sample_dir, band_names=None):
     sample_dir = Path(sample_dir)
     band_list = []
-    label = None
-    for file in sample_dir.iterdir():
-        if file.name == "label.json":
-            with open(file, "r") as fd:
-                label = json.load(fd)
-        elif file.name.endswith(".aux.xml"):
-            continue
-        else:
-            band_idx = int(file.name.split('_')[0])
-            band_list.append((band_idx, load_band(file)))
+    with open(Path(sample_dir, 'band_index.json'), "r") as fd:
+        band_index = OrderedDict(json.load(fd))
 
-    band_list.sort(key=lambda x: x[0])  # sort according to band_idx
-    _, band_list = zip(*band_list)  # discard band_idx
-    band_list = list(band_list)
+    if band_names is None:
+        band_names = band_index.keys()
 
-    if label is None:
-        label = _extract_label(band_list)
+    for band_name in band_names:
+        for file_name in band_index[band_name]:
+            band_list.append(load_band(Path(sample_dir, file_name)))
+
+    label_file = Path(sample_dir, 'label.json')
+    label_file_tif = Path(sample_dir, 'label.tif')
+    if label_file.exists():
+        with open(label_file, "r") as fd:
+            label = json.load(fd)
+    elif label_file_tif.exists():
+        label = load_band(label_file_tif)
     return Sample(band_list, label, sample_name=sample_dir.name)
 
 
@@ -510,20 +535,28 @@ def _extract_label(band_list):
 
 
 class Partition(dict):
-    def __init__(self, partition_dict=None, map=None) -> None:
-        self.map = map
+    """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
+
+    @staticmethod
+    def check_split_name(split_name):
+        if split_name not in ('train', 'valid', 'test'):
+            raise ValueError(f"split_name must be one of 'train', 'valid', 'test'. Got {split_name}.")
+
+    def __init__(self, partition_dict=None) -> None:
+        """If `partition_dict` is None, it will initialize to a dict of empty lists."""
         if partition_dict is None:
             self.partition_dict = {"train": [], "valid": [], "test": []}
         else:
+            for key in partition_dict.keys():
+                Partition.check_split_name(key)
             self.partition_dict = partition_dict
 
-    def add(self, key, value):
-        if key in self.map:
-            key = self.map[key]
-        self.partition_dict[key].append(value)
+    def add(self, split_name, sample_name):
+        Partition.check_split_name(split_name)
+        self.partition_dict[split_name].append(sample_name)
 
     def save(self, directory, partition_name):
-        file_path = Path(directory, partition_name + ".json")
+        file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
 
@@ -557,15 +590,15 @@ class Dataset:
 
     def _load_path_list(self) -> None:
         self._partition_path_dict = {}
-        self._sample_path_list = []
+        self._sample_name_list = []
         for p in self.dataset_dir.iterdir():
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
             elif p.name == "task_specifications.pkl":
                 self._task_specs_path = p
-            else:
-                self._sample_path_list.append(p)
+            elif p.is_dir():
+                self._sample_name_list.append(p.name)
 
     def _load_partition(self):
         if len(self._partition_path_dict) == 0:
@@ -584,19 +617,23 @@ class Dataset:
 
         self.set_active_partition(partition_name="default")
 
-    def _iter_dataset(self, max_count=None):
-        path_list = np.random.choice(self._sample_path_list, size=max_count, replace=False)
-        for directory in path_list:
-            yield load_sample(directory)
+    def _iter_dataset(self, max_count=None, split=None):
+        if split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[split]
+        sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
+        for sample_name in sample_names:
+            yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count=None):
-        n = len(self._sample_path_list)
+    def iter_dataset(self, max_count=None, split=None):
+        n = len(self._sample_name_list)
         if max_count is None:
             max_count = n
         else:
             max_count = min(n, max_count)
 
-        return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
+        return GeneratorWithLength(self._iter_dataset(max_count=max_count, split=split), max_count)
 
     @cached_property
     def task_specs(self) -> TaskSpecifications:
@@ -620,7 +657,7 @@ class Dataset:
             return json.load(fd)
 
     def __len__(self):
-        return len(self._sample_path_list)
+        return len(self._sample_name_list)
 
 
 class Stats:
