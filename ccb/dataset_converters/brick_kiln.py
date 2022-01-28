@@ -116,8 +116,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         for img_idx in tqdm(range(len(data)), leave=False):
             all_bands, label, coord_box = data[img_idx]
             sample_name = f"examples_{file_id}_{img_idx}"
-
-            partition.add(split_map[partition_id[id_map[(int(file_id), img_idx)]]], sample_name)
+            split_name = split_map[partition_id[id_map[(int(file_id), img_idx)]]]
+            partition.add(split_name, sample_name)
             sample = make_sample(all_bands, label, coord_box, sample_name)
             sample.write(dataset_dir)
             sample_count += 1
