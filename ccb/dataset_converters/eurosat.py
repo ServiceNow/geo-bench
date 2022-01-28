@@ -55,6 +55,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs.save(dataset_dir)
 
     offset = 0
+
     for split_name in ["train", "val", "test"]:
         eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True)
         for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
@@ -65,7 +66,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
             sample = make_sample(images, int(label), sample_name)
             sample.write(dataset_dir)
-            partition.add(split_name, sample_name)
+            partition.add(split_name.replace("val", "valid"), sample_name)
 
             offset += 1
 
