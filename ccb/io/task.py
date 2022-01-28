@@ -97,8 +97,6 @@ class Regression(LabelType):
 
 
 class Detection(LabelType):
-    def __init__(self) -> None:
-        super().__init__()
 
     def assert_valid(self, value: List[dict]):
         assert isinstance(value, (list, tuple))
@@ -110,3 +108,13 @@ class Detection(LabelType):
                 assert box[key] >= 0
             assert box["xmin"] < box["xmax"]
             assert box["ymin"] < box["ymax"]
+
+
+class PointAnnotation(LabelType):
+
+    def assert_valid(self, value: List[dict]):
+        assert isinstance(value, (list, tuple))
+        for point in value:
+            assert isinstance(point, (list, tuple))
+            assert len(point) == 2
+            assert tuple(point) >= (0, 0)
