@@ -76,19 +76,19 @@ def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True, pe
     if images.dtype == np.uint8:
         return images
 
-    if np.any(images < 0):
-        raise ValueError("Images contain negative values. Can't conver to uint8")
-
     images = images.astype(np.float64)
 
     if per_channel_scaling:
         mx = np.percentile(images, q=percentile_max, axis=(0, 1, 2), keepdims=True)
         mx = np.squeeze(mx, axis=0)
+        mn = np.percentile(images, q=100 - percentile_max, axis=(0, 1, 2), keepdims=True)
     else:
+        mn = np.percentile(images, q=100 - percentile_max)
         mx = np.percentile(images, q=percentile_max)
+
     new_images = []
     for image in images:
-        image = np.clip(image * (255 / mx), 0, 255)
+        image = np.clip((image - mn) * 255 / (mx - mn), 0, 255)
         if ensure_3_channels:
             if image.ndim == 2:
                 image = np.stack((image, image, image), axis=2)
