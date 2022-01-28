@@ -67,7 +67,7 @@ def make_sample(images, label, sample_name, task_specs):
         band_data = images[band_idx, :, :]
 
         band_info = task_specs.bands_info[band_idx]
-        band_data = percentile_normalization(band_data).astype(np.float32)
+        band_data = band_data.astype(np.float32)
         band = io.Band(
             data=band_data,
             band_info=band_info,
