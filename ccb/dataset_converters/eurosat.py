@@ -40,8 +40,7 @@ def make_sample(images, label, sample_name):
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
     dataset_dir.mkdir(exist_ok=True, parents=True)
-
-    eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split="train", transforms=None, download=True, checksum=True)
+    partition = io.dataset.Partition()
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
@@ -55,19 +54,32 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
 
-    for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
-        sample_name = f"id_{i:04d}"
+    offset = 0
 
-        images = np.array(tg_sample["image"])
-        label = tg_sample["label"]
+    for split_name in ["train", "val", "test"]:
+        eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True)
+        for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
+            sample_name = f"id_{i + offset:04d}"
 
-        sample = make_sample(images, int(label), sample_name)
-        sample.write(dataset_dir)
+            images = np.array(tg_sample["image"])
+            label = tg_sample["label"]
+
+            sample = make_sample(images, int(label), sample_name)
+            sample.write(dataset_dir)
+            partition.add(split_name.replace("val", "valid"), sample_name)
+
+            offset += 1
+
+            # temporary for creating small datasets for development purpose
+            if max_count is not None and i + 1 >= max_count:
+                break
 
         # temporary for creating small datasets for development purpose
-        if max_count is not None and i + 1 >= max_count:
+        if max_count is not None and offset >= max_count:
             break
+
+    partition.save(dataset_dir, "original")
 
 
 if __name__ == "__main__":
-    convert()
+    convert(100)
