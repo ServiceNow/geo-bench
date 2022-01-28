@@ -98,8 +98,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     _, partition_id, _, _, _, _, id_map = read_list_eval_partition(Path(SRC_DATASET_DIR, "list_eval_partition.csv"))
 
     file_list = list(SRC_DATASET_DIR.iterdir())
-    partition = dataset.Partition(map={0: "train", 1: "valid", 2: "test"})
-
+    partition = dataset.Partition()
+    split_map = {0: "train", 1: "valid", 2: "test"}
     sample_count = 0
     for file_idx, file_path in enumerate(tqdm(file_list)):
         if file_path.suffix != ".hdf5":
@@ -117,7 +117,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             all_bands, label, coord_box = data[img_idx]
             sample_name = f"examples_{file_id}_{img_idx}"
 
-            partition.add(partition_id[id_map[(int(file_id), img_idx)]], sample_name)
+            partition.add(split_map[partition_id[id_map[(int(file_id), img_idx)]]], sample_name)
             sample = make_sample(all_bands, label, coord_box, sample_name)
             sample.write(dataset_dir)
             sample_count += 1
@@ -127,7 +127,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
         if max_count is not None and sample_count >= max_count:
             break
-    partition.save(dataset_dir, "original_partition")
+    partition.save(dataset_dir, "original")
 
 
 if __name__ == "__main__":
