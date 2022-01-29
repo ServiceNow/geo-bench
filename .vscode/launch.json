@@ -11,7 +11,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "env": {
-                "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}"
+                "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}",
             }
         },
         {
@@ -22,7 +22,24 @@
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}",
+                "CC_BENCHMARK_SOURCE_DATASETS": "/mnt/public/datasets/cc_benchmark/source",
+                "CC_BENCHMARK_CONVERTED_DATASETS": "/mnt/public/datasets/cc_benchmark/converted",
             }
+        },
+        {
+            "name": "train",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/ccb/torch_toolbox/trainer.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}${pathSeparator}${env:PYTHONPATH}",
+                "CC_BENCHMARK_SOURCE_DATASETS": "/mnt/public/datasets/cc_benchmark/source",
+                "CC_BENCHMARK_CONVERTED_DATASETS": "/mnt/public/datasets/cc_benchmark/converted",
+            },
+            "args": [
+                "--model-generator", ""
+            ]
         }
     ]
 }
