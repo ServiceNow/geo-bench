@@ -14,6 +14,8 @@ from pathlib import Path
 from tqdm import tqdm
 from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
+import os
+from multiprocessing import Pool
 
 # Classification labels
 LABELS = (
@@ -140,6 +142,20 @@ def make_sample(images, mask, sample_name):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
+
+def process_i(args):
+    i, tg_sample, dataset_dir = args
+    sample_name = f"sample_{i:08d}"
+
+    images = tg_sample["image"].numpy()
+    mask = tg_sample["mask"].numpy()
+
+    sample = make_sample(images, mask, sample_name)
+    sample.write(dataset_dir)
+    #print(f'Wrote {sample_name}')
+    return i
+    
+
 def convert(max_count=None, dataset_dir=DATASET_DIR):
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
@@ -159,17 +175,18 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
 
-    for i, tg_sample in enumerate(tqdm(cashew)):
-        sample_name = f"sample={i:04d}"
+    multiprocess = True
+    if multiprocess:
+        with Pool(os.cpu_count()) as p:
+            print(f'Spinning up pool of {os.cpu_count()} workers')
+            iterator = p.imap(process_i, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)) )
+            for i in tqdm(iterator, total=len(cashew)):
+                pass
 
-        images = tg_sample["image"].numpy()
-        mask = tg_sample["mask"].numpy()
+    else:
+        for i, cashew_i in enumerate(tqdm(cashew)):
+            process_i(i, cashew_i, dataset_dir)
 
-        sample = make_sample(images, mask, sample_name)
-        sample.write(dataset_dir)
-
-        if max_count is not None and i + 1 >= max_count:
-            break
 
 
 if __name__ == "__main__":
