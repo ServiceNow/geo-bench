@@ -39,8 +39,7 @@ def make_sample(images, label, sample_name, task_specs):
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
     dataset_dir.mkdir(exist_ok=True, parents=True)
-
-    so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split="validation", transforms=None, checksum=True)
+    partition = io.dataset.Partition()
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
@@ -53,19 +52,25 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir)
+    #for split_name in ["train", "validation", "test"]:
+    for split_name in ["validation"]:
+        so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
+        for i, tg_sample in enumerate(tqdm(so2sat_dataset)):
+            sample_name = f"id_{i:04d}"
 
-    for i, tg_sample in enumerate(tqdm(so2sat_dataset)):
-        sample_name = f"id_{i:04d}"
+            images = np.array(tg_sample["image"])
+            label = tg_sample["label"]
 
-        images = np.array(tg_sample["image"])
-        label = tg_sample["label"]
+            sample = make_sample(images, int(label), sample_name, task_specs)
+            sample.write(dataset_dir)
+            
+            partition.add(split_name.replace("validation", "valid"), sample_name)
 
-        sample = make_sample(images, int(label), sample_name, task_specs)
-        sample.write(dataset_dir)
+            # temporary for creating small datasets for development purpose
+            if max_count is not None and i + 1 >= max_count:
+                break
 
-        # temporary for creating small datasets for development purpose
-        if max_count is not None and i + 1 >= max_count:
-            break
+    partition.save(dataset_dir, "original")
 
 
 if __name__ == "__main__":
