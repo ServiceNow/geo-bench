@@ -7,16 +7,16 @@
 A set of climate change tasks to benchmark self-supervised learning algorithms.
 
 
-# Contributing
+## Contributing
 
 We welcome your contributions! Please find instructions on how to contribute below.
 
-## Pre-commit hooks
+### Pre-commit hooks
 
 In order to ensure code quality, we provide a set of pre-commit hooks that can be run before comitting. These hooks are a bunch of checks that will be run before each commit. To install them, simply `pip install pre-commit` and run `pre-commit install` in your local copy of the repository.
 
-# Instructions
+## Getting Started
 
-## Downloading and Converting Datasets
+### Downloading and Converting Datasets
 
-Read these [instructions](https://github.com/ElementAI/climate-change-benchmark/tree/main/ccb/dataset_converters) for adding a new dataset or downloading & processing an existing dataset.
+Read these [instructions](https://github.com/ElementAI/climate-change-benchmark/tree/main/ccb/dataset_converters#readme) for adding a new dataset or downloading & processing an existing dataset.
