@@ -258,7 +258,7 @@ def leaflet_map(samples):
     return map
 
 
-def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
+def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
     dataset = Dataset(dataset_dir)
     samples = list(tqdm(dataset.iter_dataset(n_samples, split=split), desc="Loading Samples"))
@@ -268,6 +268,7 @@ def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_inte
     plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
     return dataset, samples, band_values, band_stats
 
+load_and_veryify_samples = load_and_verify_samples # compatibility
 
 def map_class_id_to_color(id_array, n_classes, background_id=0, background_color=(0, 0, 0)):
     """Attribute a color for each classes using a rainbow colormap."""
