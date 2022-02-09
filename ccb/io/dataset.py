@@ -659,6 +659,12 @@ class Dataset:
     def __len__(self):
         return len(self._sample_name_list)
 
+    def __repr__(self):
+        return 'Dataset(dataset_dir={}, active_partition={}, n_samples={}'.format(self.dataset_dir, self.active_partition, len(self))
+
+    def __str__(self):
+        return 'Dataset(dataset_dir={}, active_partition={}, n_samples={})'.format(self.dataset_dir, self.active_partition, len(self))
+
 
 class Stats:
     def __init__(
