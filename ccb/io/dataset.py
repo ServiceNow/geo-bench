@@ -576,15 +576,18 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, active_partition="default") -> None:
+    def __init__(self, dataset_dir, split=None, active_partition="default") -> None:
         """
         Args:
             dataset_dir: the path containing the samples of the dataset.
-            active_parition: Each dataset can have more than 1 partiiton. Use this field to specify the active_partition.
+            split: Specify split to use or None for all
+            active_partition: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
         """
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.active_partition = active_partition
+        self.split = split
+        assert split in ['train', 'valid', 'test', None]
         self._load_path_list()
         self._load_partition()
 
@@ -617,23 +620,31 @@ class Dataset:
 
         self.set_active_partition(partition_name="default")
 
-    def _iter_dataset(self, max_count=None, split=None):
-        if split is None:
+    def __getitem__(self, idx):
+        if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[split]
+            sample_name_list = self.active_partition[self.split]
+        sample_path = Path(self.dataset_dir, sample_name_list[idx])
+        return load_sample(sample_path)         
+
+    def _iter_dataset(self, max_count=None):
+        if self.split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[self.split]
         sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
         for sample_name in sample_names:
             yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count=None, split=None):
+    def iter_dataset(self, max_count=None):
         n = len(self._sample_name_list)
         if max_count is None:
             max_count = n
         else:
             max_count = min(n, max_count)
 
-        return GeneratorWithLength(self._iter_dataset(max_count=max_count, split=split), max_count)
+        return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
 
     @cached_property
     def task_specs(self) -> TaskSpecifications:
@@ -660,10 +671,12 @@ class Dataset:
         return len(self._sample_name_list)
 
     def __repr__(self):
-        return 'Dataset(dataset_dir={}, active_partition={}, n_samples={}'.format(self.dataset_dir, self.active_partition, len(self))
+        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}'.format(
+            self.dataset_dir, self.split, self.active_partition, len(self))
 
     def __str__(self):
-        return 'Dataset(dataset_dir={}, active_partition={}, n_samples={})'.format(self.dataset_dir, self.active_partition, len(self))
+        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})'.format(
+            self.dataset_dir, self.split, self.active_partition, len(self))
 
 
 class Stats:
