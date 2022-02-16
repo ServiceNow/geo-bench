@@ -62,6 +62,9 @@ class BandInfo(object):
     def __str__(self):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
+    def __repr__(self):
+        return 'BandInfo(name={}, original_res={:.1f}m)'.format(self.name, self.spatial_resolution)
+
     def expand_name(self):
         return [self.name]
 
@@ -76,13 +79,19 @@ class SpectralBand(BandInfo):
     def __key(self):
         return (self.name, self.wavelength)
 
+    def __repr__(self):
+        return 'SpectralBand(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+
 
 class Sentinel1(SpectralBand):
-    pass
+    def __repr__(self):
+        return 'Sentinel1(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
 
 
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
+    def __repr__(self):
+        return 'Sentinel2(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
 
 
 class Mask(BandInfo):
@@ -206,6 +215,14 @@ class Band:
         self.crs = crs
         self.meta_info = meta_info
         self.convert_to_int16 = convert_to_int16
+
+    def __repr__(self):
+        if isinstance(self.data, np.ndarray):
+            shape = self.data.shape
+        else:
+            shape = 'unknown'
+        return 'Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})'.format(
+            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date)
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -335,6 +352,10 @@ class Sample(object):
         self.label = label
         self.sample_name = sample_name
         self._build_index()
+
+    def __repr__(self):
+        bands = '\n'.join(band.__repr__() for band in self.bands)
+        return 'Sample:(name={}, bands=\n{}\n)'.format(self.sample_name, self.bands)
 
     def _build_index(self):
 
