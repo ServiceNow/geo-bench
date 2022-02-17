@@ -39,3 +39,13 @@ def test_neon_tree():
 def test_smallholder_cashews():
     from ccb.dataset_converters import benin_smallholder_cashews
     converter_tester(benin_smallholder_cashews)
+
+
+def test_so2sat():
+    from ccb.dataset_converters import so2sat
+    converter_tester(so2sat)
+
+
+def test_nz_cattle_detection():
+    from ccb.dataset_converters import nz_cattle_detection
+    converter_tester(nz_cattle_detection)
