@@ -1,8 +1,27 @@
 from typing import List
 from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import BackBone
+from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
 import torch.nn.functional as F
 import torch
+
+
+class ModelGeneratorTest(ModelGenerator):
+    def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
+        """Returns a ccb.torch_toolbox.model.Model instance from task specs
+           and hyperparameters
+
+        Args:
+            task_specs (TaskSpecifications): object with task specs
+            hyperparameters (dict): dictionary containing hyperparameters
+        """
+        backbone = Conv4Example(self.model_path, task_specs, hyperparameters)
+        head = head_generator(task_specs, hyperparameters)
+        loss = train_loss_generator(task_specs, hyperparameters)
+        return Model(backbone, head, loss, hyperparameters)
+
+
+def model_generator(path):
+    return ModelGeneratorTest(path)
 
 
 class Conv4Example(BackBone):
@@ -23,22 +42,6 @@ class Conv4Example(BackBone):
         x = F.relu(self.conv3(x), True)
         x = F.max_pool2d(x, 3, 2, 1)
         return x.mean((2, 3))
-
-
-# def iter_datasets():
-#     """
-#     Iterator over available datasets
-
-#     """
-#     for ds in DATASETS:
-#         yield ds
-
-
-# class Dataset(object):
-#     def __init__(self, name: str, path: str, task_specs: List[TaskSpecifications]):
-#         self.name = name
-#         self.path = path
-#         self.task_specs = task_specs
 
 
 # DATASETS = [
