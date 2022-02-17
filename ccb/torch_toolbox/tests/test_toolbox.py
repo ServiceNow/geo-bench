@@ -1,46 +1,63 @@
+import json
+import subprocess
+import sys
+import os
+import csv
+import shutil as sh
+from pathlib import Path
+
 import pytest
+import pytorch_lightning as pl
 import torch
 import torchvision
 import torchvision.transforms as tt
-from ccb.io.task import Classification
-from ccb.torch_toolbox.model import Model
-from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import head_generator, train_loss_generator
+from ccb.experiment.experiment import get_model_generator
+from ccb.io.task import Classification, TaskSpecifications
+from ccb.torch_toolbox.dataset import Dataset
+from ccb.torch_toolbox.model import Model, head_generator, train_loss_generator
 from ccb.torch_toolbox.tests.util import Conv4Example
-import pytorch_lightning as pl
+from ccb.torch_toolbox.trainer import start
 
 
 def test_toolbox_mnist():
-    hyperparameters = {'lr_milestones': [10, 20],
-                       'lr_gamma': 0.1,
-                       'lr_backbone': 1e-3,
-                       'lr_head': 1e-3,
-                       'head_type': 'linear',
-                       'train_iters': 100,
-                       'features_shape': (64,),
-                       'loss_type': 'crossentropy'
-                       }
+    hyperparameters = {
+        "lr_milestones": [10, 20],
+        "lr_gamma": 0.1,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-3,
+        "head_type": "linear",
+        "train_iters": 50,
+        "features_shape": (64,),
+        "loss_type": "crossentropy",
+        "batch_size": 64,
+        "num_workers": 4,
+        "logger": "csv",
+    }
+    test_dir = "/tmp/cc_benchmark/mnist_test"
+    sh.rmtree(test_dir, ignore_errors=True)
+    os.makedirs(test_dir, exist_ok=True)
+    with open(Path(test_dir) / "hparams.json", "w") as fd:
+        json.dump(hyperparameters, fd)
 
-    specs = TaskSpecifications(patch_size=(28, 28, 1, 1),
-                               label_type=Classification(10),
-                               dataset_name='MNIST')
+    specs = TaskSpecifications(patch_size=(28, 28, 1, 1), label_type=Classification(10), dataset_name="MNIST")
+    specs.save(test_dir)
+    python_binary = sys.executable
+    train_path = Path(__file__).absolute().parent.parent / "trainer.py"
+    model_path = Path(__file__).absolute().parent / "util.py"
+    cmd = [
+        python_binary,
+        str(train_path),
+        "--model-generator",
+        str(model_path),
+        "--exp-dir",
+        test_dir,
+    ]
+    subprocess.run(cmd)
+    with open(Path(test_dir) / "default/version_0/metrics.csv", "r") as fd:
+        data = next(csv.DictReader(fd))
+    print(data)
+    assert float(data["train_acc1_step"]) > 20  # has to be better than random after seeing 20 batches
 
-    head = head_generator(specs, hyperparameters)
-    backbone = Conv4Example('./', specs, hyperparameters)
-    criterion = train_loss_generator(specs, hyperparameters)
-    model = Model(backbone,
-                  head,
-                  criterion,
-                  hyperparameters=hyperparameters)
 
-    t = tt.ToTensor()
-    train_dataset = torchvision.datasets.MNIST(
-        '/tmp/datasets/mnist',
-        transform=t,
-        download=True)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=1)
-
-    trainer = pl.Trainer(gpus=0, max_epochs=1, max_steps=hyperparameters['train_iters'], logger=False)
-    trainer.fit(model, train_dataloaders=train_loader)
-    # print(trainer.logged_metrics)
-    assert(trainer.logged_metrics['train_acc1_epoch'] > 11)  # has to be better than random after seeing 20 batches
+if __name__ == "__main__":
+    test_toolbox_mnist()
