@@ -15,7 +15,7 @@ from ccb.experiment.experiment import get_model_generator
 from ccb.io.task import Classification, TaskSpecifications
 from ccb.torch_toolbox.dataset import Dataset
 from ccb.torch_toolbox.model import Model, head_generator, train_loss_generator
-from ccb.torch_toolbox.tests.util import Conv4Example
+from ccb.torch_toolbox.util import Conv4Example
 from ccb.torch_toolbox.trainer import start
 
 
