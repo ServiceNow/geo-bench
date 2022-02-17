@@ -76,19 +76,19 @@ def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True, pe
     if images.dtype == np.uint8:
         return images
 
-    if np.any(images < 0):
-        raise ValueError("Images contain negative values. Can't conver to uint8")
-
     images = images.astype(np.float64)
 
     if per_channel_scaling:
         mx = np.percentile(images, q=percentile_max, axis=(0, 1, 2), keepdims=True)
         mx = np.squeeze(mx, axis=0)
+        mn = np.percentile(images, q=100 - percentile_max, axis=(0, 1, 2), keepdims=True)
     else:
+        mn = np.percentile(images, q=100 - percentile_max)
         mx = np.percentile(images, q=percentile_max)
+
     new_images = []
     for image in images:
-        image = np.clip(image * (255 / mx), 0, 255)
+        image = np.clip((image - mn) * 255 / (mx - mn), 0, 255)
         if ensure_3_channels:
             if image.ndim == 2:
                 image = np.stack((image, image, image), axis=2)
@@ -112,7 +112,6 @@ def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=
 
 
 def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_width=128):
-
     def callback(center, width):
         rgb_extractor = make_rgb_extractor(center, width)
         images = hyperspectral_to_rgb(samples, band_name, rgb_extractor, percentile_max)
@@ -122,11 +121,9 @@ def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_w
 
 
 def make_rgb_extractor(center, width):
-
     def callback(hs_data):
-
         def _extrac_band(start, stop):
-            return hs_data[:, :, int(start):int(stop)].mean(axis=2)
+            return hs_data[:, :, int(start) : int(stop)].mean(axis=2)
 
         h, w, d = hs_data.shape
         _center = max(0, center - width * 1.5) + width * 1.5
@@ -175,13 +172,13 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
     if label_patch_size is not None:
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
-        scale = np.array([1., 1.])
+        scale = np.array([1.0, 1.0])
     if isinstance(label, (list, tuple)):
         im = Image.fromarray(image)
         ctxt = ImageDraw.Draw(im)
         for obj in label:
-            if isinstance(obj, dict) and 'xmin' in obj:
-                coord = np.array([[obj['xmin'], obj['ymin']], [obj['xmax'], obj['ymax']]])
+            if isinstance(obj, dict) and "xmin" in obj:
+                coord = np.array([[obj["xmin"], obj["ymin"]], [obj["xmax"], obj["ymax"]]])
                 ctxt.rectangle(list((coord * scale).flat), outline=(255, 0, 0))
             elif isinstance(obj, (tuple, list)) and len(obj) == 2:
                 size = 5 * scale
@@ -203,7 +200,7 @@ def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=
             images = [overlay_label(image, sample.label, label_patch_size) for image, sample in zip(images, samples)]
 
         all_images.extend(images)
-        group_name = '-'.join(band_group)
+        group_name = "-".join(band_group)
         labels.extend((group_name,) * len(images))
 
     if isinstance(samples[0].label, Band):
@@ -258,7 +255,7 @@ def leaflet_map(samples):
     return map
 
 
-def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
+def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
     dataset = Dataset(dataset_dir)
     samples = list(tqdm(dataset.iter_dataset(n_samples, split=split), desc="Loading Samples"))
@@ -267,6 +264,9 @@ def load_and_veryify_samples(dataset_dir, n_samples, n_hist_bins=100, check_inte
     band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
     plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
     return dataset, samples, band_values, band_stats
+
+
+load_and_veryify_samples = load_and_verify_samples  # compatibility
 
 
 def map_class_id_to_color(id_array, n_classes, background_id=0, background_color=(0, 0, 0)):

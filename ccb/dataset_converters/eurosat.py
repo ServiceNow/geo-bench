@@ -25,7 +25,7 @@ def make_sample(images, label, sample_name):
         band_info = io.sentinel2_13_bands[band_idx]
 
         band = io.Band(
-            data=band_data,
+            data=band_data.astype(np.int16),
             band_info=band_info,
             spatial_resolution=10,
             transform=transform,
@@ -34,7 +34,6 @@ def make_sample(images, label, sample_name):
         )
         bands.append(band)
 
-    # label = io.Band(data=mask, band_info=LABEL_BAND, spatial_resolution=10, transform=transform, crs=crs)
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
@@ -81,4 +80,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(100)
+    convert()
