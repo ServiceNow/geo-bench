@@ -62,6 +62,9 @@ class BandInfo(object):
     def __str__(self):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
+    def __repr__(self):
+        return 'BandInfo(name={}, original_res={:.1f}m)'.format(self.name, self.spatial_resolution)
+
     def expand_name(self):
         return [self.name]
 
@@ -76,13 +79,19 @@ class SpectralBand(BandInfo):
     def __key(self):
         return (self.name, self.wavelength)
 
+    def __repr__(self):
+        return 'SpectralBand(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+
 
 class Sentinel1(SpectralBand):
-    pass
+    def __repr__(self):
+        return 'Sentinel1(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
 
 
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
+    def __repr__(self):
+        return 'Sentinel2(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
 
 
 class Mask(BandInfo):
@@ -206,6 +215,14 @@ class Band:
         self.crs = crs
         self.meta_info = meta_info
         self.convert_to_int16 = convert_to_int16
+
+    def __repr__(self):
+        if isinstance(self.data, np.ndarray):
+            shape = self.data.shape
+        else:
+            shape = 'unknown'
+        return 'Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})'.format(
+            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date)
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -335,6 +352,10 @@ class Sample(object):
         self.label = label
         self.sample_name = sample_name
         self._build_index()
+
+    def __repr__(self):
+        bands = '\n'.join(band.__repr__() for band in self.bands)
+        return 'Sample:(name={}, bands=\n{}\n)'.format(self.sample_name, self.bands)
 
     def _build_index(self):
 
@@ -576,15 +597,18 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, active_partition="default") -> None:
+    def __init__(self, dataset_dir, split=None, active_partition="default") -> None:
         """
         Args:
             dataset_dir: the path containing the samples of the dataset.
-            active_parition: Each dataset can have more than 1 partiiton. Use this field to specify the active_partition.
+            split: Specify split to use or None for all
+            active_partition: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
         """
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.active_partition = active_partition
+        self.split = split
+        assert split in ['train', 'valid', 'test', None]
         self._load_path_list()
         self._load_partition()
 
@@ -617,23 +641,31 @@ class Dataset:
 
         self.set_active_partition(partition_name="default")
 
-    def _iter_dataset(self, max_count=None, split=None):
-        if split is None:
+    def __getitem__(self, idx):
+        if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[split]
+            sample_name_list = self.active_partition[self.split]
+        sample_path = Path(self.dataset_dir, sample_name_list[idx])
+        return load_sample(sample_path)         
+
+    def _iter_dataset(self, max_count=None):
+        if self.split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[self.split]
         sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
         for sample_name in sample_names:
             yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count=None, split=None):
+    def iter_dataset(self, max_count=None):
         n = len(self._sample_name_list)
         if max_count is None:
             max_count = n
         else:
             max_count = min(n, max_count)
 
-        return GeneratorWithLength(self._iter_dataset(max_count=max_count, split=split), max_count)
+        return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
 
     @cached_property
     def task_specs(self) -> TaskSpecifications:
@@ -658,6 +690,14 @@ class Dataset:
 
     def __len__(self):
         return len(self._sample_name_list)
+
+    def __repr__(self):
+        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}'.format(
+            self.dataset_dir, self.split, self.active_partition, len(self))
+
+    def __str__(self):
+        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})'.format(
+            self.dataset_dir, self.split, self.active_partition, len(self))
 
 
 class Stats:
