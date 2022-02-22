@@ -45,4 +45,7 @@ RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poet
 # >>> Python configuration and dependencies
 # -- Install requirements
 COPY pyproject.toml ./
+COPY poetry.lock ./
 RUN poetry config virtualenvs.create false && poetry install --no-root
+# Had to add this last line to fix a pytorch bug that will be solved in the next release
+RUN pip install setuptools==59.5.0
