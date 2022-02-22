@@ -1,11 +1,45 @@
 from typing import List
 from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import BackBone
+from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
 import torch.nn.functional as F
 import torch
 
 
-class Conv4Example(BackBone):
+class Conv4Generator(ModelGenerator):
+    def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
+        """Returns a ccb.torch_toolbox.model.Model instance from task specs
+           and hyperparameters
+
+        Args:
+            task_specs (TaskSpecifications): object with task specs
+            hyperparameters (dict): dictionary containing hyperparameters
+        """
+        backbone = Conv4(self.model_path, task_specs, hyperparameters)
+        head = head_generator(task_specs, hyperparameters)
+        loss = train_loss_generator(task_specs, hyperparameters)
+        return Model(backbone, head, loss, hyperparameters)
+
+
+    def hp_search(self,  task_specs, max_num_configs=10):
+        hparams = {
+            "lr_milestones": [10, 20],
+            "lr_gamma": 0.1,
+            "lr_backbone": 1e-3,
+            "lr_head": 1e-3,
+            "head_type": "linear",
+            "train_iters": 50,
+            "features_shape": (64,),
+            "loss_type": "crossentropy",
+            "batch_size": 64,
+            "num_workers": 4,
+            "logger": "csv",
+        }
+        return [hparams]
+
+model_generator = Conv4Generator()
+
+
+class Conv4(BackBone):
     def __init__(self, model_path, task_specs, hyperparams):
         super().__init__(model_path, task_specs, hyperparams)
         h, w, c, t = task_specs.patch_size
@@ -23,22 +57,6 @@ class Conv4Example(BackBone):
         x = F.relu(self.conv3(x), True)
         x = F.max_pool2d(x, 3, 2, 1)
         return x.mean((2, 3))
-
-
-# def iter_datasets():
-#     """
-#     Iterator over available datasets
-
-#     """
-#     for ds in DATASETS:
-#         yield ds
-
-
-# class Dataset(object):
-#     def __init__(self, name: str, path: str, task_specs: List[TaskSpecifications]):
-#         self.name = name
-#         self.path = path
-#         self.task_specs = task_specs
 
 
 # DATASETS = [

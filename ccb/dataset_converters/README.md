@@ -18,12 +18,28 @@ Otherwise, they default to `~/dataset` and `~/converted_dataset`.
 
 ## Downloading and Processing Existing Datasets
 
+### Benin Smallholder Cashews
+From top-level directory, run the following
+```bash
+python -m ccb.dataset_converters.benin_smallholder_cashews
+```
+Open the Jupyter notebook `ccb/dataset_converters/benin_smallholder_cashews_inspect.ipynb` to display stats and preview the dataset.
+
+
 ### Brick-Kiln
 From top-level directory, run the following
 ```bash
 python -m ccb.dataset_converters.brick_kiln
 ```
 Open the Jupyter notebook `ccb/dataset_converters/brick_kiln_inspect.ipynb` to display stats and preview the dataset.
+
+
+### Eurosat
+From top-level directory, run the following
+```bash
+python -m ccb.dataset_converters.eurosat
+```
+Open the Jupyter notebook `ccb/dataset_converters/eurosat_inspect.ipynb` to display stats and preview the dataset.
 
 
 ### Kenya Crop
@@ -34,4 +50,6 @@ python -m ccb.dataset_converters.cv4a_kenya_crop_type
 Open the Jupyter notebook `ccb/dataset_converters/cv4a_kenya_crop_type_inspect.ipynb` to display stats and preview the dataset.
 
 
+## Computing Data Statistics
 
+Coming soon – need to compute mean, std, percentiles about datasets and store them in task_specs.pkl
