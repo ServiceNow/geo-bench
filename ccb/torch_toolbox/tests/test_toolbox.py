@@ -6,16 +6,9 @@ import csv
 import shutil as sh
 from pathlib import Path
 
-import pytest
-import pytorch_lightning as pl
-import torch
-import torchvision
-import torchvision.transforms as tt
 from ccb.experiment.experiment import get_model_generator
 from ccb.io.task import Classification, TaskSpecifications
-from ccb.torch_toolbox.dataset import Dataset
-from ccb.torch_toolbox.model import Model, head_generator, train_loss_generator
-from ccb.torch_toolbox.util import Conv4Example
+from ccb.torch_toolbox.model import head_generator, train_loss_generator
 from ccb.torch_toolbox.trainer import start
 
 
