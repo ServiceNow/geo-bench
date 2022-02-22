@@ -50,7 +50,7 @@ def start():
     print("Task specifications:", task_specs)
 
     # Load the user-specified model generator
-    model_gen = get_model_generator(args.model_generator)(args.exp_dir)
+    model_gen = get_model_generator(args.model_generator)
     model = model_gen.generate(task_specs, hparams)
     datamodule = Dataset(
         task_specs.dataset_name, os.environ.get("DATAROOT", str(exp_dir.parent / "data")), task_specs, hparams

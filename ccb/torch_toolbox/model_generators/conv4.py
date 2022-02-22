@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch
 
 
-class ModelGeneratorTest(ModelGenerator):
+class Conv4Generator(ModelGenerator):
     def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
         """Returns a ccb.torch_toolbox.model.Model instance from task specs
            and hyperparameters
@@ -14,17 +14,32 @@ class ModelGeneratorTest(ModelGenerator):
             task_specs (TaskSpecifications): object with task specs
             hyperparameters (dict): dictionary containing hyperparameters
         """
-        backbone = Conv4Example(self.model_path, task_specs, hyperparameters)
+        backbone = Conv4(self.model_path, task_specs, hyperparameters)
         head = head_generator(task_specs, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
         return Model(backbone, head, loss, hyperparameters)
 
 
-def model_generator(path):
-    return ModelGeneratorTest(path)
+    def hp_search(self,  task_specs, max_num_configs=10):
+        hparams = {
+            "lr_milestones": [10, 20],
+            "lr_gamma": 0.1,
+            "lr_backbone": 1e-3,
+            "lr_head": 1e-3,
+            "head_type": "linear",
+            "train_iters": 50,
+            "features_shape": (64,),
+            "loss_type": "crossentropy",
+            "batch_size": 64,
+            "num_workers": 4,
+            "logger": "csv",
+        }
+        return [hparams]
+
+model_generator = Conv4Generator()
 
 
-class Conv4Example(BackBone):
+class Conv4(BackBone):
     def __init__(self, model_path, task_specs, hyperparams):
         super().__init__(model_path, task_specs, hyperparams)
         h, w, c, t = task_specs.patch_size

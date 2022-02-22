@@ -36,7 +36,7 @@ def test_toolbox_mnist():
     specs.save(test_dir)
     python_binary = sys.executable
     train_path = Path(__file__).absolute().parent.parent / "trainer.py"
-    model_path = Path(__file__).absolute().parent / "util.py"
+    model_path = Path(__file__).absolute().parent.parent / "model_generators" / "conv4.py"
     cmd = [
         python_binary,
         str(train_path),
