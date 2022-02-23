@@ -27,7 +27,8 @@ def convert(module_name):
     ), f"{Path(converter.DATASET_DIR).parent} vs {io.datasets_dir}"
     assert Path(converter.DATASET_DIR).name == converter.DATASET_NAME
 
-    shutil.rmtree(converter.DATASET_DIR)
+    if Path(converter.DATASET_DIR).exists():
+        shutil.rmtree(converter.DATASET_DIR)
     converter.convert(max_count=MAX_COUNT)
 
 
