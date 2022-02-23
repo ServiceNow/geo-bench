@@ -80,7 +80,8 @@ class SpectralBand(BandInfo):
         return (self.name, self.wavelength)
 
     def __repr__(self):
-        return 'SpectralBand(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+        return '{}(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+        # self.__class__.__name__
 
 
 class Sentinel1(SpectralBand):
@@ -98,7 +99,7 @@ class Mask(BandInfo):
     pass
 
 
-class Height(BandInfo):
+class ElevationBand(BandInfo):
     pass
 
 
@@ -346,7 +347,7 @@ def _map_bands(band_info_set):
 
 # TODO need to make sure that band order is consistant through the dataset
 class Sample(object):
-    def __init__(self, bands: List[Band], label: Union[LabelType, float, int], sample_name: str) -> None:
+    def __init__(self, bands: List[Band], label, sample_name: str) -> None:
         super().__init__()
         self.bands = bands
         self.label = label
@@ -689,7 +690,11 @@ class Dataset:
             return json.load(fd)
 
     def __len__(self):
-        return len(self._sample_name_list)
+        if self.split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[self.split]
+        return len(sample_name_list)
 
     def __repr__(self):
         return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}'.format(

@@ -5,24 +5,21 @@ Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  
 
 """
 import argparse
-import json
 
 from pathlib import Path
 from uuid import uuid4
 
-from ccb.experiment.experiment import Dataset, iter_datasets
+from ccb.experiment.experiment import Dataset, iter_datasets, Job
 from ccb.torch_toolbox.model import ModelGenerator
-from ccb.experiment.experiment import get_model_generator, hparams_to_string
-
-
-TRAINER_CMD = "python trainer.py"
+from ccb.experiment.experiment import get_model_generator
 
 
 def experiment_generator(
-    model_generator: ModelGenerator,
+    model_generator_module_name: str,
     experiment_dir: str,
     task_filter: callable = None,
     max_num_configs: int = 10,
+    dataset_iterator=None,
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
@@ -41,6 +38,8 @@ def experiment_generator(
     experiment_dir = Path(experiment_dir)
     experiment_dir /= str(uuid4())
 
+    model_generator = get_model_generator(model_generator_module_name)
+
     for dataset in iter_datasets():
         if task_filter is not None:
             if not task_filter(dataset.task_specs):
@@ -48,21 +47,12 @@ def experiment_generator(
 
         for hparams, hparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
 
-            # Create experiment directory
+            # Create and fill experiment directory
             job_dir = experiment_dir / dataset.name / hparams_string
-            job_dir.mkdir(parents=True, exist_ok=False)
-
-            # Dump HPs
-            json.dump(hparams, open(job_dir / "hparams.json", "w"))
-
-            # Dump task specification
-            json.dump(dataset.task_specs.to_dict(), open(job_dir / "task_specs.json", "w"))
-
-            # Experiment launch file
-            with open(job_dir / "run.sh", "w") as f_cmd:
-                f_cmd.write("#!/bin/bash\n")
-                f_cmd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-                f_cmd.write(f'cd $(dirname "$0") && {TRAINER_CMD} --model-generator $1 >log.out 2>err.out')
+            job = Job(job_dir)
+            job.save_hparams(hparams)
+            job.save_task_specs(dataset.task_specs)
+            job.write_script(model_generator_module_name)
 
 
 def start():
@@ -81,10 +71,20 @@ def start():
         help="The based directory in which experiment-related files should be created.",
         required=True,
     )
+
+    parser.add_argument(
+        "--benchmark",
+        help="The set of dataset that will be used for evaluating. 'ccb' | 'mnist' ",
+        required=False,
+        default="ccb",
+    )
+
     args = parser.parse_args()
 
-    # Load the user-specified model generator
-    model_generator = get_model_generator(args.model_generator)
-
     # Generate experiments
-    experiment_generator(model_generator, args.experiment_dir)
+    dataset_iterator = {"ccb": None, "mnist": mnist_iterator}[args.benchmark]
+    experiment_generator(args.model_generator, args.experiment_dir, dataset_iterator=dataset_iterator)
+
+
+if __name__ == "__main__":
+    start()
