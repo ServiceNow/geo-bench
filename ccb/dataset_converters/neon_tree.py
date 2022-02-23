@@ -164,7 +164,7 @@ BAND_INFO_LIST = [
     io.SpectralBand("red"),
     io.SpectralBand("green"),
     io.SpectralBand("blue"),
-    io.Height("Canopy Height Model", alt_names=("lidar", "CHM")),
+    io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM")),
     io.HyperSpectralBands("Neon", n_bands=369),
 ]
 
