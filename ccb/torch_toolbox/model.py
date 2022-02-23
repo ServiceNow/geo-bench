@@ -3,7 +3,7 @@ import torchvision.transforms as tt
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
-from ccb.io.task import Classification
+from ccb.io import Classification
 
 
 class Model(LightningModule):
