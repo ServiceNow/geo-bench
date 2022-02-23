@@ -1,4 +1,5 @@
 from typing import List
+from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
 import torch.nn.functional as F
@@ -19,9 +20,8 @@ class Conv4Generator(ModelGenerator):
         loss = train_loss_generator(task_specs, hyperparameters)
         return Model(backbone, head, loss, hyperparameters)
 
-
-    def hp_search(self,  task_specs, max_num_configs=10):
-        hparams = {
+    def hp_search(self, task_specs, max_num_configs=10):
+        hparams1 = {
             "lr_milestones": [10, 20],
             "lr_gamma": 0.1,
             "lr_backbone": 1e-3,
@@ -34,7 +34,12 @@ class Conv4Generator(ModelGenerator):
             "num_workers": 4,
             "logger": "csv",
         }
-        return [hparams]
+
+        hparams2 = hparams1.copy()
+        hparams2["lr_head"] = 2e-3
+
+        return hparams_to_string([hparams1, hparams2])
+
 
 model_generator = Conv4Generator()
 
