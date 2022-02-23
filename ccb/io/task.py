@@ -1,4 +1,3 @@
-
 from typing import List
 import pickle
 from pathlib import Path
@@ -9,7 +8,7 @@ class TaskSpecifications:
     Attributes:
         dataset_name: The name of the dataset.
         patch_size: maximum image patch size across bands (width, height).
-        n_time_steps: integer specifying the number of time steps for each sample. 
+        n_time_steps: integer specifying the number of time steps for each sample.
             This should be 1 for most dataset unless it's time series.
         bands_info: list of object of type BandInfo descrbing the type of each band.
         label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
@@ -37,8 +36,10 @@ class TaskSpecifications:
         self.eval_loss = eval_loss
         self.spatial_resolution = spatial_resolution
 
-    def save(self, directory):
-        file_path = Path(directory, "task_specifications.pkl")
+    def save(self, directory, overwrite=False):
+        file_path = Path(directory, "task_specs.pkl")
+        if file_path.exists() and not overwrite:
+            raise Exception("task_specifications.pkl alread exists and overwrite is set to False.")
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
@@ -97,7 +98,6 @@ class Regression(LabelType):
 
 
 class Detection(LabelType):
-
     def assert_valid(self, value: List[dict]):
         assert isinstance(value, (list, tuple))
         for box in value:
@@ -111,7 +111,6 @@ class Detection(LabelType):
 
 
 class PointAnnotation(LabelType):
-
     def assert_valid(self, value: List[dict]):
         assert isinstance(value, (list, tuple))
         for point in value:

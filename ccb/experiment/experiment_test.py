@@ -28,9 +28,7 @@ def test_duplicate_combos():
     Test if we correctly return two trials if we receive duplicate HP combinations.
 
     """
-    hp_str = list(
-        zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}]))
-    )[1]
+    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}])))[1]
     assert len(hp_str) == 3
     assert len([x for x in hp_str if "key1=1" in x and "key2=2" in x]) == 2
 
@@ -51,10 +49,10 @@ def test_load_module():
     Test loading an existing model generator from a user-specified path.
 
     """
-    path = "tmp_testing_model_generator.py"
-    open(path, "w").write("def model_generator():\n    return 'it works!'")
-    assert get_model_generator(path)() == "it works!"
-    os.remove(path)
+
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
+    assert hasattr(model_generator, "hp_search")
+
 
 # def test_unexisting_path():
 #     """
