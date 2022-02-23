@@ -1,4 +1,3 @@
-
 import pytorch_lightning as pl
 import toolbox
 
@@ -47,8 +46,16 @@ class TaskSpecifications:
             (we should implement a dict mapping this string to loss_functions).
     """
 
-    def __init__(self, shape=None, spatial_resolution=None, temporal_resolution=None, band_names=None,
-                 band_wevelength=None, task_type=None, dataset_name=None) -> None:
+    def __init__(
+        self,
+        shape=None,
+        spatial_resolution=None,
+        temporal_resolution=None,
+        band_names=None,
+        band_wevelength=None,
+        task_type=None,
+        dataset_name=None,
+    ) -> None:
         self.shape = shape
         self.spatial_resolution = spatial_resolution
         self.temporal_resolution = temporal_resolution
@@ -66,17 +73,17 @@ class TaskSpecifications:
 
 def head_generator(task_specs, hyperparams, input_shape):
     """
-    Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow: 
+    Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow:
         classification: 2 layer MLP with softmax activation
-        semantic_segmentation: U-Net decoder. 
-    we can also do something special for a specific dataset using task_specs.dataset_name. Hyperparams and input_shape 
+        semantic_segmentation: U-Net decoder.
+    we can also do something special for a specific dataset using task_specs.dataset_name. Hyperparams and input_shape
     can also be used to adapt the head.
 
     Args:
         task_specs: object of type TaskSpecifications providing information on what type of task we are solving
         hyperparams: dict of hyperparameters.
         input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
-            the input itself? should it be a dict of shapes? 
+            the input itself? should it be a dict of shapes?
     """
     if task_specs.task_type.lower() == "classification":
         return LinearHead(input_shape[-1], output_size=task_specs.n_classes)
@@ -87,7 +94,6 @@ def head_generator(task_specs, hyperparams, input_shape):
 
 
 class LinearHead(pl.LightningModule):
-
     def __init__(self, input_size, output_size):
         super.__init__()
         self._build(input_size, output_size)
@@ -101,7 +107,7 @@ class LinearHead(pl.LightningModule):
 
 def vit_head_generator(task_specs, hyperparams, input_shape):
     """
-    ViT architectures may require different type of heads. In which case, we should provide this to the users as well. TO BE DISCUSSED. 
+    ViT architectures may require different type of heads. In which case, we should provide this to the users as well. TO BE DISCUSSED.
     """
     pass
 
@@ -119,8 +125,9 @@ def hparams_to_string(list_of_hp_configs):
     to distinguish them easily.
 
     TODO: Introspect the list of hyperparms configurations to find the hyperparameters that changes during the experiment e.g.,
-    there might be 8 hyperparameters but only 2 that changes. Format the changing hyperparamters into a short string that can be used for filenames. 
+    there might be 8 hyperparameters but only 2 that changes. Format the changing hyperparamters into a short string that can be used for filenames.
     """
+
 
 ####
 # Userside:
@@ -137,7 +144,8 @@ class MyBackBone:
         self.task_specs = task_specs
         self.hyperparams = hyperparams
 
-    def forward(self, data_dict):
+    def forward(self, sample):
+
         # data_dict is a collection of tensors returned by the data loader.
         # The user is responsible to implement something that will map
         # the information from the dataset and encode it into a list of tensors.
@@ -244,7 +252,7 @@ experiment_generator(model_generator, experiment_dir)
 model_generator_path = argparser.model_generator_path
 model_generator = dynamic_import(model_generator_path).model_genarator
 
-job_specs = json.load('job_specs.json')  # job_specs.json is supposed to be in the current directory
+job_specs = json.load("job_specs.json")  # job_specs.json is supposed to be in the current directory
 task_specs = job_specs["task_specs"]
 hyperparms = job_specs["hyperparams"]
 
@@ -278,3 +286,29 @@ trainer.fit(model, train_dataloaders=train_loader)  # how to manage early stoppi
 #
 # Hopefully this test could run in less than a minute without the need of GPU. If not maybe we can
 # generate a dataset even smaller and configure the writing to training_traces every step.
+
+
+###############
+# my_trainer.py
+###############
+
+# load information from experiment directory
+# hparams may also be provided as args to the script through exp_generator
+(
+    hparams,
+    task_specs,
+) = toolbox.load_exp_info()
+
+# User Performs training loop on the model using the train_loader
+train_loader = task_specs.get_train_loader()
+for batch in train_loader.get_batch():
+    model.train(batch)  # or however the user wants to do it
+
+# repeat for valid and test
+for split_name in ["valid", "test"]:
+    valid_loader, evaluator = task_specs.get_val_loader(split_name)  # the loader only loads the
+    for batch, sample_ids in valid_loader.get_batch():  # batch does not contain labels
+        predictions = model.predict(batch)  # or however the user wants to do this
+
+        # saves individual losses in the experiment directory. Maybe save predictions as well, but this might be too much data.
+        evaluator.eval(predictions, sample_ids)
