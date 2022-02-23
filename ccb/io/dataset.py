@@ -13,7 +13,7 @@ from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
 from warnings import warn
-from ccb.io.task import LabelType, TaskSpecifications
+from ccb.io.label import LabelType
 from collections import OrderedDict
 
 
@@ -63,7 +63,7 @@ class BandInfo(object):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
     def __repr__(self):
-        return 'BandInfo(name={}, original_res={:.1f}m)'.format(self.name, self.spatial_resolution)
+        return "BandInfo(name={}, original_res={:.1f}m)".format(self.name, self.spatial_resolution)
 
     def expand_name(self):
         return [self.name]
@@ -80,19 +80,26 @@ class SpectralBand(BandInfo):
         return (self.name, self.wavelength)
 
     def __repr__(self):
-        return '{}(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+        return "{}(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
         # self.__class__.__name__
 
 
 class Sentinel1(SpectralBand):
     def __repr__(self):
-        return 'Sentinel1(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+        return "Sentinel1(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
 
 
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
+
     def __repr__(self):
-        return 'Sentinel2(name={}, wavelen={}, original_res={:.1f}m)'.format(self.name, self.wavelength, self.spatial_resolution)
+        return "Sentinel2(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
 
 
 class Mask(BandInfo):
@@ -148,7 +155,7 @@ sentinel1_8_bands = [
     Sentinel1("05 - VH.LEE Filtered"),
     Sentinel1("06 - VV.LEE Filtered"),
     Sentinel1("07 - VH.LEE Filtered.Real"),
-    Sentinel1("08 - VV.LEE Filtered.Imaginary")
+    Sentinel1("08 - VV.LEE Filtered.Imaginary"),
 ]
 
 
@@ -194,7 +201,7 @@ class Band:
     ) -> None:
         """
         Args:
-            data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands) 
+            data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands)
             band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
             spatial_resolution: current Spatial resolution of the pixels in meters. Note: Band.band_info.spatial_resolution  contains
                 the original spatial resolution of the sensor. If data is a resampled version of the original data, Band.spatial_resolution
@@ -204,7 +211,7 @@ class Band:
             transform: georeferncing transformation as provided by rasterio. See rasterio.transform.from_bounds for example.
             crs: coordinate refenence system for the transformation.
             meta_info: A dict of any information that might be useful.
-            convert_to_int16: By default, data will be converted to int16 when saved to_geotiff. ValueError will be raised if conversion is 
+            convert_to_int16: By default, data will be converted to int16 when saved to_geotiff. ValueError will be raised if conversion is
                 not possible. Set this flag to False to bypass this mechanism.
         """
         self.data = data
@@ -221,9 +228,10 @@ class Band:
         if isinstance(self.data, np.ndarray):
             shape = self.data.shape
         else:
-            shape = 'unknown'
-        return 'Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})'.format(
-            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date)
+            shape = "unknown"
+        return "Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})".format(
+            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date
+        )
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -355,8 +363,8 @@ class Sample(object):
         self._build_index()
 
     def __repr__(self):
-        bands = '\n'.join(band.__repr__() for band in self.bands)
-        return 'Sample:(name={}, bands=\n{}\n)'.format(self.sample_name, self.bands)
+        bands = "\n".join(band.__repr__() for band in self.bands)
+        return "Sample:(name={}, bands=\n{}\n)".format(self.sample_name, self.bands)
 
     def _build_index(self):
 
@@ -394,7 +402,7 @@ class Sample(object):
         resample_order: int = 3,
     ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
         """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands). If it contains MultiBands, the final
-        dimension 
+        dimension
 
         Args:
             dates: Selects a subset of dates. Defaults to None, which selects all dates.
@@ -402,7 +410,7 @@ class Sample(object):
                 Will search into band_info.name and band_info.alt_names. You cen use, e.g., ('red', 'green', 'blue').
             resample: will enable resampling bands to match the largest shape. Defaults to False and raises an error
                 if bands are not all the same shape. Resampling is performed using scipy.ndimage.zoom with order `resample_order`
-            fill_value: Fills missing bands with this value. Defaults to None, which will raise an error for missing bands. 
+            fill_value: Fills missing bands with this value. Defaults to None, which will raise an error for missing bands.
                 The type or np.dtype of fill_value may influence the numerical precision of the returned array. See numpy.array's documentation.
             resample_order: passed to scipy.ndimage.zoom when resampling.
 
@@ -494,7 +502,7 @@ class Sample(object):
         if len(file_set) != len(self.bands):
             raise ValueError(f"Duplicate band description in bands. Perhaps date is missing?")
 
-        with open(Path(dst_dir, "band_index.json"), 'w') as fd:
+        with open(Path(dst_dir, "band_index.json"), "w") as fd:
             json.dump(tuple(band_index.items()), fd)
 
         if self.label is not None:
@@ -510,7 +518,7 @@ class Sample(object):
 def load_sample(sample_dir, band_names=None):
     sample_dir = Path(sample_dir)
     band_list = []
-    with open(Path(sample_dir, 'band_index.json'), "r") as fd:
+    with open(Path(sample_dir, "band_index.json"), "r") as fd:
         band_index = OrderedDict(json.load(fd))
 
     if band_names is None:
@@ -520,8 +528,8 @@ def load_sample(sample_dir, band_names=None):
         for file_name in band_index[band_name]:
             band_list.append(load_band(Path(sample_dir, file_name)))
 
-    label_file = Path(sample_dir, 'label.json')
-    label_file_tif = Path(sample_dir, 'label.tif')
+    label_file = Path(sample_dir, "label.json")
+    label_file_tif = Path(sample_dir, "label.tif")
     if label_file.exists():
         with open(label_file, "r") as fd:
             label = json.load(fd)
@@ -531,7 +539,7 @@ def load_sample(sample_dir, band_names=None):
 
 
 def _largest_shape(band_array):
-    """Extract the largest shape and the dtype from an array of bands. 
+    """Extract the largest shape and the dtype from an array of bands.
     Assertion error is raised if there is more than one type."""
     shape = [0, 0]
     for band in band_array.flat:
@@ -561,7 +569,7 @@ class Partition(dict):
 
     @staticmethod
     def check_split_name(split_name):
-        if split_name not in ('train', 'valid', 'test'):
+        if split_name not in ("train", "valid", "test"):
             raise ValueError(f"split_name must be one of 'train', 'valid', 'test'. Got {split_name}.")
 
     def __init__(self, partition_dict=None) -> None:
@@ -609,7 +617,7 @@ class Dataset:
         self._task_specs_path = None
         self.active_partition = active_partition
         self.split = split
-        assert split in ['train', 'valid', 'test', None]
+        assert split in ["train", "valid", "test", None]
         self._load_path_list()
         self._load_partition()
 
@@ -620,7 +628,7 @@ class Dataset:
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
-            elif p.name == "task_specifications.pkl":
+            elif p.name == "task_specs.pkl":
                 self._task_specs_path = p
             elif p.is_dir():
                 self._sample_name_list.append(p.name)
@@ -648,7 +656,7 @@ class Dataset:
         else:
             sample_name_list = self.active_partition[self.split]
         sample_path = Path(self.dataset_dir, sample_name_list[idx])
-        return load_sample(sample_path)         
+        return load_sample(sample_path)
 
     def _iter_dataset(self, max_count=None):
         if self.split is None:
@@ -669,9 +677,9 @@ class Dataset:
         return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
 
     @cached_property
-    def task_specs(self) -> TaskSpecifications:
+    def task_specs(self):
         if self._task_specs_path is None:
-            raise ValueError(f"The file 'task_specifications.pkl' does not exist for dataset {self.dataset_dir.name}.")
+            raise ValueError(f"The file 'task_specs.pkl' does not exist for dataset {self.dataset_dir.name}.")
         with open(self._task_specs_path, "rb") as fd:
             return pickle.load(fd)
 
@@ -697,12 +705,14 @@ class Dataset:
         return len(sample_name_list)
 
     def __repr__(self):
-        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}'.format(
-            self.dataset_dir, self.split, self.active_partition, len(self))
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}".format(
+            self.dataset_dir, self.split, self.active_partition, len(self)
+        )
 
     def __str__(self):
-        return 'Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})'.format(
-            self.dataset_dir, self.split, self.active_partition, len(self))
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})".format(
+            self.dataset_dir, self.split, self.active_partition, len(self)
+        )
 
 
 class Stats:

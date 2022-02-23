@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 
 from ccb.experiment.experiment import Job
-from ccb.io.task import Classification, TaskSpecifications
+from ccb.io import Classification, TaskSpecifications
 
 
 def test_toolbox_mnist():
