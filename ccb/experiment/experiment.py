@@ -45,6 +45,9 @@ def hparams_to_string(hp_configs):
     """
     # Find which hyperparameters vary between hyperparameter combinations
     keys = set(chain.from_iterable(combo.keys() for combo in hp_configs))
+
+    # TODO find a solution for unhashable hparams such as list, or print a more
+    # useful error message.
     active_keys = [k for k in keys if len(set(combo[k] for combo in hp_configs)) > 1]
 
     # Pretty print a HP combination

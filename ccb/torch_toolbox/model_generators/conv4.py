@@ -22,7 +22,7 @@ class Conv4Generator(ModelGenerator):
 
     def hp_search(self, task_specs, max_num_configs=10):
         hparams1 = {
-            "lr_milestones": [10, 20],
+            "lr_milestones": (10, 20),
             "lr_gamma": 0.1,
             "lr_backbone": 1e-3,
             "lr_head": 1e-3,
