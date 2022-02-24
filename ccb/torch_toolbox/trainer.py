@@ -43,12 +43,7 @@ def start():
     model_gen = get_model_generator(args.model_generator)
     model = model_gen.generate(job.task_specs, hparams)
     datamodule = DataModule(job.task_specs, batch_size=hparams["batch_size"], num_workers=hparams["num_workers"])
-    # datamodule = Dataset(
-    #     job.task_specs.dataset_name,
-    #     os.environ.get("DATAROOT", str(job.dir.parent / "data")),
-    #     job.task_specs,
-    #     hparams,
-    # )
+
     if hparams.get("logger", False) == "csv":
         logger = pl.loggers.CSVLogger(job.dir)
     else:

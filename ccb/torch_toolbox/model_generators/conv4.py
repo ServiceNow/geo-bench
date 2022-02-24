@@ -25,7 +25,7 @@ class Conv4Generator(ModelGenerator):
             "lr_milestones": (10, 20),
             "lr_gamma": 0.1,
             "lr_backbone": 1e-3,
-            "lr_head": 1e-3,
+            "lr_head": 2e-3,
             "head_type": "linear",
             "train_iters": 50,
             "features_shape": (64,),
@@ -36,7 +36,7 @@ class Conv4Generator(ModelGenerator):
         }
 
         hparams2 = hparams1.copy()
-        hparams2["lr_head"] = 2e-3
+        hparams2["lr_head"] = 4e-3
 
         return hparams_to_string([hparams1, hparams2])
 
