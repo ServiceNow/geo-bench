@@ -14,7 +14,7 @@ def test_toolbox_mnist():
         job = Job(job_dir)
         mnist_task_specs.save(job.dir)
 
-        hparams = conv4.model_generator.hp_search(mnist_task_specs)[0]
+        hparams = conv4.model_generator.hp_search(mnist_task_specs)[0][0]
         job.save_hparams(hparams)
 
         torch_toolbox_dir = Path(__file__).absolute().parent.parent
@@ -26,7 +26,7 @@ def test_toolbox_mnist():
             "--job-dir",
             job.dir,
         ]
-        subprocess.run(cmd)
+        subprocess.check_call(cmd)
         print(job.metrics)
         assert float(job.metrics["train_acc1_step"]) > 20  # has to be better than random after seeing 20 batches
 

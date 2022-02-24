@@ -131,7 +131,7 @@ def head_generator(task_specs, hyperparams):
     """
     if isinstance(task_specs.label_type, Classification):
         if hyperparams["head_type"] == "linear":
-            (in_ch,) = hyperparams['features_shape']
+            (in_ch,) = hyperparams["features_shape"]
             out_ch = task_specs.label_type.n_classes
             return torch.nn.Linear(in_ch, out_ch)
         else:
