@@ -8,10 +8,8 @@ import argparse
 
 from pathlib import Path
 from uuid import uuid4
-from typing import Iterator
 
 from ccb.experiment.experiment import Job
-from ccb.torch_toolbox.model import ModelGenerator
 from ccb.experiment.experiment import get_model_generator
 from ccb import io
 
