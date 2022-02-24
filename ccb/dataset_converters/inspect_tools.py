@@ -1,4 +1,4 @@
-from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats
+from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats, dataset_statistics
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
@@ -20,35 +20,6 @@ def compare(a, b, name, src_a, src_b):
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def dataset_statistics(dataset_iterator, n_value_per_image=1000):
-
-    accumulator = defaultdict(list)
-
-    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
-
-        for band in sample.bands:
-            accumulator[band.band_info.name].append(
-                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-            )
-
-        if isinstance(sample.label, Band):
-            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
-        elif isinstance(sample.label, (list, tuple)):
-            for obj in sample.label:
-                if isinstance(obj, dict):
-                    for key, val in obj.items():
-                        accumulator[f"label_{key}"].append(val)
-        else:
-            accumulator["label"].append(sample.label)
-
-    band_values = {}
-    band_stats = {}
-    for name, values in accumulator.items():
-        values = np.hstack(values)
-        band_values[name] = values
-        band_stats[name] = compute_stats(values)
-
-    return band_values, band_stats
 
 
 def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
