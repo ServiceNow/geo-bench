@@ -14,7 +14,8 @@ import pickle
 from functools import cached_property, lru_cache
 from warnings import warn
 from ccb.io.label import LabelType
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from tqdm import tqdm
 
 
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -606,7 +607,7 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, split=None, active_partition="default") -> None:
+    def __init__(self, dataset_dir, split=None, partition_name="default") -> None:
         """
         Args:
             dataset_dir: the path containing the samples of the dataset.
@@ -615,11 +616,10 @@ class Dataset:
         """
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
-        self.active_partition = active_partition
         self.split = split
         assert split in ["train", "valid", "test", None]
         self._load_path_list()
-        self._load_partition()
+        self._load_partition(partition_name)
 
     def _load_path_list(self) -> None:
         self._partition_path_dict = {}
@@ -633,7 +633,9 @@ class Dataset:
             elif p.is_dir():
                 self._sample_name_list.append(p.name)
 
-    def _load_partition(self):
+    def _load_partition(self, partition_name):
+        # Todo: simplify logic of load partition
+        # It seems that in any case, the partition name is ignored
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -643,12 +645,12 @@ class Dataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = self._partition_path_dict.keys()[0]
+                partition_name = self._partition_path_dict.keys()[0]  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(f"No default partition found for dataset {self.dataset_dir.name}. Using {partition_name} as default.")
 
-        self.set_active_partition(partition_name="default")
+        self.set_active_partition(partition_name)
 
     def __getitem__(self, idx):
         if self.split is None:
@@ -706,12 +708,12 @@ class Dataset:
 
     def __repr__(self):
         return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}".format(
-            self.dataset_dir, self.split, self.active_partition, len(self)
+            self.dataset_dir, self.split, self.active_partition_name, len(self)
         )
 
     def __str__(self):
         return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})".format(
-            self.dataset_dir, self.split, self.active_partition, len(self)
+            self.dataset_dir, self.split, self.active_partition_name, len(self)
         )
 
 
@@ -729,6 +731,19 @@ class Stats:
         self.percentile_99 = percentile_99
         self.percentile_99_9 = percentile_99_9
 
+    def to_dict(self):
+        return OrderedDict([ 
+            ('min', self.min),
+            ('max', self.max),
+            ('mean', self.mean),
+            ('std', self.std),
+            ('median', self.median),
+            ('percentile_0_1', self.percentile_0_1),
+            ('percentile_1', self.percentile_1),
+            ('percentile_99', self.percentile_99),
+            ('percentile_99_9', self.max),
+        ])
+
 
 def compute_stats(values):
     q_0_1, q_1, median, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 50, 99, 99.9])
@@ -744,6 +759,38 @@ def compute_stats(values):
         percentile_99_9=q_99_9,
     )
     return stats
+
+
+def dataset_statistics(dataset_iterator, n_value_per_image=1000):
+
+    accumulator = defaultdict(list)
+
+    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
+
+        for band in sample.bands:
+            accumulator[band.band_info.name].append(
+                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+            )
+
+        if isinstance(sample.label, Band):
+            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+        elif isinstance(sample.label, (list, tuple)):
+            for obj in sample.label:
+                if isinstance(obj, dict):
+                    for key, val in obj.items():
+                        accumulator[f"label_{key}"].append(val)
+        else:
+            accumulator["label"].append(sample.label)
+
+    band_values = {}
+    band_stats = {}
+    for name, values in accumulator.items():
+        values = np.hstack(values)
+        band_values[name] = values
+        band_stats[name] = compute_stats(values)
+
+    return band_values, band_stats
+
 
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):
