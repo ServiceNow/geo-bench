@@ -2,6 +2,7 @@ import csv
 import json
 from os import mkdir
 import pickle
+import stat
 import sys
 
 from importlib import import_module
@@ -93,9 +94,11 @@ class Job:
         task_specs.save(self.dir, overwrite=overwrite)
 
     def write_script(self, model_generator_module):
-        with open(self.dir / "run.sh", "w") as f_cmd:
-            f_cmd.write("#!/bin/bash\n")
-            f_cmd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-            f_cmd.write(
-                f'cd $(dirname "$0") && ccb_trainer --model-generator {model_generator_module} >log.out 2>err.out'
+        script_path = self.dir / "run.sh"
+        with open(script_path, "w") as fd:
+            fd.write("#!/bin/bash\n")
+            fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
+            fd.write(
+                f'cd $(dirname "$0") && ccb_trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
             )
+        script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
