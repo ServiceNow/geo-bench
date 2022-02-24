@@ -59,7 +59,10 @@ class TaskSpecifications:
                 "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
             )
         else:
-            return Dataset(datasets_dir / self.dataset_name, split, active_partition=partition)
+            return Dataset(self.get_dataset_dir(), split, active_partition=partition)
+
+    def get_dataset_dir(self):
+        return datasets_dir / self.dataset_name
 
 
 def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
