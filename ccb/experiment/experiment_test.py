@@ -5,7 +5,7 @@ from pathlib import Path
 from shutil import rmtree
 import subprocess
 import sys
-from ccb.experiment.experiment import get_model_generator, hparams_to_string
+from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
@@ -100,6 +100,12 @@ def test_experiment_generator():
     exp_dir = list(experiments_dir.iterdir())[0]
 
     sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+
+    for job_dir in (exp_dir / "MNIST").iterdir():
+        job = Job(job_dir)
+        print(job_dir)
+        print(job.metrics)
+        assert float(job.metrics["train_acc1_step"]) > 20
 
 
 if __name__ == "__main__":
