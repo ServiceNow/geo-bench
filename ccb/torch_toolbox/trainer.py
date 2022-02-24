@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Trains the model using job information contained in the current directory.
 Expects to find files "hparams.json" and "task_specs.json".
@@ -8,7 +9,7 @@ Usage: trainer.py --model-generator path/to/my/model/generator.py
 import argparse
 import os
 
-from ccb.torch_toolbox.dataset import Dataset
+from ccb.torch_toolbox.dataset import DataModule
 from ccb.experiment.experiment import get_model_generator, Job
 import pytorch_lightning as pl
 
@@ -41,12 +42,13 @@ def start():
     # Load the user-specified model generator
     model_gen = get_model_generator(args.model_generator)
     model = model_gen.generate(job.task_specs, hparams)
-    datamodule = Dataset(
-        job.task_specs.dataset_name,
-        os.environ.get("DATAROOT", str(job.dir.parent / "data")),
-        job.task_specs,
-        hparams,
-    )
+    datamodule = DataModule(job.task_specs, batch_size=hparams["batch_size"], num_workers=hparams["num_workers"])
+    # datamodule = Dataset(
+    #     job.task_specs.dataset_name,
+    #     os.environ.get("DATAROOT", str(job.dir.parent / "data")),
+    #     job.task_specs,
+    #     hparams,
+    # )
     if hparams.get("logger", False) == "csv":
         logger = pl.loggers.CSVLogger(job.dir)
     else:
