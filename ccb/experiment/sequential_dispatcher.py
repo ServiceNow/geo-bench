@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from signal import raise_signal
 import subprocess
 
 
@@ -18,8 +19,10 @@ def sequential_dispatcher(exp_dir, prompt=True):
 
     for script in script_list:
         print(f"Running {script}.")
-        p = subprocess.run([script])
+        subprocess.check_call([script])
+
     print("Done.")
+
 
 def start():
     # Command line arguments

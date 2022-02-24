@@ -6,6 +6,7 @@ from shutil import rmtree
 import subprocess
 import sys
 from ccb.experiment.experiment import get_model_generator, hparams_to_string
+from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
 def test_trial_numbering():
@@ -79,10 +80,10 @@ def test_load_module():
 def test_experiment_generator():
     experiment_generator_dir = Path(__file__).absolute().parent
 
-    experiment_dir = Path("/tmp/exp_gen_test")
-    if experiment_dir.exists():
-        rmtree(experiment_dir)
-    experiment_dir.mkdir(parents=True, exist_ok=True)
+    experiments_dir = Path("/tmp/exp_gen_test")
+    if experiments_dir.exists():
+        rmtree(experiments_dir)
+    experiments_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         sys.executable,
@@ -90,11 +91,15 @@ def test_experiment_generator():
         "--model-generator",
         "ccb.torch_toolbox.model_generators.conv4",
         "--experiment-dir",
-        str(experiment_dir),
+        str(experiments_dir),
         "--benchmark",
         "test",
     ]
-    subprocess.run(cmd)
+    subprocess.check_call(cmd)
+
+    exp_dir = list(experiments_dir.iterdir())[0]
+
+    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
 
 if __name__ == "__main__":
