@@ -8,10 +8,12 @@ import argparse
 
 from pathlib import Path
 from uuid import uuid4
+from typing import Iterator
 
-from ccb.experiment.experiment import Dataset, iter_datasets, Job
+from ccb.experiment.experiment import Job
 from ccb.torch_toolbox.model import ModelGenerator
 from ccb.experiment.experiment import get_model_generator
+from ccb import io
 
 
 def experiment_generator(
@@ -19,7 +21,7 @@ def experiment_generator(
     experiment_dir: str,
     task_filter: callable = None,
     max_num_configs: int = 10,
-    dataset_iterator=None,
+    benchmark_name="default",
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
@@ -40,18 +42,18 @@ def experiment_generator(
 
     model_generator = get_model_generator(model_generator_module_name)
 
-    for dataset in iter_datasets():
+    for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
-            if not task_filter(dataset.task_specs):
+            if not task_filter(task_specs):
                 continue
 
-        for hparams, hparams_string in model_generator.hp_search(dataset.task_specs, max_num_configs):
+        for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
             # Create and fill experiment directory
-            job_dir = experiment_dir / dataset.name / hparams_string
+            job_dir = experiment_dir / task_specs.dataset_name / hparams_string
             job = Job(job_dir)
             job.save_hparams(hparams)
-            job.save_task_specs(dataset.task_specs)
+            job.save_task_specs(task_specs)
             job.write_script(model_generator_module_name)
 
 
@@ -76,14 +78,13 @@ def start():
         "--benchmark",
         help="The set of dataset that will be used for evaluating. 'ccb' | 'mnist' ",
         required=False,
-        default="ccb",
+        default="default",
     )
 
     args = parser.parse_args()
 
     # Generate experiments
-    dataset_iterator = {"ccb": None, "mnist": mnist_iterator}[args.benchmark]
-    experiment_generator(args.model_generator, args.experiment_dir, dataset_iterator=dataset_iterator)
+    experiment_generator(args.model_generator, args.experiment_dir, benchmark_name=args.benchmark)
 
 
 if __name__ == "__main__":

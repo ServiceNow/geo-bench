@@ -1,6 +1,10 @@
 # TODO(drouin) finish adapting to pytest  (different than unittest)
 
 import os
+from pathlib import Path
+from shutil import rmtree
+import subprocess
+import sys
 from ccb.experiment.experiment import get_model_generator, hparams_to_string
 
 
@@ -70,3 +74,28 @@ def test_load_module():
 #     open(path, "w").write("def model_generator_():\n    pass")  # So model_generator doesn't exist
 #     self.assertRaises(AttributeError, get_model_generator, path)
 #     os.remove(path)
+
+
+def test_experiment_generator():
+    experiment_generator_dir = Path(__file__).absolute().parent
+
+    experiment_dir = Path("/tmp/exp_gen_test")
+    if experiment_dir.exists():
+        rmtree(experiment_dir)
+    experiment_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        sys.executable,
+        str(experiment_generator_dir / "experiment_generator.py"),
+        "--model-generator",
+        "ccb.torch_toolbox.model_generators.conv4",
+        "--experiment-dir",
+        str(experiment_dir),
+        "--benchmark",
+        "test",
+    ]
+    subprocess.run(cmd)
+
+
+if __name__ == "__main__":
+    test_experiment_generator()
