@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-from signal import raise_signal
 import subprocess
 
 
