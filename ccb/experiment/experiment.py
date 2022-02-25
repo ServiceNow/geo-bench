@@ -102,3 +102,13 @@ class Job:
                 f'cd $(dirname "$0") && ccb_trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
+
+    @cached_property
+    def stderr(self):
+        with open(self.dir / "err.out", "r") as fd:
+            return fd.read()
+
+    @cached_property
+    def stdout(self):
+        with open(self.dir / "log.out", "r") as fd:
+            return fd.read()
