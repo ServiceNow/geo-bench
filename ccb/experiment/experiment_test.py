@@ -77,7 +77,7 @@ def test_load_module():
 #     os.remove(path)
 
 
-def test_experiment_generator():
+def test_experiment_generator_on_mnist():
     experiment_generator_dir = Path(__file__).absolute().parent
 
     experiments_dir = Path("/tmp/exp_gen_test")
@@ -108,5 +108,30 @@ def test_experiment_generator():
         assert float(job.metrics["train_acc1_step"]) > 20
 
 
+def test_experiment_generator_on_benchmark():
+    experiment_generator_dir = Path(__file__).absolute().parent
+
+    experiments_dir = Path("/tmp/exp_gen_test")
+    if experiments_dir.exists():
+        rmtree(experiments_dir)
+    experiments_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        sys.executable,
+        str(experiment_generator_dir / "experiment_generator.py"),
+        "--model-generator",
+        "ccb.torch_toolbox.model_generators.conv4",
+        "--experiment-dir",
+        str(experiments_dir),
+        "--benchmark",
+        "default",
+    ]
+    subprocess.check_call(cmd)
+
+    exp_dir = list(experiments_dir.iterdir())[0]
+
+    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+
+
 if __name__ == "__main__":
-    test_experiment_generator()
+    test_experiment_generator_on_benchmark()
