@@ -1,6 +1,7 @@
 import argparse
 from pathlib import Path
 import subprocess
+from ccb.experiment.experiment import Job
 
 
 def sequential_dispatcher(exp_dir, prompt=True):
@@ -16,9 +17,13 @@ def sequential_dispatcher(exp_dir, prompt=True):
         if ans != "y":
             return
 
+
     for script in script_list:
         print(f"Running {script}.")
-        subprocess.check_call([script])
+        job = Job(script.parent)
+
+        p = subprocess.run([script])
+        print(job.stderr)
 
     print("Done.")
 
