@@ -228,8 +228,8 @@ def leaflet_map(samples):
 
 def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
-    dataset = Dataset(dataset_dir)
-    samples = list(tqdm(dataset.iter_dataset(n_samples, split=split), desc="Loading Samples"))
+    dataset = Dataset(dataset_dir, split=split)
+    samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
     band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
