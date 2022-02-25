@@ -1,4 +1,6 @@
+from calendar import c
 from typing import List
+from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
@@ -45,10 +47,10 @@ model_generator = Conv4Generator()
 
 
 class Conv4(BackBone):
-    def __init__(self, model_path, task_specs, hyperparams):
+    def __init__(self, model_path, task_specs: io.TaskSpecifications, hyperparams):
         super().__init__(model_path, task_specs, hyperparams)
-        h, w, c, t = task_specs.patch_size
-        self.conv0 = torch.nn.Conv2d(c, 64, 3, 1, 1)
+        n_bands = len(task_specs.bands_info)
+        self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv3 = torch.nn.Conv2d(64, 64, 3, 1, 1)

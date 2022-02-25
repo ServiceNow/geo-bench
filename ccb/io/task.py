@@ -4,7 +4,7 @@ import pickle
 from pathlib import Path
 from ccb.io.label import Classification
 
-from ccb.io.dataset import Dataset, datasets_dir
+from ccb.io.dataset import Dataset, datasets_dir, BandInfo
 
 
 class TaskSpecifications:
@@ -59,10 +59,15 @@ class TaskSpecifications:
                 "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
             )
         else:
-            return Dataset(self.get_dataset_dir(), split, active_partition=partition)
+            return Dataset(self.get_dataset_dir(), split, partition_name=partition)
 
     def get_dataset_dir(self):
-        return datasets_dir / self.dataset_name
+        return Path(datasets_dir) / self.dataset_name
+
+    # for backward compatibility (we'll remove soon)
+    @cached_property
+    def benchmark_name(self):
+        return "default"
 
 
 def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
@@ -107,7 +112,8 @@ class SegmentationAccuracy(Loss):
 mnist_task_specs = TaskSpecifications(
     dataset_name="MNIST",
     benchmark_name="test",
-    patch_size=(28, 28, 1, 1),
+    patch_size=(28, 28),
+    bands_info=[BandInfo("grey")],
     label_type=Classification(10),
     eval_loss=Accuracy(),
 )
