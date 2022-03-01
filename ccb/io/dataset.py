@@ -621,7 +621,28 @@ class Dataset:
         self._load_path_list()
         self._load_partition(partition_name)
         assert split is None or split in self.list_splits(), 'Invalid split {}'.format(split)
+        self._load_stats()
+        
+    def _load_stats(self):
+        self.stats = {}
+        # This will actually load all partitions at once to simplify the logic
+        # Otherwise we would need to change stats every time set_split or set_active_partition() is called
+        current_partition = self.active_partition_name # push current 
+        for partition in self.list_partitions():
+            self.set_active_partition(partition)
+            for split in self.list_splits():
+                print(f'Attempting to load stats for {partition}:{split}')
+                try:
+                    with open(self.dataset_dir / f'{partition}_{split}_bandstats.json', 'r', encoding='utf8') as fp:
+                        stats = json.load(fp)
+                        self.stats.setdefault(partition, {})
+                        self.stats[partition][split] = stats
+                        print('-> success')
+                except Exception as e:
+                    print(f'-> Could not load stats {e}. Maybe (re)compute them with bandstats.py?')
 
+        # pop current partition
+        self.set_active_partition(current_partition)
 
     def _load_path_list(self) -> None:
         # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
@@ -693,6 +714,9 @@ class Dataset:
             return pickle.load(fd)
 
     def list_splits(self):
+        '''
+        List splits for active partition
+        '''
         return list(self.active_partition.keys())
 
     def set_split(self, split):
@@ -703,7 +727,7 @@ class Dataset:
         return self.split
 
     def list_partitions(self):
-        return self._partition_path_dict.keys()
+        return list(self._partition_path_dict.keys())
 
     def set_active_partition(self, partition_name="default"):
         if partition_name not in self._partition_path_dict:
