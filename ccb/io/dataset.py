@@ -365,6 +365,7 @@ class Sample(object):
 
     def __repr__(self):
         bands = "\n".join(band.__repr__() for band in self.bands)
+        np.set_printoptions(threshold=5)
         return "Sample:(name={}, bands=\n{}\n)".format(self.sample_name, self.bands)
 
     def _build_index(self):
@@ -617,14 +618,21 @@ class Dataset:
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.split = split
-        assert split in ["train", "valid", "test", None]
         self._load_path_list()
         self._load_partition(partition_name)
+        assert split is None or split in self.list_splits(), 'Invalid split {}'.format(split)
+
 
     def _load_path_list(self) -> None:
+        # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
+        '''
+        for p in self.dataset_dir.glob('*_partition.json'):
+            partition_name = p.name.split("_partition.json")[0]
+            self._partition_path_dict[partition_name] = p
+        '''
         self._partition_path_dict = {}
         self._sample_name_list = []
-        for p in self.dataset_dir.iterdir():
+        for p in self.dataset_dir.glob('*'):#self.dataset_dir.iterdir():
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
@@ -633,9 +641,8 @@ class Dataset:
             elif p.is_dir():
                 self._sample_name_list.append(p.name)
 
+
     def _load_partition(self, partition_name):
-        # Todo: simplify logic of load partition
-        # It seems that in any case, the partition name is ignored
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -684,6 +691,16 @@ class Dataset:
             raise ValueError(f"The file 'task_specs.pkl' does not exist for dataset {self.dataset_dir.name}.")
         with open(self._task_specs_path, "rb") as fd:
             return pickle.load(fd)
+
+    def list_splits(self):
+        return list(self.active_partition.keys())
+
+    def set_split(self, split):
+        assert split is None or split in self.list_splits()
+        self.split = split
+
+    def get_split(self):
+        return self.split
 
     def list_partitions(self):
         return self._partition_path_dict.keys()
@@ -761,6 +778,25 @@ def compute_stats(values):
     return stats
 
 
+def compute_stats2(values):
+    '''
+    Returns a plain dictionary of statistics (can be directly serialized to .json)
+    '''
+    q_0_1, q_1, q_5, median, q_95, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 5, 50, 95, 99, 99.9])
+    return {
+        'min':float(np.min(values)),
+        'max':float(np.max(values)),
+        'mean':float(np.mean(values)),
+        'std':float(np.std(values)),
+        'median':float(median),
+        'percentile_0_1':float(q_0_1),
+        'percentile_1':float(q_1),
+        'percentile_5':float(q_1),
+        'percentile_95':float(q_95),
+        'percentile_99':float(q_99),
+        'percentile_99_9':float(q_99_9),
+    }
+
 def dataset_statistics(dataset_iterator, n_value_per_image=1000):
 
     accumulator = defaultdict(list)
@@ -791,6 +827,46 @@ def dataset_statistics(dataset_iterator, n_value_per_image=1000):
 
     return band_values, band_stats
 
+
+
+def dataset_statistics2(dataset, n_value_per_image=1000, n_samples=None):
+    '''
+    Returns JSON-serializable statistics, take random subser of samples and for each sample, random subset of values.
+    '''
+    accumulator = defaultdict(list)
+
+    if n_samples is not None and n_samples < len(dataset):
+        indices = np.random.choice(len(dataset), n_samples, replace=False)
+    else:
+        indices = list(range(len(dataset)))
+
+    for i in tqdm(indices, desc="Extracting Statistics"):
+
+        sample = dataset[i]
+
+        for band in sample.bands:
+            accumulator[band.band_info.name].append(
+                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+            )
+
+        if isinstance(sample.label, Band):
+            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+        elif isinstance(sample.label, (list, tuple)):
+            for obj in sample.label:
+                if isinstance(obj, dict):
+                    for key, val in obj.items():
+                        accumulator[f"label_{key}"].append(val)
+        else:
+            accumulator["label"].append(sample.label)
+
+    band_values = {}
+    band_stats = {}
+    for name, values in accumulator.items():
+        values = np.hstack(values)
+        band_values[name] = values
+        band_stats[name] = compute_stats2(values)
+
+    return band_stats
 
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):
