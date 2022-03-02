@@ -17,14 +17,14 @@ def test_toolbox_mnist():
         hparams = conv4.model_generator.hp_search(mnist_task_specs)[0][0]
         job.save_hparams(hparams)
 
-        torch_toolbox_dir = Path(__file__).absolute().parent.parent
         cmd = [
             sys.executable,
-            str(torch_toolbox_dir / "trainer.py"),
+            "-m",
+            "ccb.torch_toolbox.trainer",
             "--model-generator",
             "ccb.torch_toolbox.model_generators.conv4",
             "--job-dir",
-            job.dir,
+            str(job.dir),
         ]
         subprocess.check_call(cmd)
         print(job.metrics)
