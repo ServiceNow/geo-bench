@@ -11,7 +11,7 @@ pipeline:
       - BORGY_GPU=1
       - IMAGE_NAME=registry.console.elementai.com/snow.rg_climate_benchmark/base
       - VOLATILE_IMAGE_NAME=volatile-images.borgy.elementai.net/snow.rg_climate_benchmark
-      - DEPENDENCY_FILES=Dockerfile requirements.txt
+      - DEPENDENCY_FILES=Dockerfile poetry.lock
     commands:
       - docker login -u console -p "$EAI_TOKEN" https://registry.console.elementai.com
       # Check if we need to rebuild the docker image

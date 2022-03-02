@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Trains the model using job information contained in the current directory.
 Expects to find files "hparams.json" and "task_specs.json".
@@ -6,16 +7,11 @@ Usage: trainer.py --model-generator path/to/my/model/generator.py
 
 """
 import argparse
-import json
 import os
 
-from pathlib import Path
-from uuid import uuid4
-
-from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.tests.util import Dataset, iter_datasets
-from ccb.torch_toolbox.model import ModelGenerator
-from ccb.experiment.experiment import get_model_generator, hparams_to_string
+from ccb.torch_toolbox.dataset import DataModule
+from ccb.experiment.experiment import get_model_generator, Job
+import pytorch_lightning as pl
 
 
 def start():
@@ -26,20 +22,35 @@ def start():
     )
     parser.add_argument(
         "--model-generator",
-        help="Path to a Python file that defines a model generator (expects a model_generator variable to exist).",
+        help="Module name that defines a model generator. Must be in PYTHONPATH and expects a model_generator variable to exist.",
+        required=True,
+    )
+    parser.add_argument(
+        "--job-dir",
+        help="Path to the job.",
         required=True,
     )
     args = parser.parse_args()
 
-    # Load the user-specified model generator
-    model_generator = get_model_generator(args.model_generator)
-
-    # Load hyperparameters and task specification
-    hparams = json.load(open("hparams.json", "r"))
-    task_specs = json.load(open("task_specs.json", "r"))
+    job = Job(args.job_dir)
+    hparams = job.hparams
 
     print("Model generator path:", args.model_generator)
     print("Hyperparameters:", hparams)
-    print("Task specifications:", task_specs)
+    print("Task specifications:", job.task_specs)
 
-    # TODO: Training
+    # Load the user-specified model generator
+    model_gen = get_model_generator(args.model_generator)
+    model = model_gen.generate(job.task_specs, hparams)
+    datamodule = DataModule(job.task_specs, batch_size=hparams["batch_size"], num_workers=hparams["num_workers"])
+
+    if hparams.get("logger", False) == "csv":
+        logger = pl.loggers.CSVLogger(job.dir)
+    else:
+        logger = None
+    trainer = pl.Trainer(gpus=0, max_epochs=1, max_steps=hparams.get("train_iters", None), logger=logger)
+    trainer.fit(model, datamodule)
+
+
+if __name__ == "__main__":
+    start()

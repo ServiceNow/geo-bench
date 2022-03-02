@@ -3,18 +3,20 @@
 #   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx" -O brick_kiln_v1.0.tar.gz && rm -rf /tmp/cookies.txt
 
 
-from ccb.io import dataset, task
+from ccb import io
 import numpy as np
 import csv
-from ccb.dataset_converters import util
 import rasterio
 from pathlib import Path
 import h5py
 from tqdm import tqdm
+import os
 
+# print(os.environ["HOME"])
+# print(os.environ["CC_BENCHMARK_SOURCE_DATASETS"])
 DATASET_NAME = "brick_kiln_v1.0"
-SRC_DATASET_DIR = Path(dataset.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(dataset.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
 def load_examples_bloc(file_path):
@@ -42,12 +44,12 @@ def read_list_eval_partition(csv_file):
 
     data = np.array(data)
 
-    y = data[:, 0].astype(np.int)
-    partition = data[:, 1].astype(np.int)
-    hdf5_file = data[:, 2].astype(np.int)
-    hdf5_idx = data[:, 3].astype(np.int)
+    y = data[:, 0].astype(np.int32)
+    partition = data[:, 1].astype(np.int32)
+    hdf5_file = data[:, 2].astype(np.int32)
+    hdf5_idx = data[:, 3].astype(np.int32)
     gps = data[:, 4:8]
-    indices = data[:, 8:11].astype(np.int)
+    indices = data[:, 8:11].astype(np.int32)
 
     id_map = {}
     for i, (file_id, sample_idx) in enumerate(zip(hdf5_file, hdf5_idx)):
@@ -57,8 +59,7 @@ def read_list_eval_partition(csv_file):
 
 
 def make_sample(src_bands, label, coord_box, sample_name):
-    """Converts the data in src_bands. Instantiate each Band separately and combine them into Sample
-    """
+    """Converts the data in src_bands. Instantiate each Band separately and combine them into Sample"""
 
     lon_top_left, lat_top_left, lon_bottom_right, lat_bottom_right = coord_box
     transform = rasterio.transform.from_bounds(
@@ -72,33 +73,37 @@ def make_sample(src_bands, label, coord_box, sample_name):
 
     bands = []
     for i, band in enumerate(src_bands):
-        band_data = dataset.Band(
-            data=band, band_info=dataset.sentinel2_13_bands[i],
-            spatial_resolution=10, transform=transform, crs="EPSG:4326",)
+        band_data = io.Band(
+            data=band,
+            band_info=io.sentinel2_13_bands[i],
+            spatial_resolution=10,
+            transform=transform,
+            crs="EPSG:4326",
+        )
         bands.append(band_data)
 
-    return dataset.Sample(bands, label=int(label), sample_name=sample_name)
+    return io.Sample(bands, label=int(label), sample_name=sample_name)
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
-    task_specs = task.TaskSpecifications(
+    task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(64, 64),
         n_time_steps=1,
-        bands_info=dataset.sentinel2_13_bands,
+        bands_info=io.sentinel2_13_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=task.Classification(2, ("not brick kiln", "brick kiln")),
-        eval_loss=task.Accuracy,
+        label_type=io.Classification(2, ("not brick kiln", "brick kiln")),
+        eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
 
     _, partition_id, _, _, _, _, id_map = read_list_eval_partition(Path(SRC_DATASET_DIR, "list_eval_partition.csv"))
 
     file_list = list(SRC_DATASET_DIR.iterdir())
-    partition = dataset.Partition()
+    partition = io.Partition()
     split_map = {0: "train", 1: "valid", 2: "test"}
     sample_count = 0
     for file_idx, file_path in enumerate(tqdm(file_list)):

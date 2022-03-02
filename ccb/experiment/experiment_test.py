@@ -1,7 +1,12 @@
 # TODO(drouin) finish adapting to pytest  (different than unittest)
 
 import os
-from ccb.experiment.experiment import get_model_generator, hparams_to_string
+from pathlib import Path
+from shutil import rmtree
+import subprocess
+import sys
+from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
+from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
 def test_trial_numbering():
@@ -28,9 +33,7 @@ def test_duplicate_combos():
     Test if we correctly return two trials if we receive duplicate HP combinations.
 
     """
-    hp_str = list(
-        zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}]))
-    )[1]
+    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}])))[1]
     assert len(hp_str) == 3
     assert len([x for x in hp_str if "key1=1" in x and "key2=2" in x]) == 2
 
@@ -51,10 +54,10 @@ def test_load_module():
     Test loading an existing model generator from a user-specified path.
 
     """
-    path = "tmp_testing_model_generator.py"
-    open(path, "w").write("def model_generator():\n    return 'it works!'")
-    assert get_model_generator(path)() == "it works!"
-    os.remove(path)
+
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
+    assert hasattr(model_generator, "hp_search")
+
 
 # def test_unexisting_path():
 #     """
@@ -72,3 +75,63 @@ def test_load_module():
 #     open(path, "w").write("def model_generator_():\n    pass")  # So model_generator doesn't exist
 #     self.assertRaises(AttributeError, get_model_generator, path)
 #     os.remove(path)
+
+
+def test_experiment_generator_on_mnist():
+    experiment_generator_dir = Path(__file__).absolute().parent
+
+    experiments_dir = Path("/tmp/exp_gen_test")
+    if experiments_dir.exists():
+        rmtree(experiments_dir)
+    experiments_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        sys.executable,
+        str(experiment_generator_dir / "experiment_generator.py"),
+        "--model-generator",
+        "ccb.torch_toolbox.model_generators.conv4",
+        "--experiment-dir",
+        str(experiments_dir),
+        "--benchmark",
+        "test",
+    ]
+    subprocess.check_call(cmd)
+
+    exp_dir = list(experiments_dir.iterdir())[0]
+
+    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+
+    for job_dir in (exp_dir / "MNIST").iterdir():
+        job = Job(job_dir)
+        print(job_dir)
+        print(job.metrics)
+        assert float(job.metrics["train_acc1_step"]) > 20
+
+
+def test_experiment_generator_on_benchmark():
+    experiment_generator_dir = Path(__file__).absolute().parent
+
+    experiments_dir = Path("/tmp/exp_gen_test")
+    if experiments_dir.exists():
+        rmtree(experiments_dir)
+    experiments_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = [
+        sys.executable,
+        str(experiment_generator_dir / "experiment_generator.py"),
+        "--model-generator",
+        "ccb.torch_toolbox.model_generators.conv4",
+        "--experiment-dir",
+        str(experiments_dir),
+        "--benchmark",
+        "default",
+    ]
+    subprocess.check_call(cmd)
+
+    exp_dir = list(experiments_dir.iterdir())[0]
+
+    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+
+
+if __name__ == "__main__":
+    test_experiment_generator_on_benchmark()

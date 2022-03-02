@@ -64,7 +64,7 @@ def load_tif(tif_path):
 
 
 def to_csv(info_list, dst_dir):
-    with open(Path(dst_dir, "info.csv"), 'w') as fd:
+    with open(Path(dst_dir, "info.csv"), "w") as fd:
         writer = csv.writer(fd)
         writer.writerows(info_list)
 
@@ -74,7 +74,7 @@ def find_missing(dir_list: List[Path], file_set):
     other_files = []
     for dir in dir_list:
         for file in dir.iterdir():
-            if file.name.endswith('.tif'):
+            if file.name.endswith(".tif"):
                 if file not in file_set:
                     missing_list.append(file)
             else:
@@ -85,13 +85,13 @@ def find_missing(dir_list: List[Path], file_set):
 
 
 def _extract_tag(file_name):
-    tags = re.findall('[A-Z]{4}', file_name)
+    tags = re.findall("[A-Z]{4}", file_name)
     if len(tags) == 0:
         tag = None
     elif len(tags) == 1:
         tag = tags[0]
     else:
-        print('more than one tag:', tags)
+        print("more than one tag:", tags)
         tag = tags[0]
     return tag
 
@@ -130,14 +130,14 @@ def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count)
             #         shapes.append("None")
 
             if np.all(exists[:3]):
-                split = 'test'
+                split = "test"
                 sample_list = make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True)
 
             elif np.all(exists[3:]):
-                split = 'train'
+                split = "train"
                 sample_list = make_sample(name, rgb_path_z, chm_path_z, hs_path_z, boxes, check_shapes=True, slice=True)
             else:
-                split = 'unk'
+                split = "unk"
                 sample_list = []
 
             info = (name, tag, len(boxes), split) + tuple(exists)
@@ -154,7 +154,7 @@ def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count)
             if max_count is not None and sample_count >= max_count:
                 break
 
-    partition.save(dataset_dir, 'original')
+    partition.save(dataset_dir, "original")
 
     to_csv(info_list, dataset_dir)
     find_missing([zenodo_dataset_dir], file_set)
@@ -164,7 +164,7 @@ BAND_INFO_LIST = [
     io.SpectralBand("red"),
     io.SpectralBand("green"),
     io.SpectralBand("blue"),
-    io.Height("Canopy Height Model", alt_names=("lidar", "CHM")),
+    io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM")),
     io.HyperSpectralBands("Neon", n_bands=369),
 ]
 
@@ -177,12 +177,12 @@ def extract_boxes(boxes, y_offset, x_offset, area_threshold=10):
 
     for box_ in boxes:
         box = box_.copy()
-        clip(box, 'xmin', x_offset)
-        clip(box, 'ymin', y_offset)
-        clip(box, 'xmax', x_offset)
-        clip(box, 'ymax', y_offset)
+        clip(box, "xmin", x_offset)
+        clip(box, "ymin", y_offset)
+        clip(box, "xmax", x_offset)
+        clip(box, "ymax", y_offset)
 
-        area = (box['xmax'] - box['xmin']) * (box['ymax'] - box['ymin'])
+        area = (box["xmax"] - box["xmin"]) * (box["ymax"] - box["ymin"])
         if area >= area_threshold:
             new_boxes.append(box)
     return new_boxes
@@ -192,8 +192,9 @@ def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
     # TODO slice boxes
     def get_patch(data, start_x, start_y, scale=1):
         start_x, start_y, size_x, size_y = tuple(
-            np.round(np.array([start_x, start_y, slice_shape[0], slice_shape[1]]) * scale).astype(np.int))
-        return data[start_x:start_x + size_x, start_y: start_y + size_y, :]
+            np.round(np.array([start_x, start_y, slice_shape[0], slice_shape[1]]) * scale).astype(np.int)
+        )
+        return data[start_x : start_x + size_x, start_y : start_y + size_y, :]
 
     shape = np.array(rgb_data.shape[:2])
     slice_shape = np.asarray(slice_shape)
@@ -208,7 +209,7 @@ def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
             chm_patch = get_patch(chm_data, stride_x * i, stride_y * j, scale=0.1)
             hs_patch = get_patch(hs_data, stride_x * i, stride_y * j, scale=0.1)
             new_boxes = extract_boxes(boxes, -stride_x * i, -stride_y * j)
-            data_list.append((rgb_patch, chm_patch, hs_patch, new_boxes, f'_{i:02d}_{j:02d}'))
+            data_list.append((rgb_patch, chm_patch, hs_patch, new_boxes, f"_{i:02d}_{j:02d}"))
     return data_list
 
 
@@ -229,13 +230,13 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, sli
     if slice:
         data_list = extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape=(400, 400))
     else:
-        data_list = [(rgb_data, chm_data, hs_data, boxes, '')]
+        data_list = [(rgb_data, chm_data, hs_data, boxes, "")]
 
     sample_list = []
     for rgb_data, chm_data, hs_data, new_boxes, suffix in data_list:
-        for tag, data in (('rgb', rgb_data), ('chm', chm_data), ('hs', hs_data)):
+        for tag, data in (("rgb", rgb_data), ("chm", chm_data), ("hs", hs_data)):
             if np.any(data < 0):
-                print(f'negative values in {tag}.')
+                print(f"negative values in {tag}.")
 
         if check_shapes:
             shapes = (rgb_data.shape, chm_data.shape, hs_data.shape)
@@ -251,17 +252,16 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, sli
                 band_info=BAND_INFO_LIST[i],
                 spatial_resolution=0.1,
                 transform=rgb_transform,
-                crs=crs)
+                crs=crs,
+            )
             bands.append(band)
 
         bands.append(
-            io.Band(
-                chm_data, band_info=BAND_INFO_LIST[3],
-                spatial_resolution=1, transform=chm_transform, crs=crs))
+            io.Band(chm_data, band_info=BAND_INFO_LIST[3], spatial_resolution=1, transform=chm_transform, crs=crs)
+        )
         bands.append(
-            io.Band(
-                hs_data, band_info=BAND_INFO_LIST[4],
-                spatial_resolution=1, transform=hs_transform, crs=crs))
+            io.Band(hs_data, band_info=BAND_INFO_LIST[4], spatial_resolution=1, transform=hs_transform, crs=crs)
+        )
 
         sample_list.append(io.Sample(bands, label=new_boxes, sample_name=name + suffix))
     return sample_list
