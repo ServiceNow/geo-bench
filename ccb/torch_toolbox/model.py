@@ -41,9 +41,11 @@ class Model(LightningModule):
         output = self(images)
         loss = self.loss_function(output, target)
         acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
-        self.log(f"{prefix}_loss", loss, on_step=True, on_epoch=True, logger=True)
-        self.log(f"{prefix}_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        self.log(f"{prefix}_loss", loss, logger=True)  # , on_step=True, on_epoch=True, logger=True)
+        self.log(
+            f"{prefix}_acc1", acc1, prog_bar=True, logger=True
+        )  # on_step=True, prog_bar=True, on_epoch=True, logger=True)
+        self.log(f"{prefix}_acc5", acc5, logger=True)  # , on_step=True, on_epoch=True, logger=True)
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")

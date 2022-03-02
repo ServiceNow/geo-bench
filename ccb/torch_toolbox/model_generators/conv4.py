@@ -35,6 +35,9 @@ class Conv4Generator(ModelGenerator):
             "batch_size": 64,
             "num_workers": 4,
             "logger": "csv",
+            "max_epochs": 1,
+            "val_check_interval": 50,
+            "limit_val_batches": 50,
         }
 
         hparams2 = hparams1.copy()
