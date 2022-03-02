@@ -48,7 +48,15 @@ def start():
         logger = pl.loggers.CSVLogger(job.dir)
     else:
         logger = None
-    trainer = pl.Trainer(gpus=0, max_epochs=1, max_steps=hparams.get("train_iters", None), logger=logger)
+    trainer = pl.Trainer(
+        gpus=0,
+        max_epochs=hparams["max_epochs"],
+        max_steps=hparams.get("train_iters", None),
+        limit_val_batches=hparams.get("limit_val_batches", 1.0),
+        val_check_interval=hparams.get("val_check_interval", 1.0),
+        accelerator=hparams.get("accelerator", None),
+        logger=logger,
+    )
     trainer.fit(model, datamodule)
 
 
