@@ -1,46 +1,35 @@
-import pytest
-import torch
-import torchvision
-import torchvision.transforms as tt
-from ccb.io.task import Classification
-from ccb.torch_toolbox.model import Model
-from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import head_generator, train_loss_generator
-from ccb.torch_toolbox.tests.util import Conv4Example
-import pytorch_lightning as pl
+import subprocess
+import sys
+from pathlib import Path
+import tempfile
+
+from ccb.experiment.experiment import Job
+from ccb.io import mnist_task_specs
+from ccb.torch_toolbox.model_generators import conv4
 
 
 def test_toolbox_mnist():
-    hyperparameters = {'lr_milestones': [10, 20],
-                       'lr_gamma': 0.1,
-                       'lr_backbone': 1e-3,
-                       'lr_head': 1e-3,
-                       'head_type': 'linear',
-                       'train_iters': 100,
-                       'features_shape': (64,),
-                       'loss_type': 'crossentropy'
-                       }
 
-    specs = TaskSpecifications(patch_size=(28, 28, 1, 1),
-                               label_type=Classification(10),
-                               dataset_name='MNIST')
+    with tempfile.TemporaryDirectory(prefix="ccb_mnist_test") as job_dir:
+        job = Job(job_dir)
+        mnist_task_specs.save(job.dir)
 
-    head = head_generator(specs, hyperparameters)
-    backbone = Conv4Example('./', specs, hyperparameters)
-    criterion = train_loss_generator(specs, hyperparameters)
-    model = Model(backbone,
-                  head,
-                  criterion,
-                  hyperparameters=hyperparameters)
+        hparams = conv4.model_generator.hp_search(mnist_task_specs)[0][0]
+        job.save_hparams(hparams)
 
-    t = tt.ToTensor()
-    train_dataset = torchvision.datasets.MNIST(
-        '/tmp/datasets/mnist',
-        transform=t,
-        download=True)
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=1)
+        torch_toolbox_dir = Path(__file__).absolute().parent.parent
+        cmd = [
+            sys.executable,
+            str(torch_toolbox_dir / "trainer.py"),
+            "--model-generator",
+            "ccb.torch_toolbox.model_generators.conv4",
+            "--job-dir",
+            job.dir,
+        ]
+        subprocess.check_call(cmd)
+        print(job.metrics)
+        assert float(job.metrics["train_acc1_step"]) > 20  # has to be better than random after seeing 20 batches
 
-    trainer = pl.Trainer(gpus=0, max_epochs=1, max_steps=hyperparameters['train_iters'], logger=False)
-    trainer.fit(model, train_dataloaders=train_loader)
-    # print(trainer.logged_metrics)
-    assert(trainer.logged_metrics['train_acc1_epoch'] > 11)  # has to be better than random after seeing 20 batches
+
+if __name__ == "__main__":
+    test_toolbox_mnist()

@@ -13,8 +13,9 @@ from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
 from warnings import warn
-from ccb.io.task import LabelType, TaskSpecifications
-from collections import OrderedDict
+from ccb.io.label import LabelType
+from collections import OrderedDict, defaultdict
+from tqdm import tqdm
 
 
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -62,6 +63,9 @@ class BandInfo(object):
     def __str__(self):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
+    def __repr__(self):
+        return "BandInfo(name={}, original_res={:.1f}m)".format(self.name, self.spatial_resolution)
+
     def expand_name(self):
         return [self.name]
 
@@ -76,20 +80,34 @@ class SpectralBand(BandInfo):
     def __key(self):
         return (self.name, self.wavelength)
 
+    def __repr__(self):
+        return "{}(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
+        # self.__class__.__name__
+
 
 class Sentinel1(SpectralBand):
-    pass
+    def __repr__(self):
+        return "Sentinel1(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
 
 
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
+
+    def __repr__(self):
+        return "Sentinel2(name={}, wavelen={}, original_res={:.1f}m)".format(
+            self.name, self.wavelength, self.spatial_resolution
+        )
 
 
 class Mask(BandInfo):
     pass
 
 
-class Height(BandInfo):
+class ElevationBand(BandInfo):
     pass
 
 
@@ -138,7 +156,7 @@ sentinel1_8_bands = [
     Sentinel1("05 - VH.LEE Filtered"),
     Sentinel1("06 - VV.LEE Filtered"),
     Sentinel1("07 - VH.LEE Filtered.Real"),
-    Sentinel1("08 - VV.LEE Filtered.Imaginary")
+    Sentinel1("08 - VV.LEE Filtered.Imaginary"),
 ]
 
 
@@ -184,7 +202,7 @@ class Band:
     ) -> None:
         """
         Args:
-            data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands) 
+            data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands)
             band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
             spatial_resolution: current Spatial resolution of the pixels in meters. Note: Band.band_info.spatial_resolution  contains
                 the original spatial resolution of the sensor. If data is a resampled version of the original data, Band.spatial_resolution
@@ -194,7 +212,7 @@ class Band:
             transform: georeferncing transformation as provided by rasterio. See rasterio.transform.from_bounds for example.
             crs: coordinate refenence system for the transformation.
             meta_info: A dict of any information that might be useful.
-            convert_to_int16: By default, data will be converted to int16 when saved to_geotiff. ValueError will be raised if conversion is 
+            convert_to_int16: By default, data will be converted to int16 when saved to_geotiff. ValueError will be raised if conversion is
                 not possible. Set this flag to False to bypass this mechanism.
         """
         self.data = data
@@ -206,6 +224,15 @@ class Band:
         self.crs = crs
         self.meta_info = meta_info
         self.convert_to_int16 = convert_to_int16
+
+    def __repr__(self):
+        if isinstance(self.data, np.ndarray):
+            shape = self.data.shape
+        else:
+            shape = "unknown"
+        return "Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})".format(
+            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date
+        )
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -329,12 +356,17 @@ def _map_bands(band_info_set):
 
 # TODO need to make sure that band order is consistant through the dataset
 class Sample(object):
-    def __init__(self, bands: List[Band], label: Union[LabelType, float, int], sample_name: str) -> None:
+    def __init__(self, bands: List[Band], label, sample_name: str) -> None:
         super().__init__()
         self.bands = bands
         self.label = label
         self.sample_name = sample_name
         self._build_index()
+
+    def __repr__(self):
+        bands = "\n".join(band.__repr__() for band in self.bands)
+        np.set_printoptions(threshold=5)
+        return "Sample:(name={}, bands=\n{}\n)".format(self.sample_name, self.bands)
 
     def _build_index(self):
 
@@ -372,7 +404,7 @@ class Sample(object):
         resample_order: int = 3,
     ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
         """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands). If it contains MultiBands, the final
-        dimension 
+        dimension
 
         Args:
             dates: Selects a subset of dates. Defaults to None, which selects all dates.
@@ -380,7 +412,7 @@ class Sample(object):
                 Will search into band_info.name and band_info.alt_names. You cen use, e.g., ('red', 'green', 'blue').
             resample: will enable resampling bands to match the largest shape. Defaults to False and raises an error
                 if bands are not all the same shape. Resampling is performed using scipy.ndimage.zoom with order `resample_order`
-            fill_value: Fills missing bands with this value. Defaults to None, which will raise an error for missing bands. 
+            fill_value: Fills missing bands with this value. Defaults to None, which will raise an error for missing bands.
                 The type or np.dtype of fill_value may influence the numerical precision of the returned array. See numpy.array's documentation.
             resample_order: passed to scipy.ndimage.zoom when resampling.
 
@@ -472,7 +504,7 @@ class Sample(object):
         if len(file_set) != len(self.bands):
             raise ValueError(f"Duplicate band description in bands. Perhaps date is missing?")
 
-        with open(Path(dst_dir, "band_index.json"), 'w') as fd:
+        with open(Path(dst_dir, "band_index.json"), "w") as fd:
             json.dump(tuple(band_index.items()), fd)
 
         if self.label is not None:
@@ -488,7 +520,7 @@ class Sample(object):
 def load_sample(sample_dir, band_names=None):
     sample_dir = Path(sample_dir)
     band_list = []
-    with open(Path(sample_dir, 'band_index.json'), "r") as fd:
+    with open(Path(sample_dir, "band_index.json"), "r") as fd:
         band_index = OrderedDict(json.load(fd))
 
     if band_names is None:
@@ -498,8 +530,8 @@ def load_sample(sample_dir, band_names=None):
         for file_name in band_index[band_name]:
             band_list.append(load_band(Path(sample_dir, file_name)))
 
-    label_file = Path(sample_dir, 'label.json')
-    label_file_tif = Path(sample_dir, 'label.tif')
+    label_file = Path(sample_dir, "label.json")
+    label_file_tif = Path(sample_dir, "label.tif")
     if label_file.exists():
         with open(label_file, "r") as fd:
             label = json.load(fd)
@@ -509,7 +541,7 @@ def load_sample(sample_dir, band_names=None):
 
 
 def _largest_shape(band_array):
-    """Extract the largest shape and the dtype from an array of bands. 
+    """Extract the largest shape and the dtype from an array of bands.
     Assertion error is raised if there is more than one type."""
     shape = [0, 0]
     for band in band_array.flat:
@@ -539,7 +571,7 @@ class Partition(dict):
 
     @staticmethod
     def check_split_name(split_name):
-        if split_name not in ('train', 'valid', 'test'):
+        if split_name not in ("train", "valid", "test"):
             raise ValueError(f"split_name must be one of 'train', 'valid', 'test'. Got {split_name}.")
 
     def __init__(self, partition_dict=None) -> None:
@@ -576,31 +608,62 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, active_partition="default") -> None:
+    def __init__(self, dataset_dir, split=None, partition_name="default") -> None:
         """
         Args:
             dataset_dir: the path containing the samples of the dataset.
-            active_parition: Each dataset can have more than 1 partiiton. Use this field to specify the active_partition.
+            split: Specify split to use or None for all
+            active_partition: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
         """
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
-        self.active_partition = active_partition
+        self.split = split
         self._load_path_list()
-        self._load_partition()
+        self._load_partition(partition_name)
+        assert split is None or split in self.list_splits(), 'Invalid split {}'.format(split)
+        self._load_stats()
+        
+    def _load_stats(self):
+        self.stats = {}
+        # This will actually load all partitions at once to simplify the logic
+        # Otherwise we would need to change stats every time set_split or set_active_partition() is called
+        current_partition = self.active_partition_name # push current 
+        for partition in self.list_partitions():
+            self.set_active_partition(partition)
+            for split in self.list_splits():
+                print(f'Attempting to load stats for {partition}:{split}')
+                try:
+                    with open(self.dataset_dir / f'{partition}_{split}_bandstats.json', 'r', encoding='utf8') as fp:
+                        stats = json.load(fp)
+                        self.stats.setdefault(partition, {})
+                        self.stats[partition][split] = stats
+                        print('-> success')
+                except Exception as e:
+                    print(f'-> Could not load stats {e}. Maybe (re)compute them with bandstats.py?')
+
+        # pop current partition
+        self.set_active_partition(current_partition)
 
     def _load_path_list(self) -> None:
+        # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
+        '''
+        for p in self.dataset_dir.glob('*_partition.json'):
+            partition_name = p.name.split("_partition.json")[0]
+            self._partition_path_dict[partition_name] = p
+        '''
         self._partition_path_dict = {}
         self._sample_name_list = []
-        for p in self.dataset_dir.iterdir():
+        for p in self.dataset_dir.glob('*'):#self.dataset_dir.iterdir():
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
-            elif p.name == "task_specifications.pkl":
+            elif p.name == "task_specs.pkl":
                 self._task_specs_path = p
             elif p.is_dir():
                 self._sample_name_list.append(p.name)
 
-    def _load_partition(self):
+
+    def _load_partition(self, partition_name):
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -610,40 +673,61 @@ class Dataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = self._partition_path_dict.keys()[0]
+                partition_name = self._partition_path_dict.keys()[0]  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(f"No default partition found for dataset {self.dataset_dir.name}. Using {partition_name} as default.")
 
-        self.set_active_partition(partition_name="default")
+        self.set_active_partition(partition_name)
 
-    def _iter_dataset(self, max_count=None, split=None):
-        if split is None:
+    def __getitem__(self, idx):
+        if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[split]
+            sample_name_list = self.active_partition[self.split]
+        sample_path = Path(self.dataset_dir, sample_name_list[idx])
+        return load_sample(sample_path)
+
+    def _iter_dataset(self, max_count=None):
+        if self.split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[self.split]
         sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
         for sample_name in sample_names:
             yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count=None, split=None):
+    def iter_dataset(self, max_count=None):
         n = len(self._sample_name_list)
         if max_count is None:
             max_count = n
         else:
             max_count = min(n, max_count)
 
-        return GeneratorWithLength(self._iter_dataset(max_count=max_count, split=split), max_count)
+        return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
 
     @cached_property
-    def task_specs(self) -> TaskSpecifications:
+    def task_specs(self):
         if self._task_specs_path is None:
-            raise ValueError(f"The file 'task_specifications.pkl' does not exist for dataset {self.dataset_dir.name}.")
+            raise ValueError(f"The file 'task_specs.pkl' does not exist for dataset {self.dataset_dir.name}.")
         with open(self._task_specs_path, "rb") as fd:
             return pickle.load(fd)
 
+    def list_splits(self):
+        '''
+        List splits for active partition
+        '''
+        return list(self.active_partition.keys())
+
+    def set_split(self, split):
+        assert split is None or split in self.list_splits()
+        self.split = split
+
+    def get_split(self):
+        return self.split
+
     def list_partitions(self):
-        return self._partition_path_dict.keys()
+        return list(self._partition_path_dict.keys())
 
     def set_active_partition(self, partition_name="default"):
         if partition_name not in self._partition_path_dict:
@@ -657,7 +741,21 @@ class Dataset:
             return json.load(fd)
 
     def __len__(self):
-        return len(self._sample_name_list)
+        if self.split is None:
+            sample_name_list = self._sample_name_list
+        else:
+            sample_name_list = self.active_partition[self.split]
+        return len(sample_name_list)
+
+    def __repr__(self):
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}".format(
+            self.dataset_dir, self.split, self.active_partition_name, len(self)
+        )
+
+    def __str__(self):
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})".format(
+            self.dataset_dir, self.split, self.active_partition_name, len(self)
+        )
 
 
 class Stats:
@@ -674,6 +772,19 @@ class Stats:
         self.percentile_99 = percentile_99
         self.percentile_99_9 = percentile_99_9
 
+    def to_dict(self):
+        return OrderedDict([ 
+            ('min', self.min),
+            ('max', self.max),
+            ('mean', self.mean),
+            ('std', self.std),
+            ('median', self.median),
+            ('percentile_0_1', self.percentile_0_1),
+            ('percentile_1', self.percentile_1),
+            ('percentile_99', self.percentile_99),
+            ('percentile_99_9', self.max),
+        ])
+
 
 def compute_stats(values):
     q_0_1, q_1, median, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 50, 99, 99.9])
@@ -689,6 +800,97 @@ def compute_stats(values):
         percentile_99_9=q_99_9,
     )
     return stats
+
+
+def compute_stats2(values):
+    '''
+    Returns a plain dictionary of statistics (can be directly serialized to .json)
+    '''
+    q_0_1, q_1, q_5, median, q_95, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 5, 50, 95, 99, 99.9])
+    return {
+        'min':float(np.min(values)),
+        'max':float(np.max(values)),
+        'mean':float(np.mean(values)),
+        'std':float(np.std(values)),
+        'median':float(median),
+        'percentile_0_1':float(q_0_1),
+        'percentile_1':float(q_1),
+        'percentile_5':float(q_1),
+        'percentile_95':float(q_95),
+        'percentile_99':float(q_99),
+        'percentile_99_9':float(q_99_9),
+    }
+
+def dataset_statistics(dataset_iterator, n_value_per_image=1000):
+
+    accumulator = defaultdict(list)
+
+    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
+
+        for band in sample.bands:
+            accumulator[band.band_info.name].append(
+                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+            )
+
+        if isinstance(sample.label, Band):
+            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+        elif isinstance(sample.label, (list, tuple)):
+            for obj in sample.label:
+                if isinstance(obj, dict):
+                    for key, val in obj.items():
+                        accumulator[f"label_{key}"].append(val)
+        else:
+            accumulator["label"].append(sample.label)
+
+    band_values = {}
+    band_stats = {}
+    for name, values in accumulator.items():
+        values = np.hstack(values)
+        band_values[name] = values
+        band_stats[name] = compute_stats(values)
+
+    return band_values, band_stats
+
+
+
+def dataset_statistics2(dataset, n_value_per_image=1000, n_samples=None):
+    '''
+    Returns JSON-serializable statistics, take random subser of samples and for each sample, random subset of values.
+    '''
+    accumulator = defaultdict(list)
+
+    if n_samples is not None and n_samples < len(dataset):
+        indices = np.random.choice(len(dataset), n_samples, replace=False)
+    else:
+        indices = list(range(len(dataset)))
+
+    for i in tqdm(indices, desc="Extracting Statistics"):
+
+        sample = dataset[i]
+
+        for band in sample.bands:
+            accumulator[band.band_info.name].append(
+                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+            )
+
+        if isinstance(sample.label, Band):
+            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+        elif isinstance(sample.label, (list, tuple)):
+            for obj in sample.label:
+                if isinstance(obj, dict):
+                    for key, val in obj.items():
+                        accumulator[f"label_{key}"].append(val)
+        else:
+            accumulator["label"].append(sample.label)
+
+    band_values = {}
+    band_stats = {}
+    for name, values in accumulator.items():
+        values = np.hstack(values)
+        band_values[name] = values
+        band_stats[name] = compute_stats2(values)
+
+    return band_stats
 
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):

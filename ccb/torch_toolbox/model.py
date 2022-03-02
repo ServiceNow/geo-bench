@@ -3,7 +3,7 @@ import torchvision.transforms as tt
 import torch.nn.functional as F
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
-from ccb.io.task import Classification
+from ccb.io import Classification
 
 
 class Model(LightningModule):
@@ -86,7 +86,7 @@ class ModelGenerator:
     Class implemented by the user. The goal is to specify how to connect the backbone with the head and the loss function.
     """
 
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path=None) -> None:
         """This should not load the model at this point"""
         self.model_path = model_path
 
@@ -94,6 +94,7 @@ class ModelGenerator:
         """The user can provide a set of `max_num_configs` hyperparameters configuration to search for, based on task_specs"""
         # hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
         # return hparams_to_string(hp_configs)
+        raise NotImplementedError()
 
     def generate(self, task_specs, hyperparams):
         """Generate a Model to train
@@ -130,7 +131,7 @@ def head_generator(task_specs, hyperparams):
     """
     if isinstance(task_specs.label_type, Classification):
         if hyperparams["head_type"] == "linear":
-            (in_ch,) = hyperparams['features_shape']
+            (in_ch,) = hyperparams["features_shape"]
             out_ch = task_specs.label_type.n_classes
             return torch.nn.Linear(in_ch, out_ch)
         else:

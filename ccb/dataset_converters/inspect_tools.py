@@ -1,4 +1,4 @@
-from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats
+from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats, dataset_statistics
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
@@ -20,35 +20,6 @@ def compare(a, b, name, src_a, src_b):
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def dataset_statistics(dataset_iterator, n_value_per_image=1000):
-
-    accumulator = defaultdict(list)
-
-    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
-
-        for band in sample.bands:
-            accumulator[band.band_info.name].append(
-                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-            )
-
-        if isinstance(sample.label, Band):
-            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
-        elif isinstance(sample.label, (list, tuple)):
-            for obj in sample.label:
-                if isinstance(obj, dict):
-                    for key, val in obj.items():
-                        accumulator[f"label_{key}"].append(val)
-        else:
-            accumulator["label"].append(sample.label)
-
-    band_values = {}
-    band_stats = {}
-    for name, values in accumulator.items():
-        values = np.hstack(values)
-        band_values[name] = values
-        band_stats[name] = compute_stats(values)
-
-    return band_values, band_stats
 
 
 def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
@@ -112,7 +83,6 @@ def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=
 
 
 def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_width=128):
-
     def callback(center, width):
         rgb_extractor = make_rgb_extractor(center, width)
         images = hyperspectral_to_rgb(samples, band_name, rgb_extractor, percentile_max)
@@ -122,11 +92,9 @@ def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_w
 
 
 def make_rgb_extractor(center, width):
-
     def callback(hs_data):
-
         def _extrac_band(start, stop):
-            return hs_data[:, :, int(start):int(stop)].mean(axis=2)
+            return hs_data[:, :, int(start) : int(stop)].mean(axis=2)
 
         h, w, d = hs_data.shape
         _center = max(0, center - width * 1.5) + width * 1.5
@@ -175,13 +143,13 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
     if label_patch_size is not None:
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
-        scale = np.array([1., 1.])
+        scale = np.array([1.0, 1.0])
     if isinstance(label, (list, tuple)):
         im = Image.fromarray(image)
         ctxt = ImageDraw.Draw(im)
         for obj in label:
-            if isinstance(obj, dict) and 'xmin' in obj:
-                coord = np.array([[obj['xmin'], obj['ymin']], [obj['xmax'], obj['ymax']]])
+            if isinstance(obj, dict) and "xmin" in obj:
+                coord = np.array([[obj["xmin"], obj["ymin"]], [obj["xmax"], obj["ymax"]]])
                 ctxt.rectangle(list((coord * scale).flat), outline=(255, 0, 0))
             elif isinstance(obj, (tuple, list)) and len(obj) == 2:
                 size = 5 * scale
@@ -203,7 +171,7 @@ def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=
             images = [overlay_label(image, sample.label, label_patch_size) for image, sample in zip(images, samples)]
 
         all_images.extend(images)
-        group_name = '-'.join(band_group)
+        group_name = "-".join(band_group)
         labels.extend((group_name,) * len(images))
 
     if isinstance(samples[0].label, Band):
@@ -260,15 +228,17 @@ def leaflet_map(samples):
 
 def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
-    dataset = Dataset(dataset_dir)
-    samples = list(tqdm(dataset.iter_dataset(n_samples, split=split), desc="Loading Samples"))
+    dataset = Dataset(dataset_dir, split=split)
+    samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
     band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
     plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
     return dataset, samples, band_values, band_stats
 
-load_and_veryify_samples = load_and_verify_samples # compatibility
+
+load_and_veryify_samples = load_and_verify_samples  # compatibility
+
 
 def map_class_id_to_color(id_array, n_classes, background_id=0, background_color=(0, 0, 0)):
     """Attribute a color for each classes using a rainbow colormap."""

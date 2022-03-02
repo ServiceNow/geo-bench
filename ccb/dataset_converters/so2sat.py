@@ -52,8 +52,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir)
-    #for split_name in ["train", "validation", "test"]:
-    for split_name in ["training", "validation", "test"]:
+    n_samples = 0
+    for split_name in ["train", "validation", "test"]:
         so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
         for i, tg_sample in enumerate(tqdm(so2sat_dataset)):
             sample_name = f"id_{i:04d}"
@@ -63,12 +63,15 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
             sample = make_sample(images, int(label), sample_name, task_specs)
             sample.write(dataset_dir)
-            
+
             partition.add(split_name.replace("validation", "valid"), sample_name)
 
-            # temporary for creating small datasets for development purpose
-            if max_count is not None and i + 1 >= max_count:
+            n_samples += 1
+            if max_count is not None and n_samples >= max_count:
                 break
+
+        if max_count is not None and n_samples >= max_count:
+            break
 
     partition.save(dataset_dir, "original")
 

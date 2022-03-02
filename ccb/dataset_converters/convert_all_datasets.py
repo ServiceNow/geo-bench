@@ -6,7 +6,16 @@ from ccb import io
 from pathlib import Path
 from importlib import import_module
 
-CONVERTERS = ["brick_kiln", "neon_tree", "cv4a_kenya_crop_type", "benin_smallholder_cashews", "eurosat"]
+CONVERTERS = [
+    "brick_kiln",
+    "neon_tree",
+    "cv4a_kenya_crop_type",
+    "benin_smallholder_cashews",
+    "eurosat",
+    "benin_smallholder_cashews",
+    "so2sat",
+    "nz_cattle_detection",
+]
 
 MAX_COUNT = 1000
 
@@ -14,17 +23,19 @@ MAX_COUNT = 1000
 def convert(module_name):
     converter = import_module("ccb.dataset_converters." + module_name)
     assert Path(converter.DATASET_DIR).parent == Path(
-        io.datasets_dir), f"{Path(converter.DATASET_DIR).parent} vs {io.datasets_dir}"
+        io.datasets_dir
+    ), f"{Path(converter.DATASET_DIR).parent} vs {io.datasets_dir}"
     assert Path(converter.DATASET_DIR).name == converter.DATASET_NAME
 
-    shutil.rmtree(converter.DATASET_DIR)
+    if Path(converter.DATASET_DIR).exists():
+        shutil.rmtree(converter.DATASET_DIR)
     converter.convert(max_count=MAX_COUNT)
 
 
 if __name__ == "__main__":
 
     response = input(f"This will first delete all datasets in {io.datasets_dir}. To proceed, press 'y'.")
-    if response.lower() == 'y':
+    if response.lower() == "y":
         jobs = []
         for converter in CONVERTERS:
             job = multiprocessing.Process(target=convert, args=(converter,))
