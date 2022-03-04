@@ -98,12 +98,12 @@ def toolkit_dispatcher(exp_dir, prompt=True):
     print("Done.")
 
 
-def push_code():
+def push_code(dir):
     """Push the local code to the cluster"""
 
     print("Pushing code...")
     _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_USER}", hide_stderr=True)
-    cmd = f" rsync -a . /tmp/rg_climate_benchmark --delete --exclude-from='.eaiignore' && \
+    cmd = f" rsync -a {dir} /tmp/rg_climate_benchmark --delete --exclude-from='{dir}/.eaiignore' && \
            eai data push {TOOLKIT_CODE}@{TOOLKIT_USER} /tmp/rg_climate_benchmark:/ && \
            rm -rf /tmp/rg_climate_benchmark"
     _run_shell_cmd(cmd)
@@ -118,12 +118,18 @@ def start():
 
     parser.add_argument(
         "--experiment-dir",
-        help="The based directory in which experiment-related files should be created.",
+        help="The base directory in which experiment-related files should be created.",
         required=True,
     )
 
+    parser.add_argument(
+        "--code-dir",
+        help="The directory that contains the ccb package (default='.').",
+        default=".",
+    )
+
     args = parser.parse_args()
-    push_code()
+    push_code(args.code_dir)
     toolkit_dispatcher(args.experiment_dir)
 
 
