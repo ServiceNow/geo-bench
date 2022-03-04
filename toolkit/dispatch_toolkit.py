@@ -5,6 +5,7 @@ import subprocess
 from subprocess import PIPE
 
 
+# XXX: This needs to appear before the constants since it is used to extract user toolkit info
 def _run_shell_cmd(cmd: str, hide_stderr=False):
     """Run a shell command and return the output"""
     result = subprocess.run(cmd, shell=True, stdout=PIPE, stderr=PIPE if hide_stderr else None, universal_newlines=True)
@@ -21,7 +22,16 @@ TOOLKIT_USER = f"{TOOLKIT_USER_ORG}.{TOOLKIT_USER_ACCOUNT}"
 TOOLKIT_IMAGE = "registry.console.elementai.com/snow.rg_climate_benchmark/base:main"
 TOOLKIT_DATA = "snow.rg_climate_benchmark.data"
 TOOLKIT_CODE = "snow.rg_climate_benchmark.code"
-TOOLKIT_BOOTSTRAP_CMD = "cd /mnt/code/ && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin"
+TOOLKIT_BOOTSTRAP_CMD = 'cd /mnt/code/ && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin && echo "Bootstrap completed. Starting execution...\\n\\n\\n"'
+TOOLKIT_ENVS = [
+    "CC_BENCHMARK_SOURCE_DATASETS=/mnt/data/cc_benchmark/source",
+    "CC_BENCHMARK_CONVERTED_DATASETS=/mnt/data/cc_benchmark/converted",
+]
+
+# Computational requirements
+TOOLKIT_CPU = 2
+TOOLKIT_GPU = 1
+TOOLKIT_MEM = 32
 
 
 def _load_envs():
@@ -30,6 +40,7 @@ def _load_envs():
 
 
 def toolkit_job(script: Path):
+    """Launch a job on toolkit along with a specific script (assumed runnable with sh)"""
     job_name = (
         script.parent.name.lower()
     )  # TODO actually job_name needs to be unique across all jobs? maybe we need to rethink that.
@@ -40,21 +51,25 @@ def toolkit_job(script: Path):
     cmd = f"eai job new -i {TOOLKIT_IMAGE} --non-preemptable".split(" ")
 
     # Set job name
-    # cmd += ["--name", job_name]  # TODO: causes issues
+    # cmd += ["--name", job_name]  # TODO: Job names cause issues and are not super useful
+
+    # Computational requirements
+    cmd += [f"--cpu {TOOLKIT_CPU}"]
+    cmd += [f"--gpu {TOOLKIT_GPU}"]
+    cmd += [f"--mem {TOOLKIT_MEM}"]
 
     # Mount data objects
     cmd += ["--data", f"{TOOLKIT_DATA}:/mnt/data"]
     cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_USER}:/mnt/code"]
 
     # Set all environment variables
-    for e in _load_envs():
+    for e in TOOLKIT_ENVS:
         cmd += ["--env", e]
 
     # TODO: faire poetry install on boot
     cmd += [
         "--",
-        # f"sh -c '{TOOLKIT_BOOTSTRAP_CMD} && {str(script)}'"
-        f"sh -c '{TOOLKIT_BOOTSTRAP_CMD}'",
+        f"sh -c '{TOOLKIT_BOOTSTRAP_CMD} && cd /mnt/code/ && sh {str(script)}'",
     ]  # TODO do we have to put absolute path? Could we use relative path of script?
 
     # Launch the job
@@ -64,6 +79,7 @@ def toolkit_job(script: Path):
 
 
 def toolkit_dispatcher(exp_dir, prompt=True):
+    """Scans the exp_dir for experiments to launch"""
     exp_dir = Path(exp_dir)
 
     print(f"Scanning {exp_dir}.")
@@ -82,6 +98,17 @@ def toolkit_dispatcher(exp_dir, prompt=True):
     print("Done.")
 
 
+def push_code():
+    """Push the local code to the cluster"""
+
+    print("Pushing code...")
+    _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_USER}", hide_stderr=True)
+    cmd = f" rsync -a . /tmp/rg_climate_benchmark --delete --exclude-from='.eaiignore' && \
+           eai data push {TOOLKIT_CODE}@{TOOLKIT_USER} /tmp/rg_climate_benchmark:/ && \
+           rm -rf /tmp/rg_climate_benchmark"
+    _run_shell_cmd(cmd)
+
+
 def start():
     # Command line arguments
     parser = argparse.ArgumentParser(
@@ -96,27 +123,9 @@ def start():
     )
 
     args = parser.parse_args()
-
-    # TODO push code in user specific directory
-
+    push_code()
     toolkit_dispatcher(args.experiment_dir)
 
 
-def push_code():
-    """Push the local code to the cluster
-    :param toolkit: contains value related to toolkit (e.g. user_account)
-    """
-
-    print("Pushing code...")
-    _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_USER}")
-    # TODO: path is .. since we are in the toolkit dir. Could make cleaner later
-    cmd = f" rsync -a .. /tmp/rg_climate_benchmark --delete --exclude-from='.eaiignore' && \
-           eai data push {TOOLKIT_CODE}@{TOOLKIT_USER} /tmp/rg_climate_benchmark:/ && \
-           rm -rf /tmp/rg_climate_benchmark"
-    _run_shell_cmd(cmd)
-
-
 if __name__ == "__main__":
-    # start()
-    push_code()
-    toolkit_job(Path("/bla"))
+    start()
