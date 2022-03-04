@@ -2,7 +2,5 @@
 *.pkl
 *.zip
 *.png
-exp_*/
-git/
-data/
+.git/
 ipynb_checkpoints/
