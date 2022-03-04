@@ -38,3 +38,11 @@ class DataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=self.num_workers,
         )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.task_specs.get_dataset(split="test"),
+            batch_size=self.val_batch_size,
+            shuffle=False,
+            num_workers=self.num_workers,
+        )

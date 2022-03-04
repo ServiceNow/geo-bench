@@ -3,7 +3,14 @@ from typing import List
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
+from ccb.torch_toolbox.model import (
+    BackBone,
+    ModelGenerator,
+    Model,
+    eval_metrics_generator,
+    head_generator,
+    train_loss_generator,
+)
 import torch.nn.functional as F
 import torch
 
@@ -20,7 +27,8 @@ class Conv4Generator(ModelGenerator):
         backbone = Conv4(self.model_path, task_specs, hyperparameters)
         head = head_generator(task_specs, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
-        return Model(backbone, head, loss, hyperparameters)
+        eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
+        return Model(backbone, head, loss, hyperparameters, eval_metrics, eval_metrics)
 
     def hp_search(self, task_specs, max_num_configs=10):
         hparams1 = {
@@ -38,6 +46,7 @@ class Conv4Generator(ModelGenerator):
             "max_epochs": 1,
             "val_check_interval": 50,
             "limit_val_batches": 50,
+            "limit_test_batches": 50,
         }
 
         hparams2 = hparams1.copy()

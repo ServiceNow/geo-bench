@@ -4,7 +4,6 @@ from os import mkdir
 import pickle
 import stat
 import sys
-
 from importlib import import_module
 from itertools import chain
 from pathlib import Path
@@ -82,8 +81,11 @@ class Job:
     @cached_property
     def metrics(self):
         with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
-            data = next(csv.DictReader(fd))
-        return data
+            ret = {}
+            # FIXME: This would be more efficient if done backwards
+            for entry in csv.DictReader(fd):
+                ret.update({k: v for k, v in entry.items() if v != ""})
+        return ret
 
     @cached_property
     def task_specs(self):
