@@ -53,11 +53,13 @@ def start():
         max_epochs=hparams["max_epochs"],
         max_steps=hparams.get("train_iters", None),
         limit_val_batches=hparams.get("limit_val_batches", 1.0),
+        limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         logger=logger,
     )
     trainer.fit(model, datamodule)
+    trainer.test(model, datamodule)
 
 
 if __name__ == "__main__":
