@@ -1,0 +1,8 @@
+*.npy
+*.pkl
+*.zip
+*.png
+exp_*/
+git/
+data/
+ipynb_checkpoints/
