@@ -4,8 +4,7 @@ version = "0.0.1"
 description = ""
 authors = ["ATG Vision <atg-vision@servicenow.com>"]
 packages = [
-    { include = "ccb" },
-    { include = "toolbox" }
+    { include = "ccb" }
 ]
 
 [tool.poetry.dependencies]
@@ -55,6 +54,5 @@ exclude = '''
 '''
 
 [tool.poetry.scripts]
-experiment-generator = "toolbox.tasks.experiment_generator:start"
-train-classification = "toolbox.tasks.train.classification:start"
-train-segmentation = "ccb.tasks.train.segmentation:start"
+ccb-expgen = "ccb.experiment.experiment_generator:start"
+ccb-trainer = "ccb.torch_toolbox.trainer:start"
