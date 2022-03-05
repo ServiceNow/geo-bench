@@ -17,11 +17,15 @@ TOOLKIT_USER_ORG = _run_shell_cmd("eai organization get --field name")
 TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
 TOOLKIT_USER = f"{TOOLKIT_USER_ORG}.{TOOLKIT_USER_ACCOUNT}"
 
+# Get current git branch (used to tag code by user+branch)
+GIT_BRANCH = _run_shell_cmd("git rev-parse --abbrev-ref HEAD")
+
 # Infrastructure setup variables
 # Note: Give access to new users by adding them to the eai.rg_climate_benchmark.admin role.
 TOOLKIT_IMAGE = "registry.console.elementai.com/snow.rg_climate_benchmark/base:main"
 TOOLKIT_DATA = "snow.rg_climate_benchmark.data"
 TOOLKIT_CODE = "snow.rg_climate_benchmark.code"
+TOOLKIT_CODE_VERSION = f"{TOOLKIT_USER}_{GIT_BRANCH}"
 TOOLKIT_BOOTSTRAP_CMD = 'cd /mnt/code/ && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin && echo "Bootstrap completed. Starting execution...\\n\\n\\n"'
 TOOLKIT_ENVS = [
     "CC_BENCHMARK_SOURCE_DATASETS=/mnt/data/cc_benchmark/source",
@@ -54,13 +58,13 @@ def toolkit_job(script: Path):
     # cmd += ["--name", job_name]  # TODO: Job names cause issues and are not super useful
 
     # Computational requirements
-    cmd += [f"--cpu {TOOLKIT_CPU}"]
-    cmd += [f"--gpu {TOOLKIT_GPU}"]
-    cmd += [f"--mem {TOOLKIT_MEM}"]
+    cmd += ["--cpu", str(TOOLKIT_CPU)]
+    cmd += ["--gpu", str(TOOLKIT_GPU)]
+    cmd += ["--mem", str(TOOLKIT_MEM)]
 
     # Mount data objects
     cmd += ["--data", f"{TOOLKIT_DATA}:/mnt/data"]
-    cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_USER}:/mnt/code"]
+    cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION}:/mnt/code"]
 
     # Set all environment variables
     for e in TOOLKIT_ENVS:
@@ -100,11 +104,10 @@ def toolkit_dispatcher(exp_dir, prompt=True):
 
 def push_code(dir):
     """Push the local code to the cluster"""
-
     print("Pushing code...")
-    _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_USER}", hide_stderr=True)
-    cmd = f" rsync -a {dir} /tmp/rg_climate_benchmark --delete --exclude-from='{dir}/.eaiignore' && \
-           eai data push {TOOLKIT_CODE}@{TOOLKIT_USER} /tmp/rg_climate_benchmark:/ && \
+    _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_CODE_VERSION}", hide_stderr=True)
+    cmd = f"rsync -a '{dir}' /tmp/rg_climate_benchmark --delete --exclude-from='{dir}/.eaiignore' && \
+           eai data push {TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION} /tmp/rg_climate_benchmark:/ && \
            rm -rf /tmp/rg_climate_benchmark"
     _run_shell_cmd(cmd)
 
