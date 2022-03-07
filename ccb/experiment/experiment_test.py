@@ -1,5 +1,3 @@
-# TODO(drouin) finish adapting to pytest  (different than unittest)
-
 import os
 from pathlib import Path
 from shutil import rmtree
@@ -59,22 +57,15 @@ def test_load_module():
     assert hasattr(model_generator, "hp_search")
 
 
-# def test_unexisting_path():
-#     """
-#     Test trying to load from an unexisting module path.
+def test_unexisting_path():
+    """
+    Test trying to load from an unexisting module path.
 
-#     """
-#     self.assertRaises(ModuleNotFoundError, get_model_generator, "1234_unexisting_path.py")
-
-# def test_missing_generator_instance():
-#     """
-#     Test trying to load when the module exists, but the variable is not defined.
-
-#     """
-#     path = "tmp_testing_model_generator_broken.py"
-#     open(path, "w").write("def model_generator_():\n    pass")  # So model_generator doesn't exist
-#     self.assertRaises(AttributeError, get_model_generator, path)
-#     os.remove(path)
+    """
+    try:
+        get_model_generator("ccb.torch_toolbox.model_generators.foobar")
+    except Exception as e:
+        assert isinstance(e, ModuleNotFoundError)
 
 
 def test_experiment_generator_on_mnist():
