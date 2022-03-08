@@ -64,7 +64,7 @@ class BandInfo(object):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
     def __repr__(self):
-        return "BandInfo(name={}, original_res={:.1f}m)".format(self.name, self.spatial_resolution)
+        return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
         return [self.name]
@@ -81,27 +81,16 @@ class SpectralBand(BandInfo):
         return (self.name, self.wavelength)
 
     def __repr__(self):
-        return "{}(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
-        # self.__class__.__name__
+        return f"{self.__class__.__name__}(name={self.name}, wavelen={self.wavelength}, original_res={self.spatial_resolution:.1f}m)"
 
 
 class Sentinel1(SpectralBand):
-    def __repr__(self):
-        return "Sentinel1(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
+    pass
 
 
 class Sentinel2(SpectralBand):
     "Spectral band of type Sentinel2"
-
-    def __repr__(self):
-        return "Sentinel2(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
-
+    pass
 
 class Mask(BandInfo):
     pass
