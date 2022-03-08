@@ -18,6 +18,7 @@ class DataModule(pl.LightningDataModule):
             num_workers: The number of parallel workers for loading samples from the hard-drive.
             val_batch_size: Tes size of the batch for the validation set and test set. If None, will use batch_size.
         """
+        super().__init__()
         self.task_specs = task_specs
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size or batch_size
