@@ -40,9 +40,9 @@ pipeline:
       - BORGY_CPU=2
       - BORGY_GPU=1
     commands:
-      # Install the EAI command line. (not needed at the moment, but can be useful for data pulling)
+      # Install the EAI command line (not needed at the moment, but can be useful for data pulling)
       - curl https://console.elementai.com/cli/install | sh && chmod +x ./eai && ./eai login validate
-      - poetry config virtualenvs.create false && poetry build && pip install dist/climate*.whl && export PATH=/home/_drone/.local/bin:$PATH && poetry run pytest ccb/experiment/experiment_test.py
+      - poetry config virtualenvs.create false && poetry build && pip install dist/climate*.whl && export PATH=/home/_drone/.local/bin:$PATH && poetry run pytest
     image: volatile-images.borgy.elementai.net/snow.rg_climate_benchmark:${DRONE_BRANCH}
     secrets: [ eai_token ]
   flake8:
