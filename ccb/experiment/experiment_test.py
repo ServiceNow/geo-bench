@@ -95,16 +95,14 @@ def test_experiment_generator_on_mnist():
     for job_dir in (exp_dir / "MNIST").iterdir():
         job = Job(job_dir)
         print(job_dir)
-        print(job.metrics)
-        assert float(job.metrics["train_acc1_step"]) > 20
+        metrics = job.get_metrics()
+        assert float(metrics["train_acc1_step"]) > 20
 
 
 def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(__file__).absolute().parent
 
     experiments_dir = Path("/tmp/exp_gen_test")
-    if experiments_dir.exists():
-        rmtree(experiments_dir)
     experiments_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -125,4 +123,4 @@ def test_experiment_generator_on_benchmark():
 
 
 if __name__ == "__main__":
-    test_experiment_generator_on_benchmark()
+    test_experiment_generator_on_mnist()
