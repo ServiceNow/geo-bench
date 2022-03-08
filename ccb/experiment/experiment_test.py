@@ -1,9 +1,8 @@
-import os
 from pathlib import Path
-from shutil import rmtree
 import subprocess
 import sys
 import tempfile
+from ccb import io
 
 import pytest
 from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
@@ -89,7 +88,7 @@ def test_experiment_generator_on_mnist():
             assert float(metrics["train_acc1_step"]) > 20
 
 
-@pytest.mark.skip(reason="Requires presence of the benchmark.")
+@pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
 def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(__file__).absolute().parent
 
@@ -111,7 +110,13 @@ def test_experiment_generator_on_benchmark():
     exp_dir = list(experiments_dir.iterdir())[0]
 
     sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+    for ds_dir in Path(exp_dir).iterdir():
+        for job_dir in ds_dir.iterdir():
+            job = Job(job_dir)
+            print(job_dir)
+            metrics = job.get_metrics()
+            print(metrics)
 
 
 if __name__ == "__main__":
-    test_experiment_generator_on_mnist()
+    test_experiment_generator_on_benchmark()
