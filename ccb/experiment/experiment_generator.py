@@ -50,6 +50,7 @@ def experiment_generator(
 
     model_generator = get_model_generator(model_generator_module_name)
 
+    print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
             if not task_filter(task_specs):
