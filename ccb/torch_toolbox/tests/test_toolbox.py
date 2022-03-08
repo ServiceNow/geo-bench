@@ -27,8 +27,9 @@ def test_toolbox_mnist():
             str(job.dir),
         ]
         subprocess.check_call(cmd)
-        print(job.metrics)
-        assert float(job.metrics["train_acc1_step"]) > 20  # has to be better than random after seeing 20 batches
+        metrics = job.get_metrics()
+        print(metrics)
+        assert float(metrics["train_acc1_step"]) > 20  # has to be better than random after seeing 20 batches
 
 
 if __name__ == "__main__":
