@@ -620,40 +620,40 @@ class Dataset:
         self.split = split
         self._load_path_list()
         self._load_partition(partition_name)
-        assert split is None or split in self.list_splits(), 'Invalid split {}'.format(split)
+        assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         self._load_stats()
-        
+
     def _load_stats(self):
         self.stats = {}
         # This will actually load all partitions at once to simplify the logic
         # Otherwise we would need to change stats every time set_split or set_active_partition() is called
-        current_partition = self.active_partition_name # push current 
+        current_partition = self.active_partition_name  # push current
         for partition in self.list_partitions():
             self.set_active_partition(partition)
             for split in self.list_splits():
-                print(f'Attempting to load stats for {partition}:{split}')
+                print(f"Attempting to load stats for {partition}:{split}")
                 try:
-                    with open(self.dataset_dir / f'{partition}_{split}_bandstats.json', 'r', encoding='utf8') as fp:
+                    with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
                         stats = json.load(fp)
                         self.stats.setdefault(partition, {})
                         self.stats[partition][split] = stats
-                        print('-> success')
+                        print("-> success")
                 except Exception as e:
-                    print(f'-> Could not load stats {e}. Maybe (re)compute them with bandstats.py?')
+                    print(f"-> Could not load stats {e}. Maybe (re)compute them with bandstats.py?")
 
         # pop current partition
         self.set_active_partition(current_partition)
 
     def _load_path_list(self) -> None:
         # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
-        '''
+        """
         for p in self.dataset_dir.glob('*_partition.json'):
             partition_name = p.name.split("_partition.json")[0]
             self._partition_path_dict[partition_name] = p
-        '''
+        """
         self._partition_path_dict = {}
         self._sample_name_list = []
-        for p in self.dataset_dir.glob('*'):#self.dataset_dir.iterdir():
+        for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
@@ -661,7 +661,6 @@ class Dataset:
                 self._task_specs_path = p
             elif p.is_dir():
                 self._sample_name_list.append(p.name)
-
 
     def _load_partition(self, partition_name):
         if len(self._partition_path_dict) == 0:
@@ -714,9 +713,9 @@ class Dataset:
             return pickle.load(fd)
 
     def list_splits(self):
-        '''
+        """
         List splits for active partition
-        '''
+        """
         return list(self.active_partition.keys())
 
     def set_split(self, split):
@@ -773,17 +772,19 @@ class Stats:
         self.percentile_99_9 = percentile_99_9
 
     def to_dict(self):
-        return OrderedDict([ 
-            ('min', self.min),
-            ('max', self.max),
-            ('mean', self.mean),
-            ('std', self.std),
-            ('median', self.median),
-            ('percentile_0_1', self.percentile_0_1),
-            ('percentile_1', self.percentile_1),
-            ('percentile_99', self.percentile_99),
-            ('percentile_99_9', self.max),
-        ])
+        return OrderedDict(
+            [
+                ("min", self.min),
+                ("max", self.max),
+                ("mean", self.mean),
+                ("std", self.std),
+                ("median", self.median),
+                ("percentile_0_1", self.percentile_0_1),
+                ("percentile_1", self.percentile_1),
+                ("percentile_99", self.percentile_99),
+                ("percentile_99_9", self.max),
+            ]
+        )
 
 
 def compute_stats(values):
@@ -803,23 +804,24 @@ def compute_stats(values):
 
 
 def compute_stats2(values):
-    '''
+    """
     Returns a plain dictionary of statistics (can be directly serialized to .json)
-    '''
+    """
     q_0_1, q_1, q_5, median, q_95, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 5, 50, 95, 99, 99.9])
     return {
-        'min':float(np.min(values)),
-        'max':float(np.max(values)),
-        'mean':float(np.mean(values)),
-        'std':float(np.std(values)),
-        'median':float(median),
-        'percentile_0_1':float(q_0_1),
-        'percentile_1':float(q_1),
-        'percentile_5':float(q_1),
-        'percentile_95':float(q_95),
-        'percentile_99':float(q_99),
-        'percentile_99_9':float(q_99_9),
+        "min": float(np.min(values)),
+        "max": float(np.max(values)),
+        "mean": float(np.mean(values)),
+        "std": float(np.std(values)),
+        "median": float(median),
+        "percentile_0_1": float(q_0_1),
+        "percentile_1": float(q_1),
+        "percentile_5": float(q_1),
+        "percentile_95": float(q_95),
+        "percentile_99": float(q_99),
+        "percentile_99_9": float(q_99_9),
     }
+
 
 def dataset_statistics(dataset_iterator, n_value_per_image=1000):
 
@@ -852,11 +854,10 @@ def dataset_statistics(dataset_iterator, n_value_per_image=1000):
     return band_values, band_stats
 
 
-
 def dataset_statistics2(dataset, n_value_per_image=1000, n_samples=None):
-    '''
+    """
     Returns JSON-serializable statistics, take random subser of samples and for each sample, random subset of values.
-    '''
+    """
     accumulator = defaultdict(list)
 
     if n_samples is not None and n_samples < len(dataset):
