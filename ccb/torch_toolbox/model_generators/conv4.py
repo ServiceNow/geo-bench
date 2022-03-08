@@ -42,6 +42,12 @@ class Conv4Generator(ModelGenerator):
 
         return hparams_to_string([hparams1, hparams2])
 
+    def get_collate_fn(self, task_specs: TaskSpecifications):
+        def collate_fn(samples: List[io.Sample]):
+            pass
+
+        return collate_fn
+
 
 model_generator = Conv4Generator()
 
@@ -64,35 +70,3 @@ class Conv4(BackBone):
         x = F.relu(self.conv3(x), True)
         x = F.max_pool2d(x, 3, 2, 1)
         return x.mean((2, 3))
-
-
-# DATASETS = [
-#     Dataset(
-#         name="dataset1",
-#         path="/dataset1/",
-#         task_specs=TaskSpecifications(
-#             input_shape=(1, 2, 3),
-#             features_shape=(4, 5, 6),
-#             spatial_resolution=10,
-#             temporal_resolution=11,
-#             band_names=["acdc", "queen"],
-#             band_wavelength=0.2,
-#             task_type="classification",
-#             n_classes=10,
-#         ),
-#     ),
-#     Dataset(
-#         name="dataset2",
-#         path="/dataset2/",
-#         task_specs=TaskSpecifications(
-#             input_shape=(1, 2, 3),
-#             features_shape=(4, 5, 6),
-#             spatial_resolution=2,
-#             temporal_resolution=2,
-#             band_names=["bob marley", "snoop dog"],
-#             band_wavelength=0.1,
-#             task_type="semantic segmentation",
-#             n_classes=10,
-#         ),
-#     ),
-# ]

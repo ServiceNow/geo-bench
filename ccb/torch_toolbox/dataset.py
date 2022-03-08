@@ -6,6 +6,10 @@ from typing import List
 import pytorch_lightning as pl
 
 
+def collate_fn_identity(samples):
+    return samples
+
+
 class DataModule(pl.LightningDataModule):
     def __init__(
         self, task_specs: io.TaskSpecifications, batch_size: int, num_workers: int, val_batch_size: int = None
@@ -30,6 +34,7 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            collate_fn=collate_fn_identity,
         )
 
     def val_dataloader(self):
@@ -38,4 +43,5 @@ class DataModule(pl.LightningDataModule):
             batch_size=self.val_batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            collate_fn=collate_fn_identity,
         )
