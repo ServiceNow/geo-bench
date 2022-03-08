@@ -19,13 +19,13 @@ from multiprocessing import Pool
 
 # Classification labels
 LABELS = (
-    'no data',
-    'well-managed plantation',
-    'poorly-managed plantation',
-    'non-plantation',
-    'residential',
-    'background',
-    'uncertain'
+    "no data",
+    "well-managed plantation",
+    "poorly-managed plantation",
+    "non-plantation",
+    "residential",
+    "background",
+    "uncertain",
 )
 DATES = (
     "2019-11-05",
@@ -137,10 +137,10 @@ def make_sample(images, mask, sample_name):
             )
             bands.append(band)
 
-    label = io.Band(data=mask, band_info=LABEL_BAND,
-                    spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs=crs)
+    label = io.Band(
+        data=mask, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs=crs
+    )
     return io.Sample(bands, label=label, sample_name=sample_name)
-
 
 
 def process_i(args):
@@ -152,14 +152,14 @@ def process_i(args):
 
     sample = make_sample(images, mask, sample_name)
     sample.write(dataset_dir)
-    #print(f'Wrote {sample_name}')
+    # print(f'Wrote {sample_name}')
     return i
-    
+
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
-    print('Loading dataset from torchgeo')
+    print("Loading dataset from torchgeo")
     cashew = BeninSmallHolderCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
 
     task_specs = io.TaskSpecifications(
@@ -178,15 +178,14 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     multiprocess = True
     if multiprocess:
         with Pool(os.cpu_count()) as p:
-            print(f'Spinning up pool of {os.cpu_count()} workers')
-            iterator = p.imap(process_i, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)) )
+            print(f"Spinning up pool of {os.cpu_count()} workers")
+            iterator = p.imap(process_i, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)))
             for i in tqdm(iterator, total=len(cashew)):
                 pass
 
     else:
         for i, cashew_i in enumerate(tqdm(cashew)):
             process_i(i, cashew_i, dataset_dir)
-
 
 
 if __name__ == "__main__":
