@@ -26,9 +26,9 @@ BAND_INFO_LIST = io.make_rgb_bands(0.1)
 
 def parse_file_name(name):
     name = name.replace("Kapiti_Coast", "Kapiti-Coast")
-    _index, location, year, lon_lat = name.split('_')[:4]
-    lon_center, lat_center = [float(val) for val in lon_lat.split(',')]
-    year = int(year[1:-1].split('-')[-1])
+    _index, location, year, lon_lat = name.split("_")[:4]
+    lon_center, lat_center = [float(val) for val in lon_lat.split(",")]
+    year = int(year[1:-1].split("-")[-1])
     date = datetime.date(year=year, month=1, day=1)
     transform_center = rasterio.transform.from_origin(lon_center, lat_center, 0.1, 0.1)
     lon_corner, lat_corner = transform_center * [-250, -250]
@@ -40,22 +40,28 @@ def parse_file_name(name):
 
 
 def load_sample(img_path: Path):
-    label_path = img_path.with_suffix('.png.mask.0.txt')
+    label_path = img_path.with_suffix(".png.mask.0.txt")
     with Image.open(img_path) as im:
         data = np.array(im)[:, :, :3]
 
     location, date, transform, crs = parse_file_name(img_path.stem)
     coords = []
-    with open(label_path, 'r') as fd:
+    with open(label_path, "r") as fd:
         for line in fd:
-            coord = [int(val) for val in line.split(',')]
+            coord = [int(val) for val in line.split(",")]
             coords.append(coord)
 
     bands = []
     for i in range(3):
         band_data = io.Band(
-            data=data[:, :, i], band_info=BAND_INFO_LIST[i],
-            spatial_resolution=0.1, transform=transform, crs=crs, date=date, meta_info={'location': location})
+            data=data[:, :, i],
+            band_info=BAND_INFO_LIST[i],
+            spatial_resolution=0.1,
+            transform=transform,
+            crs=crs,
+            date=date,
+            meta_info={"location": location},
+        )
         bands.append(band_data)
 
     return io.Sample(bands, label=coords, sample_name=img_path.stem)
@@ -75,7 +81,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir)
-    path_list = Path(SRC_DATASET_DIR, 'cow_images').iterdir()
+    path_list = Path(SRC_DATASET_DIR, "cow_images").iterdir()
     sample_count = 0
     for file in tqdm(path_list):
         if file.suffix == ".png":
