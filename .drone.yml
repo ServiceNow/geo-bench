@@ -1,6 +1,5 @@
 ---
 pipeline:
-
   build-docker:
     when:
       event:
@@ -32,8 +31,6 @@ pipeline:
       - docker push "$VOLATILE_IMAGE_NAME:${DRONE_BRANCH}"
     image: images.borgy.elementai.net/eai/build
     secrets: [ eai_token ]
-
-  
   tests:
     when:
       event:
@@ -43,10 +40,11 @@ pipeline:
       - BORGY_CPU=2
       - BORGY_GPU=1
     commands:
-      - poetry config virtualenvs.create false && poetry run pytest
+      # Install the EAI command line. (not needed at the moment, but can be useful for data pulling)
+      - curl https://console.elementai.com/cli/install | sh && chmod +x ./eai && ./eai login validate
+      - poetry config virtualenvs.create false && poetry build && pip install dist/climate*.whl && export PATH=/home/_drone/.local/bin:$PATH && poetry run pytest ccb/experiment/experiment_test.py
     image: volatile-images.borgy.elementai.net/snow.rg_climate_benchmark:${DRONE_BRANCH}
-
-
+    secrets: [ eai_token ]
   flake8:
     when:
       event:
