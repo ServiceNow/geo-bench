@@ -6,6 +6,8 @@ from pytorch_lightning import LightningModule
 from ccb.io import Classification, Accuracy, CrossEntropy
 from typing import List
 
+from ccb.io.task import TaskSpecifications
+
 
 class Model(LightningModule):
     """
@@ -140,18 +142,25 @@ def vit_head_generator(task_specs, hyperparams, input_shape):
     pass
 
 
-def train_loss_generator(task_specs, hyperparams):
+def train_metrics_generator(task_specs: TaskSpecifications, hparams):
     """
     Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
-    if isinstance(task_specs.label_type, Classification):
-        if hyperparams["loss_type"] == "crossentropy":
-            return torch.nn.CrossEntropyLoss()
-        else:
-            raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
-    else:
-        raise ValueError(f"Unrecognized task: {task_specs.label_type}")
+
+    metrics = {Classification: (my_metrics), Segmentation: (my_metrics)}[task_specs.label_type.__class__]
+
+    for metric_name in hparams.get("train_metrics", defulat=()):
+        metrics.append(METRIC_MAP[metric_name])
+
+    return metrics
+    # if isinstance(task_specs.label_type, Classification):
+    #     if hyperparams["train_losses"] == "crossentropy":
+    #         return torch.nn.CrossEntropyLoss()
+    #     else:
+    #         raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
+    # else:
+    #     raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
 class Metrics:
