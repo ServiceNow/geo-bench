@@ -1,17 +1,15 @@
 # Downloaded following instructions at
 # "https://github.com/kdmayer/3D-PV-Locator#public-s3-bucket-pv4ger"
 import sys
-import csv
-import h5py
 import rasterio
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from PIL import Image
 from pathlib import Path
+from ccb import io
 
 sys.path.append(str(Path.cwd()))
-from ccb import io
 
 
 DATASET_NAME = "pv4ger_v1.0"

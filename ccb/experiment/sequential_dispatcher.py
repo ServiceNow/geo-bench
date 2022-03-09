@@ -21,7 +21,7 @@ def sequential_dispatcher(exp_dir, prompt=True):
         print(f"Running {script}.")
         job = Job(script.parent)
 
-        p = subprocess.run([script])
+        subprocess.run([script])
         print(job.get_stderr())
 
     print("Done.")

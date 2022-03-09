@@ -14,7 +14,6 @@ from tqdm import tqdm
 from PIL import Image
 import rasterio
 import datetime
-from ccb.dataset_converters.neon_tree import BAND_INFO_LIST
 
 DATASET_NAME = "New Zealand Cattle Detection"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
