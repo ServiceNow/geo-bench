@@ -29,7 +29,7 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 # Todo: move to io.dataset.py
 class Worldview3(io.SpectralBand):
-    "Visual band from Maxar Digitalglobe Worldview 3"
+    pass
 
 
 # Worldview3
