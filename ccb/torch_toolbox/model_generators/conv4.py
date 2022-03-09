@@ -1,9 +1,8 @@
-from calendar import c
 from typing import List
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
-from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator
+from ccb.torch_toolbox.model import BackBone, ModelGenerator, Model, head_generator, train_loss_generator, collate_rgb
 import torch.nn.functional as F
 import torch
 
@@ -32,7 +31,7 @@ class Conv4Generator(ModelGenerator):
             "train_iters": 50,
             "features_shape": (64,),
             "loss_type": "crossentropy",
-            "batch_size": 64,
+            "batch_size": 32,
             "num_workers": 4,
             "logger": "csv",
         }
@@ -42,11 +41,12 @@ class Conv4Generator(ModelGenerator):
 
         return hparams_to_string([hparams1, hparams2])
 
-    def get_collate_fn(self, task_specs: TaskSpecifications):
-        def collate_fn(samples: List[io.Sample]):
-            pass
+    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
 
-        return collate_fn
+        if task_specs.dataset_name.lower() == "mnist":
+            return None  # will use torch's default collate function.
+        else:
+            return collate_rgb
 
 
 model_generator = Conv4Generator()
@@ -55,7 +55,7 @@ model_generator = Conv4Generator()
 class Conv4(BackBone):
     def __init__(self, model_path, task_specs: io.TaskSpecifications, hyperparams):
         super().__init__(model_path, task_specs, hyperparams)
-        n_bands = len(task_specs.bands_info)
+        n_bands = min(3, len(task_specs.bands_info))
         self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)
