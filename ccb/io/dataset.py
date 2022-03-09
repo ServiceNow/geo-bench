@@ -89,8 +89,8 @@ class Sentinel1(SpectralBand):
 
 
 class Sentinel2(SpectralBand):
-    "Spectral band of type Sentinel2"
     pass
+
 
 class Mask(BandInfo):
     pass
@@ -219,9 +219,7 @@ class Band:
             shape = self.data.shape
         else:
             shape = "unknown"
-        return "Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})".format(
-            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date
-        )
+        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date}, data={self.date})"
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -353,9 +351,8 @@ class Sample(object):
         self._build_index()
 
     def __repr__(self):
-        bands = "\n".join(band.__repr__() for band in self.bands)
         np.set_printoptions(threshold=5)
-        return "Sample:(name={}, bands=\n{}\n)".format(self.sample_name, self.bands)
+        return f"Sample:(name={self.sample_name}, bands=\n{self.bands}\n)"
 
     def _build_index(self):
 
@@ -491,7 +488,7 @@ class Sample(object):
             file_set.add(file)
 
         if len(file_set) != len(self.bands):
-            raise ValueError(f"Duplicate band description in bands. Perhaps date is missing?")
+            raise ValueError("Duplicate band description in bands. Perhaps date is missing?")
 
         with open(Path(dst_dir, "band_index.json"), "w") as fd:
             json.dump(tuple(band_index.items()), fd)
@@ -928,4 +925,4 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
         task_specs.label_type.assert_valid(sample.label)
 
         if assert_dense:
-            assert np.all(sample.band_array != None)
+            assert np.all(sample.band_array is not None)
