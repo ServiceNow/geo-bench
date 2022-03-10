@@ -29,20 +29,20 @@ class Model(LightningModule):
         inputs, target = batch
         output = self(inputs)
         loss_train = self.loss_function(output, target)
-        acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
+        acc1, = self.__accuracy(output, target, topk=(1,))
         self.log("train_loss", loss_train, on_step=True, on_epoch=True, logger=True)
         self.log("train_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        # self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
         return loss_train
 
     def eval_step(self, batch, batch_idx, prefix):
         images, target = batch
         output = self(images)
         loss = self.loss_function(output, target)
-        acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
+        acc1, = self.__accuracy(output, target, topk=(1,))
         self.log(f"{prefix}_loss", loss, on_step=True, on_epoch=True, logger=True)
         self.log(f"{prefix}_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        # self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")
