@@ -56,3 +56,4 @@ exclude = '''
 [tool.poetry.scripts]
 ccb-expgen = "ccb.experiment.experiment_generator:start"
 ccb-trainer = "ccb.torch_toolbox.trainer:start"
+ccb-toolkit = "toolkit.dispatch_toolkit:start"
