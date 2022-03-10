@@ -1,5 +1,7 @@
 import pickle
 import tempfile
+
+import pytest
 from ccb.experiment.experiment import Job
 from ccb.io import mnist_task_specs
 from ccb.torch_toolbox.model_generators import conv4
@@ -28,6 +30,8 @@ def test_toolbox_mnist():
     train_job_on_task(conv4.model_generator, mnist_task_specs)
 
 
+@pytest.mark.slow
+@pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
 def test_toolbox_brick_kiln():
     with open(Path(io.datasets_dir) / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
