@@ -623,17 +623,19 @@ class Dataset:
                     with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
                         stats_dict = json.load(fp)
                         self.stats.setdefault(partition, {})
-                        self.stats[partition][split] = {k:convert_dict_to_stats(v) for k,v in stats_dict.items()}  # from dict to Stats
+                        self.stats[partition][split] = {
+                            k: convert_dict_to_stats(v) for k, v in stats_dict.items()
+                        }  # from dict to Stats
                         print("-> success")
                 except Exception as e:
                     print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
         # Load single stats if exist
         try:
-            print('Attempting to load single stats (over all dataset)')
+            print("Attempting to load single stats (over all dataset)")
             with open(self.dataset_dir / f"all_bandstats.json", "r", encoding="utf8") as fp:
                 stats_dict = json.load(fp)
-                self.stats.setdefault('all', {})
-                self.stats['all'] = {k:convert_dict_to_stats(v) for k,v in stats_dict.items()}  # from dict to Stats
+                self.stats.setdefault("all", {})
+                self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
                 print("-> success")
         except Exception as e:
             print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
@@ -645,7 +647,7 @@ class Dataset:
         if split_stats:
             return self.stats[self.active_partition_name][self.split]
         else:
-            return self.stats['all']
+            return self.stats["all"]
 
     def _load_path_list(self) -> None:
         # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
@@ -750,21 +752,20 @@ class Dataset:
         return len(sample_name_list)
 
     def which_stats(self):
-        '''
+        """
         String for visualizing which stats are available
-        '''
+        """
         which_stats = []
         for partition in self.stats:
-            if partition == 'all':
-                which_stats.append('all')
+            if partition == "all":
+                which_stats.append("all")
             else:
                 for split in self.stats[partition]:
-                    which_stats.append(f'{partition}:{split}')
-        if which_stats: 
-            return '|'.join(which_stats)
+                    which_stats.append(f"{partition}:{split}")
+        if which_stats:
+            return "|".join(which_stats)
         else:
-            return '<N/A>'
-
+            return "<N/A>"
 
     def __repr__(self):
         which_stats = []
@@ -780,7 +781,18 @@ class Dataset:
 
 class Stats:
     def __init__(
-        self, min, max, mean, std, median, percentile_0_1, percentile_1, percentile_5, percentile_95, percentile_99, percentile_99_9
+        self,
+        min,
+        max,
+        mean,
+        std,
+        median,
+        percentile_0_1,
+        percentile_1,
+        percentile_5,
+        percentile_95,
+        percentile_99,
+        percentile_99_9,
     ) -> None:
         # Convert all to float to avoid serialization issues with int16
         self.min = float(min)
@@ -815,17 +827,18 @@ class Stats:
 
 def convert_dict_to_stats(d):
     return Stats(
-        d['min'],
-        d['max'],
-        d['mean'],
-        d['std'],
-        d['median'],
-        d['percentile_0_1'],
-        d['percentile_1'],
-        d['percentile_5'],
-        d['percentile_95'],
-        d['percentile_99'],
-        d['percentile_99_9'])
+        d["min"],
+        d["max"],
+        d["mean"],
+        d["std"],
+        d["median"],
+        d["percentile_0_1"],
+        d["percentile_1"],
+        d["percentile_5"],
+        d["percentile_95"],
+        d["percentile_99"],
+        d["percentile_99_9"],
+    )
 
 
 def compute_stats(values):
@@ -844,7 +857,6 @@ def compute_stats(values):
         percentile_99_9=q_99_9,
     )
     return stats
-
 
 
 def dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
@@ -882,47 +894,6 @@ def dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
 
     return band_values, band_stats
 
-
-'''
-def dataset_statistics2(dataset, n_value_per_image=1000, n_samples=None):
-    """
-    Returns JSON-serializable statistics, take random subser of samples and for each sample, random subset of values.
-    """
-    accumulator = defaultdict(list)
-
-    if n_samples is not None and n_samples < len(dataset):
-        indices = np.random.choice(len(dataset), n_samples, replace=False)
-    else:
-        indices = list(range(len(dataset)))
-
-    for i in tqdm(indices, desc="Extracting Statistics"):
-
-        sample = dataset[i]
-
-        for band in sample.bands:
-            accumulator[band.band_info.name].append(
-                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-            )
-
-        if isinstance(sample.label, Band):
-            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
-        elif isinstance(sample.label, (list, tuple)):
-            for obj in sample.label:
-                if isinstance(obj, dict):
-                    for key, val in obj.items():
-                        accumulator[f"label_{key}"].append(val)
-        else:
-            accumulator["label"].append(sample.label)
-
-    band_values = {}
-    band_stats = {}
-    for name, values in accumulator.items():
-        values = np.hstack(values)
-        band_values[name] = values
-        band_stats[name] = compute_stats2(values)
-
-    return band_stats
-'''
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):
     if isinstance(date, datetime.date):
