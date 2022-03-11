@@ -28,20 +28,23 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
-# Todo: move to io.dataset.py
-class Worldview3(io.SpectralBand):
-    pass
+# # Todo: move to io.dataset.py
+# class Worldview3(io.SpectralBand):
+#     pass
 
 
-# Worldview3
-# Source: https://www.spaceimagingme.com/downloads/sensors/
-#      datasheets/DG_WorldView3_DS_2014.pdf
-# Todo: verify that band ordering is BGR
-worldview3_rgb_bands = [
-    Worldview3("01 - Blue", ("1", "01", "blue"), spatial_resolution=1.24, wavelength=0.51),  # .45-.51
-    Worldview3("02 - Green", ("2", "02", "green"), 1.24, 0.58),  # .51-.58
-    Worldview3("03 - Red", ("3", "03", "red"), 1.24, 0.69),  # .63-.69
-]
+# # Worldview3
+# # Source: https://www.spaceimagingme.com/downloads/sensors/
+# #      datasheets/DG_WorldView3_DS_2014.pdf
+# # Todo: verify that band ordering is BGR
+# worldview3_rgb_bands = [
+#     Worldview3("01 - Blue", ("1", "01", "blue"), spatial_resolution=1.24, wavelength=0.51),  # .45-.51
+#     Worldview3("02 - Green", ("2", "02", "green"), 1.24, 0.58),  # .51-.58
+#     Worldview3("03 - Red", ("3", "03", "red"), 1.24, 0.69),  # .63-.69
+# ]
+
+rgb_bands = io.make_rgb_bands(spatial_resolution=1.24)
+bgr_bands = rgb_bands[::-1]
 
 # Todo: document class labels: background, no damage, minor damage, major damage, destroyed
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=1.24, n_classes=5)
@@ -102,7 +105,7 @@ def make_sample(image_A, image_B, mask, sample_name):
         bands = []
         for band_idx in range(n_bands):
             band_data = image["image"][band_idx, :, :]
-            band_info = worldview3_rgb_bands[band_idx]
+            band_info = bgr_bands[band_idx]
             band = io.Band(
                 data=band_data,
                 band_info=band_info,
@@ -140,7 +143,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         dataset_name=DATASET_NAME,
         patch_size=(1024, 1024),
         n_time_steps=1,
-        bands_info=worldview3_rgb_bands,
+        bands_info=bgr_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
         eval_loss=io.SegmentationAccuracy,  # TODO probably not the final
@@ -203,4 +206,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(4)
+    convert(200)
