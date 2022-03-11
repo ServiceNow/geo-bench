@@ -151,9 +151,9 @@ sentinel1_8_bands = [
 
 def make_rgb_bands(spatial_resolution):
     return [
-        SpectralBand("Red", (), spatial_resolution, 0.665),
-        SpectralBand("Green", (), spatial_resolution, 0.56),
-        SpectralBand("Blue", (), spatial_resolution, 0.49),
+        SpectralBand("Red", ("red",), spatial_resolution, 0.665),
+        SpectralBand("Green", ("green",), spatial_resolution, 0.56),
+        SpectralBand("Blue", ("blue",), spatial_resolution, 0.49),
     ]
 
 
@@ -607,7 +607,7 @@ class Dataset:
         self._load_path_list()
         self._load_partition(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
-        self._load_stats()
+        # self._load_stats()
 
     def _load_stats(self):
         self.stats = {}
