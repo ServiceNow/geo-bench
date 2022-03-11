@@ -5,7 +5,7 @@ from ccb.io.dataset import (
     SegmentationClasses,
     Dataset,
     compute_stats,
-    dataset_statistics,
+    compute_dataset_statistics,
 )
 from collections import defaultdict
 import numpy as np
@@ -238,7 +238,7 @@ def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integ
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
-    band_values, band_stats = dataset_statistics(samples, n_value_per_image=1000)
+    band_values, band_stats = compute_dataset_statistics(samples, n_value_per_image=1000)
     plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
     return dataset, samples, band_values, band_stats
 
