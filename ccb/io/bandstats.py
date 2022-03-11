@@ -7,7 +7,7 @@ import argparse
 import json
 import os
 
-from ccb.io.dataset import Dataset, dataset_statistics
+from ccb.io.dataset import Dataset, compute_dataset_statistics
 
 
 parser = argparse.ArgumentParser()
@@ -25,11 +25,11 @@ def main(args):
     if not args.check_only:
         if args.splits:
             for partition in dataset.list_partitions():
-                dataset.set_active_partition(partition)
+                dataset.set_partition(partition)
                 for split in dataset.list_splits():
                     print(f"Computing statistics for {partition}:{split}")
                     dataset.set_split(split)
-                    band_values, band_stats = dataset_statistics(
+                    band_values, band_stats = compute_dataset_statistics(
                         dataset, n_value_per_image=args.values_per_image, n_samples=args.samples
                     )
                     stats_fname = os.path.join(args.dataset, f"{partition}_{split}_bandstats.json")
@@ -40,7 +40,7 @@ def main(args):
             dataset.set_active_partition("default")
             dataset.set_split(None)
             print(f"Computing single statistics for whole dataset")
-            band_values, band_stats = dataset_statistics(
+            band_values, band_stats = compute_dataset_statistics(
                 dataset, n_value_per_image=args.values_per_image, n_samples=args.samples
             )
             stats_fname = os.path.join(args.dataset, f"all_bandstats.json")
