@@ -1,4 +1,12 @@
-from ccb.io.dataset import Sample, HyperSpectralBands, Band, SegmentationClasses, Dataset, compute_stats, dataset_statistics
+from ccb.io.dataset import (
+    Sample,
+    HyperSpectralBands,
+    Band,
+    SegmentationClasses,
+    Dataset,
+    compute_stats,
+    dataset_statistics,
+)
 from collections import defaultdict
 import numpy as np
 from tqdm import tqdm
@@ -18,8 +26,6 @@ from PIL import Image, ImageDraw
 def compare(a, b, name, src_a, src_b):
     if a != b:
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
-
-
 
 
 def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):

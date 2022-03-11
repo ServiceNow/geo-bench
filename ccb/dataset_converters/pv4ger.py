@@ -1,17 +1,15 @@
 # Downloaded following instructions at
 # "https://github.com/kdmayer/3D-PV-Locator#public-s3-bucket-pv4ger"
 import sys
-import csv
-import h5py
 import rasterio
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from PIL import Image
 from pathlib import Path
+from ccb import io
 
 sys.path.append(str(Path.cwd()))
-from ccb import io
 
 
 DATASET_NAME = "pv4ger_v1.0"
@@ -26,21 +24,9 @@ def load_sample(img_path: Path, label: int):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
 
-    transform_center = rasterio.transform.from_origin(
-        lon_center,
-        lat_center,
-        SPATIAL_RESOLUTION,
-        SPATIAL_RESOLUTION
-    )
-    lon_corner, lat_corner = (
-        transform_center * [-PATCH_SIZE//2, -PATCH_SIZE//2]
-    )
-    transform = rasterio.transform.from_origin(
-        lon_corner,
-        lat_corner,
-        SPATIAL_RESOLUTION,
-        SPATIAL_RESOLUTION
-    )
+    transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
+    lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
+    transform = rasterio.transform.from_origin(lon_corner, lat_corner, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
 
     img = np.array(Image.open(img_path).convert("RGB"))
 
