@@ -66,3 +66,10 @@ def test_nz_cattle_detection():
     from ccb.dataset_converters import nz_cattle_detection
 
     converter_tester(nz_cattle_detection)
+
+
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_xview2():
+    from ccb.dataset_converters import xview2
+
+    converter_tester(xview2)
