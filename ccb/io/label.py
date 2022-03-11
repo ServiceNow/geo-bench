@@ -5,7 +5,7 @@ class LabelType(object):
     pass
 
     def assert_valid(self):
-        raise NotImplemented()
+        raise NotImplementedError()
 
 
 class Classification(LabelType):

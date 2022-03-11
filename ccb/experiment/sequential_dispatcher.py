@@ -17,13 +17,12 @@ def sequential_dispatcher(exp_dir, prompt=True):
         if ans != "y":
             return
 
-
     for script in script_list:
         print(f"Running {script}.")
         job = Job(script.parent)
 
-        p = subprocess.run([script])
-        print(job.stderr)
+        subprocess.run([script])
+        print(job.get_stderr())
 
     print("Done.")
 

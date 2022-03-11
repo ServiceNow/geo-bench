@@ -1,12 +1,9 @@
-import torch
-import torchvision.transforms as tt
-import torch.nn.functional as F
-import pytorch_lightning as pl
-from pytorch_lightning import LightningModule
-from ccb.io import Classification, Accuracy, CrossEntropy
 from typing import List
-
-from ccb.io.task import TaskSpecifications
+import torch
+from pytorch_lightning import LightningModule
+from ccb import io
+import numpy as np
+import torch.nn.functional as F
 
 
 class Model(LightningModule):
@@ -32,8 +29,8 @@ class Model(LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        images, target = batch
-        output = self(images)
+        inputs, target = batch
+        output = self(inputs)
         loss_train = self.loss_function(output, target)
         metrics = self.train_metrics(output, target, "train")
         self.log("train_loss", loss_train, logger=True)
@@ -45,13 +42,8 @@ class Model(LightningModule):
         output = self(images)
         loss = self.loss_function(output, target)
         self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
-        # acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
         metrics = self.eval_metrics(output, target, prefix)
         self.log_dict(metrics, logger=True)
-        # self.log(
-        #     f"{prefix}_acc1", acc1, prog_bar=True, logger=True
-        # )  # on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        # self.log(f"{prefix}_acc5", acc5, logger=True)  # , on_step=True, on_epoch=True, logger=True)
         return metrics
 
     def validation_step(self, batch, batch_idx):
@@ -109,6 +101,25 @@ class ModelGenerator:
         """
         raise NotImplementedError()
 
+    def get_collate_fn(self, task_specs, hyperparams):
+        """Generate the collate functions for stacking the mini-batch.
+
+        Args:
+            task_specs (TaskSpecifications): an object describing the task to be performed
+            hyperparams (dict): dictionary containing hyperparameters of the experiment
+
+        Returns:
+            A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
+            will be fed to the model.
+
+        Raises:
+            NotImplementedError
+
+        Example:
+            return ccb.torch_toolbox.model.collate_rgb
+        """
+        raise NotImplementedError()
+
 
 def head_generator(task_specs, hyperparams):
     """
@@ -124,7 +135,7 @@ def head_generator(task_specs, hyperparams):
         input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
             the input itself? should it be a dict of shapes?
     """
-    if isinstance(task_specs.label_type, Classification):
+    if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
             (in_ch,) = hyperparams["features_shape"]
             out_ch = task_specs.label_type.n_classes
@@ -142,53 +153,7 @@ def vit_head_generator(task_specs, hyperparams, input_shape):
     pass
 
 
-def train_metrics_generator(task_specs: TaskSpecifications, hparams):
-    """
-    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
-    following attributes: task_specs.task_type and task_specs.eval_loss
-    """
-
-    metrics = {Classification: (my_metrics), Segmentation: (my_metrics)}[task_specs.label_type.__class__]
-
-    for metric_name in hparams.get("train_metrics", defulat=()):
-        metrics.append(METRIC_MAP[metric_name])
-
-    return metrics
-    # if isinstance(task_specs.label_type, Classification):
-    #     if hyperparams["train_losses"] == "crossentropy":
-    #         return torch.nn.CrossEntropyLoss()
-    #     else:
-    #         raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
-    # else:
-    #     raise ValueError(f"Unrecognized task: {task_specs.label_type}")
-
-
-class Metrics:
-    def __init__(self, metrics: List):
-        self.metrics = metrics
-
-    def add_metric(self, metric):
-        self.metrics.append(metric)
-
-    def __call__(self, output, target, prefix, *args, **kwargs) -> dict:
-        ret = {}
-        for metric in self.metrics:
-            if isinstance(metric, Accuracy):
-                ret.update(compute_accuracy(output, target, prefix))
-            elif isinstance(metric, CrossEntropy):
-                loss = F.cross_entropy(output, target, *args, **kwargs)
-                ret[f"{prefix}_loss"] = loss
-        return ret
-
-
-def eval_metrics_generator(task_specs, hyperparams):
-    """
-    Returns the appropriate eval function depending on the task_specs.
-    """
-    return Metrics(task_specs.eval_metrics)
-
-
-def compute_accuracy(output, target, prefix, topk=(1,)):
+def compute_accuracy(output, target, prefix, topk=(1,), *args, **kwargs):
     """Computes the accuracy over the k top predictions for the specified values of k."""
     with torch.no_grad():
         maxk = max(topk)
@@ -203,6 +168,71 @@ def compute_accuracy(output, target, prefix, topk=(1,)):
             correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res[f"{prefix}_accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
         return res
+
+
+METRIC_MAP = {}
+
+
+def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
+    """
+    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
+    following attributes: task_specs.task_type and task_specs.eval_loss
+    """
+
+    metrics = {
+        io.Classification: [
+            compute_accuracy,
+        ],
+        io.SegmentationClasses: [],
+    }[task_specs.label_type.__class__]
+
+    for metric_name in hparams.get("train_metrics", ()):
+        metrics.append(METRIC_MAP[metric_name])
+
+    # The Metrics().__call__(input, targets) accumulates all metrics in a dict
+    return Metrics(metrics)
+
+
+def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
+    """
+    Returns the appropriate eval function depending on the task_specs.
+    """
+    metrics = {
+        io.Classification: [
+            compute_accuracy,
+        ],
+        io.SegmentationClasses: (),
+    }[task_specs.label_type.__class__]
+
+    for metric_name in hparams.get("eval_metrics", ()):
+        metrics.append(METRIC_MAP[metric_name])
+
+    return Metrics(metrics)
+
+
+def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
+    """
+    Returns the appropriate loss function depending on the task_specs.
+    """
+    loss = {io.Classification: F.cross_entropy, io.SegmentationClasses: F.cross_entropy}[
+        task_specs.label_type.__class__
+    ]
+
+    return loss
+
+
+class Metrics:
+    def __init__(self, metrics: List):
+        self.metrics = metrics
+
+    def add_metric(self, metric):
+        self.metrics.append(metric)
+
+    def __call__(self, output, target, prefix, *args, **kwargs) -> dict:
+        ret = {}
+        for metric in self.metrics:
+            ret.update(metric(output, target, prefix, *args, **kwargs))
+        return ret
 
 
 class BackBone(torch.nn.Module):
@@ -221,3 +251,21 @@ class BackBone(torch.nn.Module):
         models like u-net.
         raise NotImplementedError()
         """
+
+
+def collate_rgb(samples: List[io.Sample]):
+    x_list = []
+    label_list = []
+    for sample in samples:
+        rgb_image, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
+        x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
+        label_list.append(sample.label)
+
+    return torch.stack(x_list), stack_labels(label_list)
+
+
+def stack_labels(label_list):
+    if isinstance(label_list[0], int):
+        return torch.tensor(label_list)
+    else:
+        raise NotImplementedError()

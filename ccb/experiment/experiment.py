@@ -79,18 +79,24 @@ class Job:
             self.hparams = hparams
 
     @cached_property
-    def metrics(self):
-        with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
-            ret = {}
-            # FIXME: This would be more efficient if done backwards
-            for entry in csv.DictReader(fd):
-                ret.update({k: v for k, v in entry.items() if v != ""})
-        return ret
-
-    @cached_property
     def task_specs(self):
         with open(self.dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
+
+    def get_metrics(self):
+        try:
+            with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
+                data = {}
+                # FIXME: This would be more efficient if done backwards
+                for entry in csv.DictReader(fd):
+                    data.update({k: v for k, v in entry.items() if v != ""})
+            return data
+        except FileNotFoundError as e:
+            stderr = self.get_stderr()
+            if stderr is not None:
+                raise Exception(stderr)
+            else:
+                raise e
 
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
@@ -101,16 +107,17 @@ class Job:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb_trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
-    @cached_property
-    def stderr(self):
-        with open(self.dir / "err.out", "r") as fd:
-            return fd.read()
+    def get_stderr(self):
+        try:
+            with open(self.dir / "err.out", "r") as fd:
+                return fd.read()
+        except FileNotFoundError:
+            return None
 
-    @cached_property
-    def stdout(self):
+    def get_stdout(self):
         with open(self.dir / "log.out", "r") as fd:
             return fd.read()
