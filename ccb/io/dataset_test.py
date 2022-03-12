@@ -13,9 +13,9 @@ def random_band(shape=(16, 16), band_name="test_band"):
     return io.Band(data, band_info, 10)
 
 
-def random_sample(n_bands=3):
+def random_sample(n_bands=3, name="test_sample"):
     bands = [random_band(band_name=f"{i:2d}") for i in range(n_bands)]
-    return io.Sample(bands, np.random.randint(2), "test_sample")
+    return io.Sample(bands, np.random.randint(2), name)
 
 
 def test_pack_4d_dense():
@@ -60,3 +60,5 @@ def test_write_read():
     assert len(sample.bands) == len(sample_.bands)
     for band in sample.bands:
         len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
+
+

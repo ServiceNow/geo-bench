@@ -610,7 +610,8 @@ class Dataset:
         self._task_specs_path = None
         self.split = split
         self._load_path_list()
-        self._load_partition(partition_name)
+        #self._load_partition(partition_name)
+        self.set_partition(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         self._load_stats()
 
@@ -661,7 +662,7 @@ class Dataset:
         Select active partition by name
         '''
         if partition_name not in self._partition_path_dict:
-            raise ValueError(f"Unknown partition {partition_name}.")
+            raise ValueError(f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?")
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
 
@@ -683,6 +684,19 @@ class Dataset:
             return json.load(fd)
 
     def _load_partition(self, partition_name):
+        '''
+        Maybe this logic can be improved???
+
+        Current:
+        -> If "default" partition does not exist, load original parition, and if that one does not exist, load any
+        -> If "default" partition exists, then load partition_name.
+
+        Proposed:
+        -> Load partition_name. If it doesn't exist, raise Exception.
+        -> Always provide a default_partition.json (job of converter)
+        -> Don't consider original_partition.json to be a special case
+        -> Use "default" as default parameter for partition_name in __init__
+        '''
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -709,7 +723,7 @@ class Dataset:
         self.stats = {}
 
         # This will actually load all partition/split statistics at once to simplify the logic
-        # Otherwise we would need to change stats every time set_split or set_active_partition() is called
+        # Otherwise we would need to change stats every time set_split or set_partition() is called
         current_partition = self.active_partition_name  # push current
 
         # Check if split-wise stats exist
@@ -917,12 +931,18 @@ def compute_dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
         sample = dataset[i]
 
         for band in sample.bands:
-            accumulator[band.band_info.name].append(
-                np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-            )
+            if n_value_per_image is None:
+                accumulator[band.band_info.name].append(band.data.flatten())
+            else:
+                accumulator[band.band_info.name].append(
+                    np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+                )
 
         if isinstance(sample.label, Band):
-            accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+            if n_value_per_image is None:
+                accumulator["label"].append(sample.label.data.flatten())
+            else:
+                accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
         elif isinstance(sample.label, (list, tuple)):
             for obj in sample.label:
                 if isinstance(obj, dict):
