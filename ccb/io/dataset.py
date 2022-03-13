@@ -64,7 +64,7 @@ class BandInfo(object):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
     def __repr__(self):
-        return "BandInfo(name={}, original_res={:.1f}m)".format(self.name, self.spatial_resolution)
+        return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
         return [self.name]
@@ -81,26 +81,15 @@ class SpectralBand(BandInfo):
         return (self.name, self.wavelength)
 
     def __repr__(self):
-        return "{}(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
-        # self.__class__.__name__
+        return f"{self.__class__.__name__}(name={self.name}, wavelen={self.wavelength}, original_res={self.spatial_resolution:.1f}m)"
 
 
 class Sentinel1(SpectralBand):
-    def __repr__(self):
-        return "Sentinel1(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
+    pass
 
 
 class Sentinel2(SpectralBand):
-    "Spectral band of type Sentinel2"
-
-    def __repr__(self):
-        return "Sentinel2(name={}, wavelen={}, original_res={:.1f}m)".format(
-            self.name, self.wavelength, self.spatial_resolution
-        )
+    pass
 
 
 class Mask(BandInfo):
@@ -162,9 +151,9 @@ sentinel1_8_bands = [
 
 def make_rgb_bands(spatial_resolution):
     return [
-        SpectralBand("Red", (), spatial_resolution, 0.665),
-        SpectralBand("Green", (), spatial_resolution, 0.56),
-        SpectralBand("Blue", (), spatial_resolution, 0.49),
+        SpectralBand("Red", ("red",), spatial_resolution, 0.665),
+        SpectralBand("Green", ("green",), spatial_resolution, 0.56),
+        SpectralBand("Blue", ("blue",), spatial_resolution, 0.49),
     ]
 
 
@@ -230,9 +219,7 @@ class Band:
             shape = self.data.shape
         else:
             shape = "unknown"
-        return "Band(info={}, shape={}, resampled_resolution={}m, date={}, data={})".format(
-            self.band_info, shape, self.spatial_resolution, self.date, self.data, self.date
-        )
+        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date}, data={self.date})"
 
     def get_descriptor(self):
         descriptor = self.band_info.name
@@ -364,8 +351,8 @@ class Sample(object):
         self._build_index()
 
     def __repr__(self):
-        bands = "\n".join(band.__repr__() for band in self.bands)
-        return "Sample:(name={}, bands=\n{}\n)".format(self.sample_name, self.bands)
+        np.set_printoptions(threshold=5)
+        return f"Sample:(name={self.sample_name}, bands=\n{self.bands}\n)"
 
     def _build_index(self):
 
@@ -501,7 +488,7 @@ class Sample(object):
             file_set.add(file)
 
         if len(file_set) != len(self.bands):
-            raise ValueError(f"Duplicate band description in bands. Perhaps date is missing?")
+            raise ValueError("Duplicate band description in bands. Perhaps date is missing?")
 
         with open(Path(dst_dir, "band_index.json"), "w") as fd:
             json.dump(tuple(band_index.items()), fd)
@@ -617,14 +604,61 @@ class Dataset:
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.split = split
-        assert split in ["train", "valid", "test", None]
         self._load_path_list()
         self._load_partition(partition_name)
+        assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
+        # self._load_stats()
+
+    def _load_stats(self):
+        self.stats = {}
+        # This will actually load all partitions at once to simplify the logic
+        # Otherwise we would need to change stats every time set_split or set_active_partition() is called
+        current_partition = self.active_partition_name  # push current
+        # Load stats for all partitions if exist
+        for partition in self.list_partitions():
+            self.set_active_partition(partition)
+            for split in self.list_splits():
+                print(f"Attempting to load stats for {partition}:{split}")
+                try:
+                    with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
+                        stats_dict = json.load(fp)
+                        self.stats.setdefault(partition, {})
+                        self.stats[partition][split] = {
+                            k: convert_dict_to_stats(v) for k, v in stats_dict.items()
+                        }  # from dict to Stats
+                        print("-> success")
+                except Exception as e:
+                    print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
+        # Load single stats if exist
+        try:
+            print("Attempting to load single stats (over all dataset)")
+            with open(self.dataset_dir / f"all_bandstats.json", "r", encoding="utf8") as fp:
+                stats_dict = json.load(fp)
+                self.stats.setdefault("all", {})
+                self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
+                print("-> success")
+        except Exception as e:
+            print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
+
+        # pop current partition
+        self.set_active_partition(current_partition)
+
+    def get_active_stats(self, split_stats=True):
+        if split_stats:
+            return self.stats[self.active_partition_name][self.split]
+        else:
+            return self.stats["all"]
 
     def _load_path_list(self) -> None:
+        # Changed .iterdir to glob -> much faster when 10k+ folders on networked FS
+        """
+        for p in self.dataset_dir.glob('*_partition.json'):
+            partition_name = p.name.split("_partition.json")[0]
+            self._partition_path_dict[partition_name] = p
+        """
         self._partition_path_dict = {}
         self._sample_name_list = []
-        for p in self.dataset_dir.iterdir():
+        for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
             if p.name.endswith("_partition.json"):
                 partition_name = p.name.split("_partition.json")[0]
                 self._partition_path_dict[partition_name] = p
@@ -634,8 +668,6 @@ class Dataset:
                 self._sample_name_list.append(p.name)
 
     def _load_partition(self, partition_name):
-        # Todo: simplify logic of load partition
-        # It seems that in any case, the partition name is ignored
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -685,8 +717,21 @@ class Dataset:
         with open(self._task_specs_path, "rb") as fd:
             return pickle.load(fd)
 
+    def list_splits(self):
+        """
+        List splits for active partition
+        """
+        return list(self.active_partition.keys())
+
+    def set_split(self, split):
+        assert split is None or split in self.list_splits()
+        self.split = split
+
+    def get_split(self):
+        return self.split
+
     def list_partitions(self):
-        return self._partition_path_dict.keys()
+        return list(self._partition_path_dict.keys())
 
     def set_active_partition(self, partition_name="default"):
         if partition_name not in self._partition_path_dict:
@@ -706,47 +751,98 @@ class Dataset:
             sample_name_list = self.active_partition[self.split]
         return len(sample_name_list)
 
+    def which_stats(self):
+        """
+        String for visualizing which stats are available
+        """
+        which_stats = []
+        for partition in self.stats:
+            if partition == "all":
+                which_stats.append("all")
+            else:
+                for split in self.stats[partition]:
+                    which_stats.append(f"{partition}:{split}")
+        if which_stats:
+            return "|".join(which_stats)
+        else:
+            return "<N/A>"
+
     def __repr__(self):
-        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}".format(
-            self.dataset_dir, self.split, self.active_partition_name, len(self)
+        which_stats = []
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
+            self.dataset_dir, self.split, self.active_partition_name, len(self), self.which_stats()
         )
 
     def __str__(self):
-        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={})".format(
-            self.dataset_dir, self.split, self.active_partition_name, len(self)
+        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
+            self.dataset_dir, self.split, self.active_partition_name, len(self), self.which_stats()
         )
 
 
 class Stats:
     def __init__(
-        self, min, max, mean, std, median, percentile_0_1, percentile_1, percentile_99, percentile_99_9
+        self,
+        min,
+        max,
+        mean,
+        std,
+        median,
+        percentile_0_1,
+        percentile_1,
+        percentile_5,
+        percentile_95,
+        percentile_99,
+        percentile_99_9,
     ) -> None:
-        self.min = min
-        self.max = max
-        self.mean = mean
-        self.std = std
-        self.median = median
-        self.percentile_0_1 = percentile_0_1
-        self.percentile_1 = percentile_1
-        self.percentile_99 = percentile_99
-        self.percentile_99_9 = percentile_99_9
+        # Convert all to float to avoid serialization issues with int16
+        self.min = float(min)
+        self.max = float(max)
+        self.mean = float(mean)
+        self.std = float(std)
+        self.median = float(median)
+        self.percentile_0_1 = float(percentile_0_1)
+        self.percentile_1 = float(percentile_1)
+        self.percentile_5 = float(percentile_5)
+        self.percentile_95 = float(percentile_95)
+        self.percentile_99 = float(percentile_99)
+        self.percentile_99_9 = float(percentile_99_9)
 
     def to_dict(self):
-        return OrderedDict([ 
-            ('min', self.min),
-            ('max', self.max),
-            ('mean', self.mean),
-            ('std', self.std),
-            ('median', self.median),
-            ('percentile_0_1', self.percentile_0_1),
-            ('percentile_1', self.percentile_1),
-            ('percentile_99', self.percentile_99),
-            ('percentile_99_9', self.max),
-        ])
+        return OrderedDict(
+            [
+                ("min", self.min),
+                ("max", self.max),
+                ("mean", self.mean),
+                ("std", self.std),
+                ("median", self.median),
+                ("percentile_0_1", self.percentile_0_1),
+                ("percentile_1", self.percentile_1),
+                ("percentile_5", self.percentile_5),
+                ("percentile_95", self.percentile_95),
+                ("percentile_99", self.percentile_99),
+                ("percentile_99_9", self.max),
+            ]
+        )
+
+
+def convert_dict_to_stats(d):
+    return Stats(
+        d["min"],
+        d["max"],
+        d["mean"],
+        d["std"],
+        d["median"],
+        d["percentile_0_1"],
+        d["percentile_1"],
+        d["percentile_5"],
+        d["percentile_95"],
+        d["percentile_99"],
+        d["percentile_99_9"],
+    )
 
 
 def compute_stats(values):
-    q_0_1, q_1, median, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 50, 99, 99.9])
+    q_0_1, q_1, q_5, median, q_95, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 5, 50, 95, 99, 99.9])
     stats = Stats(
         min=np.min(values),
         max=np.max(values),
@@ -755,17 +851,24 @@ def compute_stats(values):
         median=median,
         percentile_0_1=q_0_1,
         percentile_1=q_1,
+        percentile_5=q_5,
+        percentile_95=q_95,
         percentile_99=q_99,
         percentile_99_9=q_99_9,
     )
     return stats
 
 
-def dataset_statistics(dataset_iterator, n_value_per_image=1000):
+def dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
 
     accumulator = defaultdict(list)
+    if n_samples is not None and n_samples < len(dataset):
+        indices = np.random.choice(len(dataset), n_samples, replace=False)
+    else:
+        indices = list(range(len(dataset)))
 
-    for i, sample in enumerate(tqdm(dataset_iterator, desc="Extracting Statistics")):
+    for i in tqdm(indices, desc="Extracting Statistics"):
+        sample = dataset[i]
 
         for band in sample.bands:
             accumulator[band.band_info.name].append(
@@ -790,7 +893,6 @@ def dataset_statistics(dataset_iterator, n_value_per_image=1000):
         band_stats[name] = compute_stats(values)
 
     return band_values, band_stats
-
 
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):
@@ -838,4 +940,4 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
         task_specs.label_type.assert_valid(sample.label)
 
         if assert_dense:
-            assert np.all(sample.band_array != None)
+            assert np.all(sample.band_array is not None)

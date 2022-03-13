@@ -1,4 +1,4 @@
-from ccb.io import dataset
+from ccb import io
 import numpy as np
 import tempfile
 
@@ -7,20 +7,20 @@ def random_band(shape=(16, 16), band_name="test_band"):
     data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(np.float)
     data *= 2.1
     if len(shape) == 3 and shape[2] > 1:
-        band_info = dataset.MultiBand(band_name, alt_names=("tb"), spatial_resolution=20, n_bands=shape[2])
+        band_info = io.MultiBand(band_name, alt_names=("tb"), spatial_resolution=20, n_bands=shape[2])
     else:
-        band_info = dataset.SpectralBand(band_name, alt_names=("tb"), spatial_resolution=20, wavelength=0.1)
-    return dataset.Band(data, band_info, 10)
+        band_info = io.SpectralBand(band_name, alt_names=("tb"), spatial_resolution=20, wavelength=0.1)
+    return io.Band(data, band_info, 10)
 
 
 def random_sample(n_bands=3):
     bands = [random_band(band_name=f"{i:2d}") for i in range(n_bands)]
-    return dataset.Sample(bands, np.random.randint(2), "test_sample")
+    return io.Sample(bands, np.random.randint(2), "test_sample")
 
 
 def test_pack_4d_dense():
     bands = [random_band((3, 4), "band_1"), random_band((3, 4), "band_2"), random_band((6, 8), "band_3")]
-    sample = dataset.Sample(bands, np.random.randint(2), "test_sample")
+    sample = io.Sample(bands, np.random.randint(2), "test_sample")
     image, dates, band_names = sample.pack_to_4d(resample=True)
     image_, _ = sample.pack_to_3d(resample=True)
 
@@ -39,7 +39,7 @@ def test_pack_4d_dense():
 
 def test_pack_4d_multi_band():
     bands = [random_band((3, 4, 5), "band_1"), random_band((3, 4), "band_2"), random_band((6, 8), "band_3")]
-    sample = dataset.Sample(bands, np.random.randint(2), "test_sample")
+    sample = io.Sample(bands, np.random.randint(2), "test_sample")
     image, dates, band_names = sample.pack_to_4d(resample=True)
 
     assert dates == [None]
@@ -51,7 +51,10 @@ def test_write_read():
     with tempfile.TemporaryDirectory() as dataset_dir:
         sample = random_sample()
         sample.write(dataset_dir)
-        ds = dataset.Dataset(dataset_dir)
+        partition = io.Partition()
+        partition.add("train", sample.sample_name)
+        partition.save(directory=dataset_dir, partition_name="default")
+        ds = io.Dataset(dataset_dir)
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)

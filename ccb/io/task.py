@@ -93,7 +93,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
 
 class Loss(object):
     def __call__(self, label, prediction):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     @property
     def name(self):
