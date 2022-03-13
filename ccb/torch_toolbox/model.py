@@ -1,9 +1,8 @@
+from typing import List
 import torch
-import torchvision.transforms as tt
-import torch.nn.functional as F
-import pytorch_lightning as pl
 from pytorch_lightning import LightningModule
-from ccb.io import Classification
+from ccb import io
+import numpy as np
 
 
 class Model(LightningModule):
@@ -27,23 +26,23 @@ class Model(LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        images, target = batch
-        output = self(images)
+        inputs, target = batch
+        output = self(inputs)
         loss_train = self.loss_function(output, target)
-        acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
+        acc1, = self.__accuracy(output, target, topk=(1,))
         self.log("train_loss", loss_train, on_step=True, on_epoch=True, logger=True)
         self.log("train_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        # self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
         return loss_train
 
     def eval_step(self, batch, batch_idx, prefix):
         images, target = batch
         output = self(images)
         loss = self.loss_function(output, target)
-        acc1, acc5 = self.__accuracy(output, target, topk=(1, 5))
+        acc1, = self.__accuracy(output, target, topk=(1,))
         self.log(f"{prefix}_loss", loss, on_step=True, on_epoch=True, logger=True)
         self.log(f"{prefix}_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        # self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")
@@ -114,6 +113,25 @@ class ModelGenerator:
         """
         raise NotImplementedError()
 
+    def get_collate_fn(self, task_specs, hyperparams):
+        """Generate the collate functions for stacking the mini-batch.
+
+        Args:
+            task_specs (TaskSpecifications): an object describing the task to be performed
+            hyperparams (dict): dictionary containing hyperparameters of the experiment
+
+        Returns:
+            A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
+            will be fed to the model.
+
+        Raises:
+            NotImplementedError
+
+        Example:
+            return ccb.torch_toolbox.model.collate_rgb
+        """
+        raise NotImplementedError()
+
 
 def head_generator(task_specs, hyperparams):
     """
@@ -129,7 +147,7 @@ def head_generator(task_specs, hyperparams):
         input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
             the input itself? should it be a dict of shapes?
     """
-    if isinstance(task_specs.label_type, Classification):
+    if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
             (in_ch,) = hyperparams["features_shape"]
             out_ch = task_specs.label_type.n_classes
@@ -152,7 +170,7 @@ def train_loss_generator(task_specs, hyperparams):
     Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
     following attributes: task_specs.task_type and task_specs.eval_loss
     """
-    if isinstance(task_specs.label_type, Classification):
+    if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["loss_type"] == "crossentropy":
             return torch.nn.CrossEntropyLoss()
         else:
@@ -194,3 +212,21 @@ class BackBone(torch.nn.Module):
         models like u-net.
         raise NotImplementedError()
         """
+
+
+def collate_rgb(samples: List[io.Sample]):
+    x_list = []
+    label_list = []
+    for sample in samples:
+        rgb_image, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
+        x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
+        label_list.append(sample.label)
+
+    return torch.stack(x_list), stack_labels(label_list)
+
+
+def stack_labels(label_list):
+    if isinstance(label_list[0], int):
+        return torch.tensor(label_list)
+    else:
+        raise NotImplementedError()

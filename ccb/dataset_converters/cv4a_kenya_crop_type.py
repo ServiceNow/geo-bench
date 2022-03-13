@@ -57,7 +57,9 @@ max_band_value = {
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")),)
+BAND_INFO_LIST.append(
+    io.CloudProbability(alt_names=("CPL", "CLD")),
+)
 
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=8)
 
@@ -135,12 +137,12 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
         tile_id, x_start, y_start = cv4a_dataset.chips_metadata[i]
         sample_name = f"tile={tile_id}_x={x_start:04d}_y={y_start:04d}"
-        uids = np.unique(tg_sample["field_ids"])
+        # uids = np.unique(tg_sample["field_ids"])
 
         images = np.array(tg_sample["image"])
         mask = np.array(tg_sample["mask"])
 
-        set_count = np.bincount([set_map[id] for id in uids])
+        # set_count = np.bincount([set_map[id] for id in uids])
 
         sample = make_sample(images, mask, sample_name)
         sample.write(dataset_dir)

@@ -1,11 +1,12 @@
-# TODO(drouin) finish adapting to pytest  (different than unittest)
-
-import os
 from pathlib import Path
-from shutil import rmtree
 import subprocess
 import sys
+import tempfile
+from ccb import io
+
+import pytest
 from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
+from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
@@ -59,61 +60,39 @@ def test_load_module():
     assert hasattr(model_generator, "hp_search")
 
 
-# def test_unexisting_path():
-#     """
-#     Test trying to load from an unexisting module path.
+def test_unexisting_path():
+    """
+    Test trying to load from an unexisting module path.
 
-#     """
-#     self.assertRaises(ModuleNotFoundError, get_model_generator, "1234_unexisting_path.py")
-
-# def test_missing_generator_instance():
-#     """
-#     Test trying to load when the module exists, but the variable is not defined.
-
-#     """
-#     path = "tmp_testing_model_generator_broken.py"
-#     open(path, "w").write("def model_generator_():\n    pass")  # So model_generator doesn't exist
-#     self.assertRaises(AttributeError, get_model_generator, path)
-#     os.remove(path)
+    """
+    try:
+        get_model_generator("ccb.torch_toolbox.model_generators.foobar")
+    except Exception as e:
+        assert isinstance(e, ModuleNotFoundError)
 
 
 def test_experiment_generator_on_mnist():
-    experiment_generator_dir = Path(__file__).absolute().parent
 
-    experiments_dir = Path("/tmp/exp_gen_test")
-    if experiments_dir.exists():
-        rmtree(experiments_dir)
-    experiments_dir.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory() as exp_dir:
 
-    cmd = [
-        sys.executable,
-        str(experiment_generator_dir / "experiment_generator.py"),
-        "--model-generator",
-        "ccb.torch_toolbox.model_generators.conv4",
-        "--experiment-dir",
-        str(experiments_dir),
-        "--benchmark",
-        "test",
-    ]
-    subprocess.check_call(cmd)
+        experiment_generator(
+            "ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test", make_sub_experiment=False
+        )
 
-    exp_dir = list(experiments_dir.iterdir())[0]
+        sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
-    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
-
-    for job_dir in (exp_dir / "MNIST").iterdir():
-        job = Job(job_dir)
-        print(job_dir)
-        print(job.metrics)
-        assert float(job.metrics["train_acc1_step"]) > 20
+        for job_dir in (Path(exp_dir) / "MNIST").iterdir():
+            job = Job(job_dir)
+            print(job_dir)
+            metrics = job.get_metrics()
+            assert float(metrics["train_acc1_step"]) > 20
 
 
+@pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
 def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(__file__).absolute().parent
 
     experiments_dir = Path("/tmp/exp_gen_test")
-    if experiments_dir.exists():
-        rmtree(experiments_dir)
     experiments_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = [
@@ -131,6 +110,12 @@ def test_experiment_generator_on_benchmark():
     exp_dir = list(experiments_dir.iterdir())[0]
 
     sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+    for ds_dir in Path(exp_dir).iterdir():
+        for job_dir in ds_dir.iterdir():
+            job = Job(job_dir)
+            print(job_dir)
+            metrics = job.get_metrics()
+            print(metrics)
 
 
 if __name__ == "__main__":
