@@ -1,5 +1,12 @@
-# Downloaded following instructions at
-# "https://github.com/kdmayer/3D-PV-Locator#public-s3-bucket-pv4ger"
+"""
+1. Install the AWS CLI. Instructions here: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+(requires sudo, so you may need to do it locally then copy the data over)
+2. Make an AWS account and sign into it then navigate here: https://console.aws.amazon.com/iam/
+3. Create a key pair (Access Key ID, Secret Access Key) following the instructions here: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-creds
+4. Clone git repo: git clone https://github.com/kdmayer/3D-PV-Locator.git && cd 3D-PV-Locator
+5. Configure AWS, follow default settings: aws configure
+6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/classification/ dataset/pv4ger_v1.0/
+"""
 import sys
 import csv
 import h5py
