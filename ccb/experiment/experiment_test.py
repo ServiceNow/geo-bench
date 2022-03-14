@@ -85,7 +85,7 @@ def test_experiment_generator_on_mnist():
             job = Job(job_dir)
             print(job_dir)
             metrics = job.get_metrics()
-            assert float(metrics["train_acc1_step"]) > 20
+            assert float(metrics["test_accuracy-1"]) > 20
 
 
 @pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
