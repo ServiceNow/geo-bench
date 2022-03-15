@@ -176,7 +176,11 @@ def test_dataset_statistics():
         assert np.equal(statistics['Band 200'].percentile_1, 201)
         assert np.equal(statistics['Band 200'].percentile_99, 203)
 
-        
+        assert np.equal(statistics['label'].min, 1)
+        assert np.equal(statistics['label'].max, 3)
+        assert np.equal(statistics['label'].median, 2)
+        assert np.equal(statistics['label'].mean, 2)
+
         print('Done')
 
 
