@@ -73,3 +73,14 @@ def test_xview2():
     from ccb.dataset_converters import xview2
 
     converter_tester(xview2)
+
+
+if __name__ == '__main__':
+    test_brick_kiln()
+    test_cv4a_kenya_cropy_type()
+    test_eurosat()
+    test_neon_tree()
+    test_smallholder_cashews()
+    test_so2sat()
+    test_nz_cattle_detection()
+    test_xview2()
