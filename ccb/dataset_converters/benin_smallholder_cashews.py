@@ -144,7 +144,7 @@ def make_sample(images, mask, sample_name):
 
 
 def process_i(args):
-    i, tg_sample, dataset_dir = args
+    i, tg_sample, dataset_dir, partition = args
     sample_name = f"sample_{i:08d}"
 
     images = tg_sample["image"].numpy()
@@ -153,6 +153,7 @@ def process_i(args):
     sample = make_sample(images, mask, sample_name)
     sample.write(dataset_dir)
     # print(f'Wrote {sample_name}')
+    partition.add('train', sample_name)  # by default everything goes in train
     return i
 
 
@@ -175,6 +176,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
 
+    '''
     multiprocess = True
     if multiprocess:
         with Pool(os.cpu_count()) as p:
@@ -182,10 +184,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             iterator = p.imap(process_i, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)))
             for i in tqdm(iterator, total=len(cashew)):
                 pass
+    '''
+    partition = io.Partition()
 
-    else:
-        for i, cashew_i in enumerate(tqdm(cashew)):
-            process_i(i, cashew_i, dataset_dir)
+    for i, cashew_i in enumerate(tqdm(cashew)):
+        process_i((i, cashew_i, dataset_dir, partition))
+
+    partition.save(dataset_dir, "default")
 
 
 if __name__ == "__main__":

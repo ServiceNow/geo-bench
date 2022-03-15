@@ -1,6 +1,6 @@
 # So2Sat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
-
+import os
 from ccb import io
 import numpy as np
 from pathlib import Path
@@ -74,6 +74,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             break
 
     partition.save(dataset_dir, "original")
+    # use symbolic link to point default->original partition
+    os.symlink(f'{dataset_dir}/original_partition.json', f'{dataset_dir}/default_partition.json')
+
 
 
 if __name__ == "__main__":

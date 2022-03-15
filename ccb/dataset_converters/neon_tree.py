@@ -10,6 +10,7 @@
 # For running this code:
 # $ pip install xmltodict
 
+import os
 import re
 from typing import List
 from ccb import io
@@ -155,6 +156,8 @@ def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count)
                 break
 
     partition.save(dataset_dir, "original")
+    # use symbolic link to point default->original partition
+    os.symlink(f'{dataset_dir}/original_partition.json', f'{dataset_dir}/default_partition.json')
 
     to_csv(info_list, dataset_dir)
     find_missing([zenodo_dataset_dir], file_set)
