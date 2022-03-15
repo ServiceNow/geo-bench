@@ -100,7 +100,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     cv4a_dataset = cv4a_kenya_crop_type.CV4AKenyaCropType(
         root=SRC_DATASET_DIR,
-        download=True,
+        download=False,
         checksum=True,
         api_key="e46c4efbca1274862accc0f1616762c9c72791e00523980eea3db3c48acd106c",
         chip_size=128,

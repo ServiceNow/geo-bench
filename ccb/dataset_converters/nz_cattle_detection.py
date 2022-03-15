@@ -15,7 +15,7 @@ from PIL import Image
 import rasterio
 import datetime
 
-DATASET_NAME = "New Zealand Cattle Detection"
+DATASET_NAME = "nz_cattle"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 

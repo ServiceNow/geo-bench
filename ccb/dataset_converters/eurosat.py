@@ -55,7 +55,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     offset = 0
     for split_name in ["train", "val", "test"]:
-        eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True)
+        eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=False, checksum=True)
         for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
             sample_name = f"id_{i + offset:04d}"
 
