@@ -55,12 +55,13 @@ def experiment_generator(
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
-
+        print(task_specs.dataset_name)
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
             # Create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name / hparams_string
             job = Job(job_dir)
+            print("  ", hparams_string)
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
             job.write_script(model_generator_module_name)
