@@ -28,7 +28,7 @@ def train_job_on_task(model_generator, task_specs, threshold):
 
 @pytest.mark.slow
 def test_toolbox_mnist():
-    train_job_on_task(conv4.model_generator, mnist_task_specs, 15)
+    train_job_on_task(conv4.model_generator, mnist_task_specs, 10)
 
 
 @pytest.mark.slow
