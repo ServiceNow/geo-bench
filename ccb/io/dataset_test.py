@@ -2,6 +2,7 @@ from ccb import io
 import numpy as np
 import tempfile
 from ccb.io.bandstats import bandstats
+import pytest
 
 
 def random_band(shape=(16, 16), band_name="test_band"):
@@ -128,11 +129,8 @@ def test_dataset_partition():
         ds.set_split('test')
         assert ds.get_split() == 'test'
         assert len(ds) == 0
-        try:
+        with pytest.raises(IndexError):  # default:test is empty
             ds[0]
-            raise Exception('Should have broken here. default:test is empty')
-        except IndexError:
-            pass # This is correctt
 
         ds = io.Dataset(dataset_dir, partition_name='funky')
         assert set(ds.list_partitions()) == set(['funky', 'default'])
@@ -155,11 +153,8 @@ def test_dataset_partition():
         assert ds.get_split() == 'test'
         assert_same_sample(ds[0], sample2)
         assert len(ds) == 1
-        try:
+        with pytest.raises(IndexError):  # default:test is out of bounds
             ds[2]
-            raise Exception('Should have broken here. default:test is empty')
-        except IndexError:
-            pass # This is correctt
 
 
 def test_dataset_withnopartition():
@@ -173,11 +168,9 @@ def test_dataset_withnopartition():
         sample3 = random_sample(name='sample3')
         sample3.write(dataset_dir)  
 
-        try:
+        with pytest.raises(ValueError):  # raise ValueError because not partition exists
             ds = io.Dataset(dataset_dir)
-            raise Exception('This should fail because there is no partition')
-        except ValueError:  # raised internally by set_partition()
-            pass#ed the test
+
 
 
 def custom_band(value, shape=(4, 4), band_name="test_band"):

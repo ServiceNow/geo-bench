@@ -132,9 +132,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
         if max_count is not None and sample_count >= max_count:
             break
-    partition.save(dataset_dir, "original")
-    # use symbolic link to point default->original partition
-    os.symlink(f'{dataset_dir}/original_partition.json', f'{dataset_dir}/default_partition.json')
+    partition.save(dataset_dir, "original", as_default=True)
 
 
 

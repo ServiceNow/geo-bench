@@ -194,7 +194,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         sample_name = convert_sample(i, data, dataset_dir)
         partition.add('train', sample_name)
 
-    partition.save(dataset_dir, "default")
+    partition.save(dataset_dir, "nopartition", as_default=True)
 
 
 if __name__ == "__main__":

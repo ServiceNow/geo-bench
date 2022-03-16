@@ -573,10 +573,17 @@ class Partition(dict):
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
-    def save(self, directory, partition_name):
+    def save(self, directory, partition_name, as_default=False):
+        '''
+        If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
+        This will be loaded as the default partition by class Dataset
+        '''
         file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
+        if as_default:
+            os.symlink(f'{directory}/{partition_name}_partition.json', f'{directory}/default_partition.json')
+
 
 
 class GeneratorWithLength(object):
