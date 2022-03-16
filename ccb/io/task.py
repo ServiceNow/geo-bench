@@ -76,13 +76,22 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield mnist_task_specs
         return
 
-    if benchmark_name == "default":
-        benchmark_dir = Path(datasets_dir)
-    else:
+    benchmark_dir = Path(datasets_dir)
+
+    path_map = {"ccb": (benchmark_dir, None), "ccb-test": (benchmark_dir, ("brick_kiln_v1.0", "eurosat"))}
+
+    path_map["default"] = path_map["ccb"]
+
+    if benchmark_name not in path_map:
         raise ValueError(f"Unknown benchmark name: {benchmark_name}.")
 
+    benchmark_dir, subset = path_map[benchmark_name]
+
     for dataset_dir in benchmark_dir.iterdir():
-        if not dataset_dir.is_dir():
+        if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
+            continue
+
+        if subset is not None and dataset_dir.name not in subset:
             continue
 
         with open(dataset_dir / "task_specs.pkl", "rb") as fd:
