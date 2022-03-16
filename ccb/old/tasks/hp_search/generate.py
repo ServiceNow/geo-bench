@@ -34,19 +34,11 @@ def start():
     parser.add_argument(
         "--weight_decay", type=str, default="0.0001", help="comma separated list of weight decays to search over"
     )
-    parser.add_argument(
-        "--batch_size", type=str, default="128", help="batch size"
-    )
+    parser.add_argument("--batch_size", type=str, default="128", help="batch size")
 
-    parser.add_argument(
-        "--feature_size", type=str, default="512", help="feature map size"
-    )
-    parser.add_argument(
-        "--train_frac", type=str, default="1", help="fraction of training set to use"
-    )
-    parser.add_argument(
-        "--val_frac", type=str, default="1", help="fraction of training set to use"
-    )
+    parser.add_argument("--feature_size", type=str, default="512", help="feature map size")
+    parser.add_argument("--train_frac", type=str, default="1", help="fraction of training set to use")
+    parser.add_argument("--val_frac", type=str, default="1", help="fraction of training set to use")
     parser.add_argument("--out", type=str, default="hp_search.txt", help="output file path")
 
     args = parser.parse_args()
