@@ -38,11 +38,11 @@ def bandstats(dataset_dir, use_splits, values_per_image, samples):
     else:
         dataset.set_partition("default")
         dataset.set_split(None)
-        print(f"Computing single statistics for whole dataset")
+        print("Computing single statistics for whole dataset")
         band_values, band_stats = compute_dataset_statistics(
             dataset, n_value_per_image=values_per_image, n_samples=samples
         )
-        stats_fname = os.path.join(dataset.dataset_dir, f"all_bandstats.json")
+        stats_fname = os.path.join(dataset.dataset_dir, "all_bandstats.json")
         with open(stats_fname, "w", encoding="utf8") as fp:
             json.dump({k: v.to_dict() for k, v in band_stats.items()}, fp)
         print("-> Dumped statistics to {}".format(stats_fname))

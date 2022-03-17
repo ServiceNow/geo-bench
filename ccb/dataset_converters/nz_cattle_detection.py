@@ -82,7 +82,6 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
     partition = io.Partition()
-    
     train_path_list = map(lambda f: ('train', f), Path(SRC_DATASET_DIR, 'cow_images', 'train').iterdir())
     valid_path_list = map(lambda f: ('valid', f), Path(SRC_DATASET_DIR, 'cow_images', 'valid').iterdir())
     test_path_list = map(lambda f: ('test', f), Path(SRC_DATASET_DIR, 'cow_images', 'test').iterdir())
