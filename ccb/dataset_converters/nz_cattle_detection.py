@@ -82,13 +82,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
     partition = io.Partition()
-    
     train_path_list = map(lambda f: ('train', f), Path(SRC_DATASET_DIR, 'cow_images', 'train').iterdir())
     valid_path_list = map(lambda f: ('valid', f), Path(SRC_DATASET_DIR, 'cow_images', 'valid').iterdir())
     test_path_list = map(lambda f: ('test', f), Path(SRC_DATASET_DIR, 'cow_images', 'test').iterdir())
     path_list = itertools.chain(itertools.chain(train_path_list, valid_path_list), test_path_list)
-    sample_count = 0
 
+    sample_count = 0
+    partition = io.Partition()  # default partition: everything in train
     for (split, file) in tqdm(path_list):
         if file.suffix == ".png":
             sample = load_sample(img_path=file)
@@ -99,6 +99,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
+    partition.save(dataset_dir, "nopartition", as_default=True)
 
     partition.save(dataset_dir, "original")
 

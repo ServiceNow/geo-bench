@@ -144,6 +144,7 @@ def make_sample(images, mask, sample_name):
 
 
 def convert_sample(i, tg_sample, dataset_dir):
+
     sample_name = f"sample_{i:08d}"
 
     images = tg_sample["image"].numpy()
@@ -152,7 +153,7 @@ def convert_sample(i, tg_sample, dataset_dir):
     sample = make_sample(images, mask, sample_name)
     sample.write(dataset_dir)
     # print(f'Wrote {sample_name}')
-    return i
+    return sample_name
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
@@ -172,6 +173,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         # either 50cm or 40cm, Airbus Pleiades 50cm, https://radiantearth.blob.core.windows.net/mlhub/technoserve-cashew-benin/Documentation.pdf
         spatial_resolution=SPATIAL_RESOLUTION,
     )
+
+    partition = io.Partition()
+
     task_specs.save(dataset_dir, overwrite=True)
 
     # multiprocess = False
@@ -184,12 +188,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     # else:
     # for i, data in enumerate(tqdm(cashew)):
-    i = 0
-    for data in cashew:
-        i += 1
-        if i + 1 >= max_count:
+    for i, data in enumerate(cashew):
+        if i >= max_count:
             break
-        convert_sample(i, data, dataset_dir)
+        sample_name = convert_sample(i, data, dataset_dir)
+        partition.add("train", sample_name)
+
+    partition.save(dataset_dir, "nopartition", as_default=True)
 
 
 if __name__ == "__main__":
