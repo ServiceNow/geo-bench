@@ -148,7 +148,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
         sample = make_sample(images, mask, sample_name)
         sample.write(dataset_dir)
-        partition.add('train', sample_name)  # by default everything goes in train
+        partition.add("train", sample_name)  # by default everything goes in train
 
         j += 1
         if max_count is not None and j >= max_count:

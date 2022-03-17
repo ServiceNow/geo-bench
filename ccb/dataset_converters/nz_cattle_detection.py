@@ -87,14 +87,11 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if file.suffix == ".png":
             sample = load_sample(img_path=file)
             sample.write(dataset_dir)
-            partition.add('train', sample.sample_name)
+            partition.add("train", sample.sample_name)
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
     partition.save(dataset_dir, "nopartition", as_default=True)
-
-
-            
 
 
 if __name__ == "__main__":

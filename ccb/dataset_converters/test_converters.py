@@ -91,7 +91,7 @@ def test_xview2():
     converter_tester(xview2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_brick_kiln()
     test_cv4a_kenya_cropy_type()
     test_eurosat()
