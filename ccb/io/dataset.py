@@ -752,7 +752,7 @@ class Dataset:
         # Load global stats if exists
         try:
             print("Attempting to load global stats (over all dataset)")
-            with open(self.dataset_dir / f"all_bandstats.json", "r", encoding="utf8") as fp:
+            with open(self.dataset_dir / "all_bandstats.json", "r", encoding="utf8") as fp:
                 stats_dict = json.load(fp)
                 self.stats.setdefault("all", {})
                 self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
@@ -832,7 +832,6 @@ class Dataset:
             return "<N/A>"
 
     def __repr__(self):
-        which_stats = []
         return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
             self.dataset_dir, self.split, self.active_partition_name, len(self), self.get_available_stats_str()
         )
