@@ -574,16 +574,15 @@ class Partition(dict):
         self.partition_dict[split_name].append(sample_name)
 
     def save(self, directory, partition_name, as_default=False):
-        '''
+        """
         If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
         This will be loaded as the default partition by class Dataset
-        '''
+        """
         file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
         if as_default:
-            os.symlink(f'{directory}/{partition_name}_partition.json', f'{directory}/default_partition.json')
-
+            os.symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
 
 
 class GeneratorWithLength(object):
@@ -605,7 +604,7 @@ class Dataset:
         """
         Load CCB dataset.
         CCB datasets can have different split partitions (e.g. for few-shot learning).
-        The default partition is 
+        The default partition is
         Partition
 
         Args:
@@ -617,16 +616,16 @@ class Dataset:
         self._task_specs_path = None
         self.split = split
         self._load_path_list()
-        #self._load_partition(partition_name)
+        # self._load_partition(partition_name)
         self.set_partition(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         self._load_stats()
 
     #### Loading paths
     def _load_path_list(self) -> None:
-        '''
+        """
         Scan folder for sample folders, task specifications, and partitions
-        '''
+        """
         self._partition_path_dict = {}
         self._sample_name_list = []
         for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
@@ -646,7 +645,6 @@ class Dataset:
         with open(self._task_specs_path, "rb") as fd:
             return pickle.load(fd)
 
-
     #### Splits ####
 
     def set_split(self, split):
@@ -665,33 +663,35 @@ class Dataset:
     #### Partitions ####
 
     def set_partition(self, partition_name="default"):
-        '''
+        """
         Select active partition by name
-        '''
+        """
         if partition_name not in self._partition_path_dict:
-            raise ValueError(f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?")
+            raise ValueError(
+                f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?"
+            )
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
 
     def get_partition(self):
-        '''
+        """
         Return active partition name
-        '''
+        """
         return self.active_partition_name
 
     def list_partitions(self):
         return list(self._partition_path_dict.keys())
-        
+
     @lru_cache(maxsize=3)
     def load_partition(self, partition_name="default"):
-        '''
+        """
         Load and return partition content from json file
-        '''
+        """
         with open(self._partition_path_dict[partition_name], "r") as fd:
             return json.load(fd)
 
     def _load_partition(self, partition_name):
-        '''
+        """
         Maybe this logic can be improved???
 
         Current:
@@ -703,7 +703,7 @@ class Dataset:
         -> Always provide a default_partition.json (job of converter)
         -> Don't consider original_partition.json to be a special case
         -> Use "default" as default parameter for partition_name in __init__
-        '''
+        """
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
             return
@@ -722,11 +722,11 @@ class Dataset:
 
     #### Statistics ####
     def _load_stats(self):
-        '''
+        """
         Load global and split-wise statistics. Fail with warning if not available.
 
         Note: this function must be called after the partitions are loaded
-        '''
+        """
         self.stats = {}
 
         # This will actually load all partition/split statistics at once to simplify the logic
@@ -764,21 +764,20 @@ class Dataset:
         self.set_partition(current_partition)
 
     def get_stats(self, split_wise=False):
-        '''
+        """
         Return stats for active partition if split_wise is True, otherwise return global stats
-        '''
+        """
         if split_wise:
             return self.stats[self.active_partition_name][self.split]
         else:
             return self.stats["all"]
 
-
     #### Common accessors and iterators ####
 
     def __getitem__(self, idx):
-        '''
+        """
         Return item idx from active split, from active partition
-        '''
+        """
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
@@ -787,9 +786,9 @@ class Dataset:
         return load_sample(sample_path)
 
     def __len__(self):
-        '''
+        """
         Return length of active split, from active partition
-        '''
+        """
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
@@ -813,8 +812,6 @@ class Dataset:
             max_count = min(n, max_count)
 
         return GeneratorWithLength(self._iter_dataset(max_count=max_count), max_count)
-
-
 
     #### len and printing utils ####
     def get_available_stats_str(self):
@@ -949,7 +946,9 @@ def compute_dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
             if n_value_per_image is None:
                 accumulator["label"].append(sample.label.data.flatten())
             else:
-                accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False))
+                accumulator["label"].append(
+                    np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False)
+                )
         elif isinstance(sample.label, (list, tuple)):
             for obj in sample.label:
                 if isinstance(obj, dict):
