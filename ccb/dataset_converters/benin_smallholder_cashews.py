@@ -189,7 +189,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     # else:
     # for i, data in enumerate(tqdm(cashew)):
     for i, data in enumerate(cashew):
-        if i > max_count:
+        if i >= max_count:
             break
         sample_name = convert_sample(i, data, dataset_dir)
         partition.add("train", sample_name)
