@@ -18,8 +18,12 @@ from collections import OrderedDict, defaultdict
 from tqdm import tqdm
 
 
+# Deprecated, use benchmark_dir instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
 datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+
+# src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
+CCB_DIR = Path(datasets_dir).parent
 
 
 class BandInfo(object):
