@@ -7,6 +7,7 @@
 5. Configure AWS, follow default settings: aws configure
 6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/classification/ dataset/pv4ger_v1.0/
 """
+import os
 import sys
 import rasterio
 import numpy as np
@@ -93,7 +94,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if max_count is not None and sample_count >= max_count:
             break
 
-    partition.save(dataset_dir, "original")
+    partition.save(dataset_dir, "original", as_default=True)
 
 
 if __name__ == "__main__":
