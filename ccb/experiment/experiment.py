@@ -4,7 +4,6 @@ from os import mkdir
 import pickle
 import stat
 import sys
-
 from importlib import import_module
 from itertools import chain
 from pathlib import Path
@@ -87,7 +86,10 @@ class Job:
     def get_metrics(self):
         try:
             with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
-                data = next(csv.DictReader(fd))
+                data = {}
+                # FIXME: This would be more efficient if done backwards
+                for entry in csv.DictReader(fd):
+                    data.update({k: v for k, v in entry.items() if v != ""})
             return data
         except FileNotFoundError as e:
             stderr = self.get_stderr()

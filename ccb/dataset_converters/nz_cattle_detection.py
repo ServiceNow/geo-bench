@@ -13,7 +13,6 @@ from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
 import rasterio
-import itertools
 import datetime
 
 DATASET_NAME = "nz_cattle"
@@ -82,27 +81,22 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir)
     partition = io.Partition()
-    train_path_list = map(lambda f: ('train', f), Path(SRC_DATASET_DIR, 'cow_images', 'train').iterdir())
-    valid_path_list = map(lambda f: ('valid', f), Path(SRC_DATASET_DIR, 'cow_images', 'valid').iterdir())
-    test_path_list = map(lambda f: ('test', f), Path(SRC_DATASET_DIR, 'cow_images', 'test').iterdir())
-    path_list = itertools.chain(itertools.chain(train_path_list, valid_path_list), test_path_list)
+
+    path_list = Path(SRC_DATASET_DIR, 'cow_images').iterdir()
 
     sample_count = 0
     partition = io.Partition()  # default partition: everything in train
-    for (split, file) in tqdm(path_list):
+    for file in tqdm(path_list):
         if file.suffix == ".png":
             sample = load_sample(img_path=file)
             sample.write(dataset_dir)
 
-            partition.add(split, sample.sample_name)
+            partition.add('train', sample.sample_name)
 
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
     partition.save(dataset_dir, "nopartition", as_default=True)
-
-    partition.save(dataset_dir, "original")
-
 
 if __name__ == "__main__":
     convert()
