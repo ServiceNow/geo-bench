@@ -141,4 +141,3 @@ dmypy.json
 .pyre/
 .DS_Store
 .vscode/
-poetry.lock
