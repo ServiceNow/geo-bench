@@ -27,7 +27,7 @@ def train_job_on_task(model_generator, task_specs, threshold):
 
 
 def test_toolbox_mnist():
-    train_job_on_task(conv4.model_generator, mnist_task_specs, 20)
+    train_job_on_task(conv4.model_generator, mnist_task_specs, 0.20)
 
 
 @pytest.mark.slow
@@ -35,7 +35,7 @@ def test_toolbox_mnist():
 def test_toolbox_brick_kiln():
     with open(Path(io.datasets_dir) / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
-    train_job_on_task(conv4.model_generator, task_specs, 70)
+    train_job_on_task(conv4.model_generator, task_specs, 0.70)
 
 
 if __name__ == "__main__":

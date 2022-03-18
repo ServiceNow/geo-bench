@@ -4,6 +4,7 @@ from pytorch_lightning import LightningModule
 from ccb import io
 import numpy as np
 import torch.nn.functional as F
+import torchmetrics
 
 
 class Model(LightningModule):
@@ -181,7 +182,7 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
 
     metrics = {
         io.Classification: [
-            compute_accuracy,
+            torchmetrics.Accuracy(),
         ],
         io.SegmentationClasses: [],
     }[task_specs.label_type.__class__]
@@ -199,7 +200,7 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     """
     metrics = {
         io.Classification: [
-            compute_accuracy,
+            torchmetrics.Accuracy(),
         ],
         io.SegmentationClasses: (),
     }[task_specs.label_type.__class__]
@@ -228,10 +229,13 @@ class Metrics:
     def add_metric(self, metric):
         self.metrics.append(metric)
 
-    def __call__(self, output, target, prefix, *args, **kwargs) -> dict:
+    def __call__(self, output, target, prefix="", *args, **kwargs) -> dict:
         ret = {}
         for metric in self.metrics:
-            ret.update(metric(output, target, prefix, *args, **kwargs))
+            if isinstance(metric, torchmetrics.Accuracy):
+                ret["_".join([prefix, "accuracy-1"])] = metric(output, target)
+            else:
+                ret.update(metric(output, target, prefix, *args, **kwargs))
         return ret
 
 
