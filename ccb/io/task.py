@@ -31,6 +31,7 @@ class TaskSpecifications:
         bands_stats=None,
         label_type=None,
         eval_loss=None,
+        eval_metrics=None,
         spatial_resolution=None,
     ) -> None:
         self.dataset_name = dataset_name
@@ -41,6 +42,7 @@ class TaskSpecifications:
         self.bands_stats = bands_stats
         self.label_type = label_type
         self.eval_loss = eval_loss
+        self.eval_metrics = eval_metrics
         self.spatial_resolution = spatial_resolution
 
     def save(self, directory, overwrite=False):
@@ -114,6 +116,10 @@ class Accuracy(Loss):
         return float(label != prediction)
 
 
+class CrossEntropy(Loss):
+    pass
+
+
 class SegmentationAccuracy(Loss):
     pass
 
@@ -124,5 +130,6 @@ mnist_task_specs = TaskSpecifications(
     patch_size=(28, 28),
     bands_info=[BandInfo("grey")],
     label_type=Classification(10),
-    eval_loss=Accuracy(),
+    eval_loss=CrossEntropy(),
+    eval_metrics=[Accuracy()],
 )
