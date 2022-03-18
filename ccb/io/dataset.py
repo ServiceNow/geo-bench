@@ -543,17 +543,17 @@ def _largest_shape(band_array):
     return tuple(shape)
 
 
-def _extract_label(band_list):
-    """Extract the label information from the band_list. *Note, the band_list is modified.*"""
-    labels = set()
-    for idx in range(len(band_list) - 1, -1, -1):  # iterate backward to avoid changing list index when popping
-        if isinstance(band_list[idx].band_info, LabelType):
-            labels.add(band_list.pop(idx))
+# def _extract_label(band_list):
+#     """Extract the label information from the band_list. *Note, the band_list is modified.*"""
+#     labels = set()
+#     for idx in range(len(band_list) - 1, -1, -1):  # iterate backward to avoid changing list index when popping
+#         if isinstance(band_list[idx].band_info, LabelType):
+#             labels.add(band_list.pop(idx))
 
-    labels.discard(None)
-    if len(labels) != 1:
-        raise ValueError(f"Found {len(labels)} label while expecting exactly 1 label.")
-    return labels.pop()
+#     labels.discard(None)
+#     if len(labels) != 1:
+#         raise ValueError(f"Found {len(labels)} label while expecting exactly 1 label.")
+#     return labels.pop()
 
 
 class Partition(dict):
@@ -623,7 +623,7 @@ class Dataset:
         # self._load_partition(partition_name)
         self.set_partition(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
-        self._load_stats()
+        # self._load_stats()
 
     #### Loading paths
     def _load_path_list(self) -> None:
@@ -655,9 +655,6 @@ class Dataset:
         assert split is None or split in self.list_splits()
         self.split = split
 
-    def get_split(self):
-        return self.split
-
     def list_splits(self):
         """
         List splits for active partition
@@ -676,12 +673,6 @@ class Dataset:
             )
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
-
-    def get_partition(self):
-        """
-        Return active partition name
-        """
-        return self.active_partition_name
 
     def list_partitions(self):
         return list(self._partition_path_dict.keys())
@@ -724,57 +715,66 @@ class Dataset:
 
         self.set_partition(partition_name)
 
-    #### Statistics ####
-    def _load_stats(self):
-        """
-        Load global and split-wise statistics. Fail with warning if not available.
+    @cached_property
+    def band_stats(self):
+        with open(self.dataset_dir / "band_stats.json", "r") as fd:
+            all_band_stats_dict = json.load(fd)
+        band_stats = {}
+        for band_name, stats_dict in all_band_stats_dict.items():
+            band_stats[band_name] = Stats(**stats_dict)
+        return band_stats
 
-        Note: this function must be called after the partitions are loaded
-        """
-        self.stats = {}
+    # #### Statistics ####
+    # def _load_stats(self):
+    #     """
+    #     Load global and split-wise statistics. Fail with warning if not available.
 
-        # This will actually load all partition/split statistics at once to simplify the logic
-        # Otherwise we would need to change stats every time set_split or set_partition() is called
-        current_partition = self.active_partition_name  # push current
+    #     Note: this function must be called after the partitions are loaded
+    #     """
+    #     self.stats = {}
 
-        # Check if split-wise stats exist
-        for partition in self.list_partitions():
-            self.set_partition(partition)
-            for split in self.list_splits():
-                print(f"Attempting to load split-wise stats for {partition}:{split}")
-                try:
-                    with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
-                        stats_dict = json.load(fp)
-                        self.stats.setdefault(partition, {})
-                        self.stats[partition][split] = {
-                            k: convert_dict_to_stats(v) for k, v in stats_dict.items()
-                        }  # from dict to Stats
-                        print("-> success")
-                except Exception as e:
-                    print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
+    #     # This will actually load all partition/split statistics at once to simplify the logic
+    #     # Otherwise we would need to change stats every time set_split or set_partition() is called
+    #     current_partition = self.active_partition_name  # push current
 
-        # Load global stats if exists
-        try:
-            print("Attempting to load global stats (over all dataset)")
-            with open(self.dataset_dir / "all_bandstats.json", "r", encoding="utf8") as fp:
-                stats_dict = json.load(fp)
-                self.stats.setdefault("all", {})
-                self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
-                print("-> success")
-        except Exception as e:
-            print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
+    #     # Check if split-wise stats exist
+    #     for partition in self.list_partitions():
+    #         self.set_partition(partition)
+    #         for split in self.list_splits():
+    #             print(f"Attempting to load split-wise stats for {partition}:{split}")
+    #             try:
+    #                 with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
+    #                     stats_dict = json.load(fp)
+    #                     self.stats.setdefault(partition, {})
+    #                     self.stats[partition][split] = {
+    #                         k: convert_dict_to_stats(v) for k, v in stats_dict.items()
+    #                     }  # from dict to Stats
+    #                     print("-> success")
+    #             except Exception as e:
+    #                 print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
 
-        # pop current partition
-        self.set_partition(current_partition)
+    #     # Load global stats if exists
+    #     try:
+    #         print("Attempting to load global stats (over all dataset)")
+    #         with open(self.dataset_dir / "all_bandstats.json", "r", encoding="utf8") as fp:
+    #             stats_dict = json.load(fp)
+    #             self.stats.setdefault("all", {})
+    #             self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
+    #             print("-> success")
+    #     except Exception as e:
+    #         print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
 
-    def get_stats(self, split_wise=False):
-        """
-        Return stats for active partition if split_wise is True, otherwise return global stats
-        """
-        if split_wise:
-            return self.stats[self.active_partition_name][self.split]
-        else:
-            return self.stats["all"]
+    #     # pop current partition
+    #     self.set_partition(current_partition)
+
+    # def get_stats(self, split_wise=False):
+    #     """
+    #     Return stats for active partition if split_wise is True, otherwise return global stats
+    #     """
+    #     if split_wise:
+    #         return self.stats[self.active_partition_name][self.split]
+    #     else:
+    #         return self.stats["all"]
 
     #### Common accessors and iterators ####
 
@@ -836,14 +836,7 @@ class Dataset:
             return "<N/A>"
 
     def __repr__(self):
-        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
-            self.dataset_dir, self.split, self.active_partition_name, len(self), self.get_available_stats_str()
-        )
-
-    def __str__(self):
-        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
-            self.dataset_dir, self.split, self.active_partition_name, len(self), self.get_available_stats_str()
-        )
+        return f"Dataset(dataset_dir={ self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
 
 
 class Stats:
@@ -875,37 +868,7 @@ class Stats:
         self.percentile_99_9 = float(percentile_99_9)
 
     def to_dict(self):
-        return OrderedDict(
-            [
-                ("min", self.min),
-                ("max", self.max),
-                ("mean", self.mean),
-                ("std", self.std),
-                ("median", self.median),
-                ("percentile_0_1", self.percentile_0_1),
-                ("percentile_1", self.percentile_1),
-                ("percentile_5", self.percentile_5),
-                ("percentile_95", self.percentile_95),
-                ("percentile_99", self.percentile_99),
-                ("percentile_99_9", self.max),
-            ]
-        )
-
-
-def convert_dict_to_stats(d):
-    return Stats(
-        d["min"],
-        d["max"],
-        d["mean"],
-        d["std"],
-        d["median"],
-        d["percentile_0_1"],
-        d["percentile_1"],
-        d["percentile_5"],
-        d["percentile_95"],
-        d["percentile_99"],
-        d["percentile_99_9"],
-    )
+        return self.__dict__
 
 
 def compute_stats(values):
