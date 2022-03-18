@@ -1,6 +1,6 @@
 # So2Sat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
-
+import os
 from ccb import io
 import numpy as np
 from pathlib import Path
@@ -73,7 +73,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if max_count is not None and n_samples >= max_count:
             break
 
-    partition.save(dataset_dir, "original")
+    partition.save(dataset_dir, "original", as_default=True)
 
 
 if __name__ == "__main__":

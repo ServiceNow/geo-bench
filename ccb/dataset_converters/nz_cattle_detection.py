@@ -13,9 +13,10 @@ from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
 import rasterio
+import itertools
 import datetime
 
-DATASET_NAME = "New Zealand Cattle Detection"
+DATASET_NAME = "nz_cattle"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
@@ -80,16 +81,27 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir)
-    path_list = Path(SRC_DATASET_DIR, "cow_images").iterdir()
+    partition = io.Partition()
+    train_path_list = map(lambda f: ('train', f), Path(SRC_DATASET_DIR, 'cow_images', 'train').iterdir())
+    valid_path_list = map(lambda f: ('valid', f), Path(SRC_DATASET_DIR, 'cow_images', 'valid').iterdir())
+    test_path_list = map(lambda f: ('test', f), Path(SRC_DATASET_DIR, 'cow_images', 'test').iterdir())
+    path_list = itertools.chain(itertools.chain(train_path_list, valid_path_list), test_path_list)
+
     sample_count = 0
-    for file in tqdm(path_list):
+    partition = io.Partition()  # default partition: everything in train
+    for (split, file) in tqdm(path_list):
         if file.suffix == ".png":
             sample = load_sample(img_path=file)
             sample.write(dataset_dir)
 
+            partition.add(split, sample.sample_name)
+
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
+    partition.save(dataset_dir, "nopartition", as_default=True)
+
+    partition.save(dataset_dir, "original")
 
 
 if __name__ == "__main__":
