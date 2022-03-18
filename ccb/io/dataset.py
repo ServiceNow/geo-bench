@@ -837,9 +837,7 @@ class Dataset:
         )
 
     def __str__(self):
-        return "Dataset(dataset_dir={}, split={}, active_partition={}, n_samples={}, stats={})".format(
-            self.dataset_dir, self.split, self.active_partition_name, len(self), self.get_available_stats_str()
-        )
+        return self.__repr__()
 
 
 class Stats:
@@ -883,7 +881,7 @@ class Stats:
                 ("percentile_5", self.percentile_5),
                 ("percentile_95", self.percentile_95),
                 ("percentile_99", self.percentile_99),
-                ("percentile_99_9", self.max),
+                ("percentile_99_9", self.percentile_99_9),
             ]
         )
 
