@@ -3,6 +3,8 @@ import torch
 from pytorch_lightning import LightningModule
 from ccb import io
 import numpy as np
+import torch.nn.functional as F
+import torchmetrics
 
 
 class Model(LightningModule):
@@ -12,11 +14,13 @@ class Model(LightningModule):
     TODO(pau-pow)
     """
 
-    def __init__(self, backbone, head, loss_function, hyperparameters):
+    def __init__(self, backbone, head, loss_function, hyperparameters, train_metrics=None, eval_metrics=None):
         super().__init__()
         self.backbone = backbone
         self.head = head
         self.loss_function = loss_function
+        self.train_metrics = train_metrics or (lambda *args: {})
+        self.eval_metrics = eval_metrics or (lambda *args: {})
         self.hyperparameters = hyperparameters
         self.save_hyperparameters()
 
@@ -29,23 +33,25 @@ class Model(LightningModule):
         inputs, target = batch
         output = self(inputs)
         loss_train = self.loss_function(output, target)
-        (acc1,) = self.__accuracy(output, target, topk=(1,))
-        self.log("train_loss", loss_train, on_step=True, on_epoch=True, logger=True)
-        self.log("train_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        # self.log("train_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        metrics = self.train_metrics(output, target, "train")
+        self.log("train_loss", loss_train, logger=True)
+        self.log_dict(metrics)
         return loss_train
 
     def eval_step(self, batch, batch_idx, prefix):
         images, target = batch
         output = self(images)
         loss = self.loss_function(output, target)
-        (acc1,) = self.__accuracy(output, target, topk=(1,))
-        self.log(f"{prefix}_loss", loss, on_step=True, on_epoch=True, logger=True)
-        self.log(f"{prefix}_acc1", acc1, on_step=True, prog_bar=True, on_epoch=True, logger=True)
-        # self.log(f"{prefix}_acc5", acc5, on_step=True, on_epoch=True, logger=True)
+        self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
+        metrics = self.eval_metrics(output, target, prefix)
+        self.log_dict(metrics, logger=True)
+        return metrics
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")
+
+    def test_step(self, batch, batch_idx):
+        return self.eval_step(batch, batch_idx, "test")
 
     def configure_optimizers(self):
         backbone_parameters = self.backbone.parameters()
@@ -61,23 +67,6 @@ class Model(LightningModule):
             optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
         )
         return [optimizer], [scheduler]
-
-    @staticmethod
-    def __accuracy(output, target, topk=(1,)):
-        """Computes the accuracy over the k top predictions for the specified values of k."""
-        with torch.no_grad():
-            maxk = max(topk)
-            batch_size = target.size(0)
-
-            _, pred = output.topk(maxk, 1, True, True)
-            pred = pred.t()
-            correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-            res = []
-            for k in topk:
-                correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-                res.append(correct_k.mul_(100.0 / batch_size))
-            return res
 
 
 class ModelGenerator:
@@ -165,21 +154,7 @@ def vit_head_generator(task_specs, hyperparams, input_shape):
     pass
 
 
-def train_loss_generator(task_specs, hyperparams):
-    """
-    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
-    following attributes: task_specs.task_type and task_specs.eval_loss
-    """
-    if isinstance(task_specs.label_type, io.Classification):
-        if hyperparams["loss_type"] == "crossentropy":
-            return torch.nn.CrossEntropyLoss()
-        else:
-            raise ValueError(f"Unrecognized loss type: {hyperparams['head_type']}")
-    else:
-        raise ValueError(f"Unrecognized task: {task_specs.label_type}")
-
-
-def compute_metrics(output, target, topk=(1,)):
+def compute_accuracy(output, target, prefix, topk=(1,), *args, **kwargs):
     """Computes the accuracy over the k top predictions for the specified values of k."""
     with torch.no_grad():
         maxk = max(topk)
@@ -192,8 +167,76 @@ def compute_metrics(output, target, topk=(1,)):
         res = {}
         for k in topk:
             correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res[f"accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
+            res[f"{prefix}_accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
         return res
+
+
+METRIC_MAP = {}
+
+
+def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
+    """
+    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
+    following attributes: task_specs.task_type and task_specs.eval_loss
+    """
+
+    metrics = {
+        io.Classification: [
+            torchmetrics.Accuracy(),
+        ],
+        io.SegmentationClasses: [],
+    }[task_specs.label_type.__class__]
+
+    for metric_name in hparams.get("train_metrics", ()):
+        metrics.append(METRIC_MAP[metric_name])
+
+    # The Metrics().__call__(input, targets) accumulates all metrics in a dict
+    return Metrics(metrics)
+
+
+def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
+    """
+    Returns the appropriate eval function depending on the task_specs.
+    """
+    metrics = {
+        io.Classification: [
+            torchmetrics.Accuracy(),
+        ],
+        io.SegmentationClasses: (),
+    }[task_specs.label_type.__class__]
+
+    for metric_name in hparams.get("eval_metrics", ()):
+        metrics.append(METRIC_MAP[metric_name])
+
+    return Metrics(metrics)
+
+
+def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
+    """
+    Returns the appropriate loss function depending on the task_specs.
+    """
+    loss = {io.Classification: F.cross_entropy, io.SegmentationClasses: F.cross_entropy}[
+        task_specs.label_type.__class__
+    ]
+
+    return loss
+
+
+class Metrics:
+    def __init__(self, metrics: List):
+        self.metrics = metrics
+
+    def add_metric(self, metric):
+        self.metrics.append(metric)
+
+    def __call__(self, output, target, prefix="", *args, **kwargs) -> dict:
+        ret = {}
+        for metric in self.metrics:
+            if isinstance(metric, torchmetrics.Accuracy):
+                ret["_".join([prefix, "accuracy-1"])] = metric(output, target)
+            else:
+                ret.update(metric(output, target, prefix, *args, **kwargs))
+        return ret
 
 
 class BackBone(torch.nn.Module):

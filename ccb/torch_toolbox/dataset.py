@@ -42,7 +42,16 @@ class DataModule(pl.LightningDataModule):
         return DataLoader(
             self.task_specs.get_dataset(split="valid"),
             batch_size=self.val_batch_size,
-            shuffle=True,
+            shuffle=False,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.task_specs.get_dataset(split="test"),
+            batch_size=self.val_batch_size,
+            shuffle=False,
             num_workers=self.num_workers,
             collate_fn=self.collate_fn,
         )
