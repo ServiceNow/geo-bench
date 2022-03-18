@@ -86,7 +86,7 @@ def test_experiment_generator_on_mnist():
             job = Job(job_dir)
             print(job_dir)
             metrics = job.get_metrics()
-            assert float(metrics["train_acc1_step"]) > 0.10
+            assert float(metrics["test_accuracy-1"]) > 0.10
 
 
 @pytest.mark.slow
