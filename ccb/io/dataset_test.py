@@ -1,7 +1,7 @@
 from ccb import io
 import numpy as np
 import tempfile
-from ccb.io.bandstats import bandstats
+from ccb.io.bandstats import produce_band_stats
 import pytest
 
 
@@ -100,9 +100,9 @@ def test_dataset_partition():
         # Test 1: load partition default, no split
         ds = io.Dataset(dataset_dir)
         assert set(ds.list_partitions()) == set(["funky", "default"])
-        assert ds.get_partition() == "default"  # use default normally
+        assert ds.active_partition_name == "default"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
-        assert ds.get_split() is None
+        assert ds.split is None
         assert len(ds) == 3
         # Ordering is not guaranteed. Do we want to enforce that? The following can fail
         # assert_same_sample(ds[0], sample1)
@@ -110,12 +110,12 @@ def test_dataset_partition():
         # assert_same_sample(ds[2], sample3)
 
         ds.set_split("train")
-        assert ds.get_split() == "train"
+        assert ds.split == "train"
         assert_same_sample(ds[0], sample1)
         assert len(ds) == 1
 
         ds.set_split("valid")
-        assert ds.get_split() == "valid"
+        assert ds.split == "valid"
         # Try strict ordering
         try:
             assert_same_sample(ds[0], sample2)
@@ -126,29 +126,29 @@ def test_dataset_partition():
         assert len(ds) == 2
 
         ds.set_split("test")
-        assert ds.get_split() == "test"
+        assert ds.split == "test"
         assert len(ds) == 0
         with pytest.raises(IndexError):  # default:test is empty
             ds[0]
 
         ds = io.Dataset(dataset_dir, partition_name="funky")
         assert set(ds.list_partitions()) == set(["funky", "default"])
-        assert ds.get_partition() == "funky"  # use default normally
+        assert ds.active_partition_name == "funky"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
         assert len(ds) == 3
 
         ds.set_split("train")
-        assert ds.get_split() == "train"
+        assert ds.split == "train"
         assert_same_sample(ds[0], sample3)
         assert len(ds) == 1
 
         ds.set_split("valid")
-        assert ds.get_split() == "valid"
+        assert ds.split == "valid"
         assert_same_sample(ds[0], sample1)
         assert len(ds) == 1
 
         ds.set_split("test")
-        assert ds.get_split() == "test"
+        assert ds.split == "test"
         assert_same_sample(ds[0], sample2)
         assert len(ds) == 1
         with pytest.raises(IndexError):  # default:test is out of bounds
@@ -204,12 +204,12 @@ def test_dataset_statistics():
         partition.save(directory=dataset_dir, partition_name="default")
 
         # Compute statistics : this will create all_bandstats.json
-        bandstats(dataset_dir, use_splits=False, values_per_image=None, samples=None)
+        produce_band_stats(dataset_dir, use_splits=False, values_per_image=None, samples=None)
 
         # Reload dataset with statistics
         ds2 = io.Dataset(dataset_dir)
 
-        statistics = ds2.get_stats(split_wise=False)
+        statistics = ds2.band_stats
 
         assert set(statistics.keys()) == set(["Band 100", "Band 200", "Band 300", "label"])
         assert np.equal(statistics["Band 100"].min, 101)
