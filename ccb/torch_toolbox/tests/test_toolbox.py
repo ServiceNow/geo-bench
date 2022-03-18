@@ -26,8 +26,9 @@ def train_job_on_task(model_generator, task_specs, threshold):
         assert float(metrics["test_accuracy-1"]) > threshold  # has to be better than random after seeing 20 batches
 
 
+@pytest.mark.slow
 def test_toolbox_mnist():
-    train_job_on_task(conv4.model_generator, mnist_task_specs, 0.20)
+    train_job_on_task(conv4.model_generator, mnist_task_specs, 0.10)
 
 
 @pytest.mark.slow

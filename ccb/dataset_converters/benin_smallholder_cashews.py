@@ -143,8 +143,8 @@ def make_sample(images, mask, sample_name):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def process_i(args):
-    i, tg_sample, dataset_dir = args
+def convert_sample(i, tg_sample, dataset_dir):
+
     sample_name = f"sample_{i:08d}"
 
     images = tg_sample["image"].numpy()
@@ -153,7 +153,7 @@ def process_i(args):
     sample = make_sample(images, mask, sample_name)
     sample.write(dataset_dir)
     # print(f'Wrote {sample_name}')
-    return i
+    return sample_name
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
@@ -173,20 +173,29 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         # either 50cm or 40cm, Airbus Pleiades 50cm, https://radiantearth.blob.core.windows.net/mlhub/technoserve-cashew-benin/Documentation.pdf
         spatial_resolution=SPATIAL_RESOLUTION,
     )
-    task_specs.save(dataset_dir)
 
-    multiprocess = True
-    if multiprocess:
-        with Pool(os.cpu_count()) as p:
-            print(f"Spinning up pool of {os.cpu_count()} workers")
-            iterator = p.imap(process_i, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)))
-            for i in tqdm(iterator, total=len(cashew)):
-                pass
+    partition = io.Partition()
 
-    else:
-        for i, cashew_i in enumerate(tqdm(cashew)):
-            process_i(i, cashew_i, dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
+
+    # multiprocess = False
+    # if multiprocess:
+    #     with Pool(os.cpu_count()) as p:
+    #         print(f"Spinning up pool of {os.cpu_count()} workers")
+    #         iterator = p.imap(convert_sample, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)))
+    #         for i in tqdm(iterator, total=len(cashew)):
+    #             pass
+
+    # else:
+    # for i, data in enumerate(tqdm(cashew)):
+    for i, data in enumerate(cashew):
+        if i >= max_count:
+            break
+        sample_name = convert_sample(i, data, dataset_dir)
+        partition.add("train", sample_name)
+
+    partition.save(dataset_dir, "nopartition", as_default=True)
 
 
 if __name__ == "__main__":
-    convert()
+    convert(10)

@@ -71,6 +71,7 @@ def test_unexisting_path():
         assert isinstance(e, ModuleNotFoundError)
 
 
+@pytest.mark.slow
 def test_experiment_generator_on_mnist():
 
     with tempfile.TemporaryDirectory() as exp_dir:
@@ -85,9 +86,10 @@ def test_experiment_generator_on_mnist():
             job = Job(job_dir)
             print(job_dir)
             metrics = job.get_metrics()
-            assert float(metrics["test_accuracy-1"]) > 0.20
+            assert float(metrics["train_acc1_step"]) > 0.10
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
 def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(__file__).absolute().parent
@@ -103,7 +105,7 @@ def test_experiment_generator_on_benchmark():
         "--experiment-dir",
         str(experiments_dir),
         "--benchmark",
-        "default",
+        "ccb-test",
     ]
     subprocess.check_call(cmd)
 
