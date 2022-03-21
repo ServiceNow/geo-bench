@@ -44,7 +44,7 @@ def produce_band_stats(dataset_dir, use_splits=False, values_per_image=1000, sam
         )
         stats_fname = os.path.join(dataset.dataset_dir, "band_stats.json")
         with open(stats_fname, "w", encoding="utf8") as fp:
-            json.dump({k: v.to_dict() for k, v in band_stats.items()}, fp)
+            json.dump({k: v.to_dict() for k, v in band_stats.items()}, fp, indent=4, sort_keys=True)
         print("Statistics written to {stats_fname}.")
 
 
@@ -54,5 +54,5 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
-    # produce_band_stats(io.CCB_DIR / "converted" / "eurosat")
+    # start()
+    produce_band_stats(io.CCB_DIR / "classification" / "brick_kiln_v1.0")
