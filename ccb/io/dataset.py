@@ -18,7 +18,7 @@ from collections import OrderedDict, defaultdict
 from tqdm import tqdm
 
 
-# Deprecated, use benchmark_dir instead
+# Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
 datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
 
@@ -541,19 +541,6 @@ def _largest_shape(band_array):
         shape[1] = max(shape[1], band.data.shape[1])
 
     return tuple(shape)
-
-
-# def _extract_label(band_list):
-#     """Extract the label information from the band_list. *Note, the band_list is modified.*"""
-#     labels = set()
-#     for idx in range(len(band_list) - 1, -1, -1):  # iterate backward to avoid changing list index when popping
-#         if isinstance(band_list[idx].band_info, LabelType):
-#             labels.add(band_list.pop(idx))
-
-#     labels.discard(None)
-#     if len(labels) != 1:
-#         raise ValueError(f"Found {len(labels)} label while expecting exactly 1 label.")
-#     return labels.pop()
 
 
 class Partition(dict):
