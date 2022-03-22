@@ -4,7 +4,7 @@ import pickle
 from pathlib import Path
 from ccb.io.label import Classification
 
-from ccb.io.dataset import Dataset, datasets_dir, BandInfo
+from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 
 
 class TaskSpecifications:
@@ -64,7 +64,7 @@ class TaskSpecifications:
             return Dataset(self.get_dataset_dir(), split, partition_name=partition)
 
     def get_dataset_dir(self):
-        return Path(datasets_dir) / self.dataset_name
+        return CCB_DIR / self.benchmark_name / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -78,22 +78,10 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield mnist_task_specs
         return
 
-    benchmark_dir = Path(datasets_dir)
+    benchmark_dir = CCB_DIR / benchmark_name
 
-    path_map = {"ccb": (benchmark_dir, None), "ccb-test": (benchmark_dir, ("brick_kiln_v1.0", "eurosat"))}
-
-    path_map["default"] = path_map["ccb"]
-
-    if benchmark_name not in path_map:
-        raise ValueError(f"Unknown benchmark name: {benchmark_name}.")
-
-    benchmark_dir, subset = path_map[benchmark_name]
-
-    for dataset_dir in benchmark_dir.iterdir():
+    for dataset_dir in benchmark_dir:
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
-            continue
-
-        if subset is not None and dataset_dir.name not in subset:
             continue
 
         with open(dataset_dir / "task_specs.pkl", "rb") as fd:
