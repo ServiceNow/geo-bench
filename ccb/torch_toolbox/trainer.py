@@ -22,6 +22,7 @@ def train(model_gen, job_dir):
         job.task_specs,
         batch_size=hparams["batch_size"],
         num_workers=hparams["num_workers"],
+        transform=model_gen.get_transform(job.task_specs, hparams),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
 

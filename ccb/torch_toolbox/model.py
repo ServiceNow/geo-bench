@@ -119,7 +119,19 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise NotImplementedError()
+        raise None
+
+    def get_transform(self, task_specs, hyperparams):
+        """Generate the collate functions for stacking the mini-batch.
+
+        Args:
+            task_specs (TaskSpecifications): an object describing the task to be performed
+            hyperparams (dict): dictionary containing hyperparameters of the experiment
+
+        Returns:
+            A callable taking an object of type Sample as input. The return will be fed to the collate_fn
+        """
+        return None
 
 
 def head_generator(task_specs, hyperparams):
