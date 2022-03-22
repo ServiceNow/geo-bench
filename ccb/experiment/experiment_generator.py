@@ -66,7 +66,7 @@ def experiment_generator(
             job.save_task_specs(task_specs)
             job.write_script(model_generator_module_name)
 
-    return experiment_dir.name
+    return experiment_dir
 
 
 def start():
