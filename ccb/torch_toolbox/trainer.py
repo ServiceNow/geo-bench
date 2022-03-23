@@ -26,10 +26,10 @@ def train(model_gen, job_dir):
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
 
-    if hparams.get("logger", False) == "csv":
-        logger = pl.loggers.CSVLogger(job.dir)
+    if hparams.get("logger", None).lower() == "wandb":
+        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", job.dir), save_dir=job.dir)
     else:
-        logger = None
+        logger = pl.loggers.CSVLogger(job.dir)
     trainer = pl.Trainer(
         gpus=0,
         max_epochs=hparams["max_epochs"],
