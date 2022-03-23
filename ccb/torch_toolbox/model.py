@@ -22,7 +22,7 @@ class Model(LightningModule):
         self.train_metrics = train_metrics or (lambda *args: {})
         self.eval_metrics = eval_metrics or (lambda *args: {})
         self.hyperparameters = hyperparameters
-        self.save_hyperparameters()
+        self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
         features = self.backbone(x)
