@@ -75,7 +75,7 @@ class Job:
         if hparams_path.exists() and not overwrite:
             raise Exception("hparams alread exists and overwrite is set to False.")
         with open(hparams_path, "w") as fd:
-            json.dump(hparams, fd)
+            json.dump(hparams, fd, indent=4, sort_keys=True)
             self.hparams = hparams
 
     @cached_property
