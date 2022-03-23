@@ -1,4 +1,6 @@
-# from ccb.torch_toolbox.model_generators import conv4
+# Convenient code for bypassing commandlines
+# This file serves as a template and will be remove from the repo once we're done with experiments.
+# Please don't commit the changes related to your personnal experiments
 
 from pathlib import Path
 from ccb.experiment.experiment_generator import experiment_generator
