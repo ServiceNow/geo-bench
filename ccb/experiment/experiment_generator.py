@@ -22,7 +22,6 @@ def experiment_generator(
     max_num_configs: int = 10,
     benchmark_name: str = "default",
     experiment_name: str = None,
-    make_sub_experiment=True,
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
@@ -45,8 +44,8 @@ def experiment_generator(
         Name of the experiment.
     """
     experiment_dir = Path(experiment_dir)
-    if make_sub_experiment:
-        experiment_dir /= f"{experiment_name + '_' if experiment_name is not None else ''}{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    if experiment_name is not None:
+        experiment_dir /= f"{experiment_name}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
 
     model_generator = get_model_generator(model_generator_module_name)
 
@@ -66,7 +65,7 @@ def experiment_generator(
             job.save_task_specs(task_specs)
             job.write_script(model_generator_module_name)
 
-    return experiment_dir.name
+    return experiment_dir
 
 
 def start():
