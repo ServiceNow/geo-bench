@@ -543,7 +543,7 @@ def _largest_shape(band_array):
     return tuple(shape)
 
 
-class Partition(dict):
+class Partition:
     """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
 
     @staticmethod
