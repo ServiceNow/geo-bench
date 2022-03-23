@@ -4,7 +4,7 @@ import pickle
 from pathlib import Path
 from ccb.io.label import Classification
 
-from ccb.io.dataset import Dataset, datasets_dir, BandInfo
+from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 
 
 class TaskSpecifications:
@@ -52,19 +52,20 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default"):
+    def get_dataset(self, split, partition="default", transform=None):
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
 
-            return torchvision.datasets.MNIST(
-                "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
-            )
+            if transform is None:
+                transform = tt.ToTensor()
+            return torchvision.datasets.MNIST("/tmp/mnist", train=split == "train", transform=transform, download=True)
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition)
+            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform)
 
     def get_dataset_dir(self):
-        return Path(datasets_dir) / self.dataset_name
+        benchmark_name = self.benchmark_name or "default"
+        return CCB_DIR / benchmark_name / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -78,22 +79,10 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield mnist_task_specs
         return
 
-    benchmark_dir = Path(datasets_dir)
-
-    path_map = {"ccb": (benchmark_dir, None), "ccb-test": (benchmark_dir, ("brick_kiln_v1.0", "eurosat"))}
-
-    path_map["default"] = path_map["ccb"]
-
-    if benchmark_name not in path_map:
-        raise ValueError(f"Unknown benchmark name: {benchmark_name}.")
-
-    benchmark_dir, subset = path_map[benchmark_name]
+    benchmark_dir = CCB_DIR / benchmark_name
 
     for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
-            continue
-
-        if subset is not None and dataset_dir.name not in subset:
             continue
 
         with open(dataset_dir / "task_specs.pkl", "rb") as fd:

@@ -22,11 +22,12 @@ def train(model_gen, job_dir):
         job.task_specs,
         batch_size=hparams["batch_size"],
         num_workers=hparams["num_workers"],
+        transform=model_gen.get_transform(job.task_specs, hparams),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
 
     if hparams.get("logger", None).lower() == "wandb":
-        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", None), save_dir=job.dir)
+        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", job.dir), save_dir=job.dir)
     else:
         logger = pl.loggers.CSVLogger(job.dir)
     trainer = pl.Trainer(
