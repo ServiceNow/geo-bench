@@ -12,10 +12,10 @@ def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random)
 
     for split_name, sample_names in partition.items():
         if len(sample_names) > max_sizes[split_name]:
-            new_partition[split_name] = rng.choice(sample_names, max_sizes[split_name], replace=False)
+            subset = list(rng.choice(sample_names, max_sizes[split_name], replace=False))
         else:
-            new_partition[split_name] = sample_names[:]  # create a copy to avoid potential issues
-
+            subset = sample_names[:]  # create a copy to avoid potential issues
+        new_partition.partition_dict[split_name] = subset
     return new_partition
 
 
@@ -30,7 +30,7 @@ def transform_dataset(dataset_dir: Path, new_benchmark_dir, partition_name, max_
 
     task_specs.save(new_dataset_dir, overwrite=True)
 
-    for split_name, sample_names in new_partition.items():
+    for split_name, sample_names in new_partition.partition_dict.items():
         print(f"  Converting {len(sample_names)} from {split_name} split.")
         for sample_name in tqdm(sample_names):
             if sample_converter is None:
