@@ -99,7 +99,7 @@ def test_experiment_generator_on_benchmark():
         sys.executable,
         str(experiment_generator_dir / "experiment_generator.py"),
         "--model-generator",
-        "ccb.torch_toolbox.model_generators.conv4",
+        "ccb.torch_toolbox.model_generators.conv4_test",
         "--experiment-dir",
         str(experiment_dir),
         "--benchmark",
