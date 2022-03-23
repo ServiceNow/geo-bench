@@ -63,5 +63,5 @@ def test_toolbox_brick_kiln():
 
 if __name__ == "__main__":
     # test_toolbox_brick_kiln()
-    test_toolbox_wandb()
-    # test_toolbox_mnist()
+    # test_toolbox_wandb()
+    test_toolbox_mnist()
