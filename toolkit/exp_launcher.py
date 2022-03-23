@@ -7,8 +7,6 @@ from pathlib import Path
 from ccb.experiment.experiment_generator import experiment_generator
 from toolkit import dispatch_toolkit
 
-ccb_code_dir = Path(__file__).parent.parent
-
 
 expirment_dir = experiment_generator(
     model_generator_module_name="ccb.torch_toolbox.model_generators.conv4",
@@ -18,5 +16,5 @@ expirment_dir = experiment_generator(
 )
 
 
-dispatch_toolkit.push_code(ccb_code_dir)
+dispatch_toolkit.push_code(Path(__file__).parent.parent)
 dispatch_toolkit.toolkit_dispatcher(expirment_dir)
