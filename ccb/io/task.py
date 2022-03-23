@@ -52,19 +52,20 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default"):
+    def get_dataset(self, split, partition="default", transform=None):
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
 
-            return torchvision.datasets.MNIST(
-                "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
-            )
+            if transform is None:
+                transform = tt.ToTensor()
+            return torchvision.datasets.MNIST("/tmp/mnist", train=split == "train", transform=transform, download=True)
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition)
+            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform)
 
     def get_dataset_dir(self):
-        return CCB_DIR / self.benchmark_name / self.dataset_name
+        benchmark_name = self.benchmark_name or "default"
+        return CCB_DIR / benchmark_name / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -80,7 +81,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
 
     benchmark_dir = CCB_DIR / benchmark_name
 
-    for dataset_dir in benchmark_dir:
+    for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 

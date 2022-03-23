@@ -32,9 +32,9 @@ def test_toolbox_mnist():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
+@pytest.mark.skipif(not Path(io.CCB_DIR).exists(), reason="Requires presence of the benchmark.")
 def test_toolbox_brick_kiln():
-    with open(Path(io.datasets_dir) / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
+    with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
     train_job_on_task(conv4.model_generator, task_specs, 0.70)
 
