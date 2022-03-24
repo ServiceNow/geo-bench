@@ -36,6 +36,7 @@ class Conv4Generator(ModelGenerator):
             "val_check_interval": 50,
             "limit_val_batches": 50,
             "limit_test_batches": 50,
+            "n_gpus": 1,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
