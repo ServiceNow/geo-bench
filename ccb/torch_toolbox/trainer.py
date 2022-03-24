@@ -31,13 +31,14 @@ def train(model_gen, job_dir):
     else:
         logger = pl.loggers.CSVLogger(str(job.dir))
     trainer = pl.Trainer(
-        gpus=hparams.get("gpus", 0),
+        gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
         max_steps=hparams.get("train_iters", None),
         limit_val_batches=hparams.get("limit_val_batches", 1.0),
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
+        progress_bar_refresh_rate=0,
         logger=logger,
     )
     trainer.fit(model, datamodule)
