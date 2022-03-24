@@ -27,7 +27,7 @@ def train(model_gen, job_dir):
     )
 
     if hparams.get("logger", None).lower() == "wandb":
-        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=job.dir)
+        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
     else:
         logger = pl.loggers.CSVLogger(job.dir)
     trainer = pl.Trainer(
