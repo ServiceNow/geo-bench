@@ -26,7 +26,7 @@ TOOLKIT_IMAGE = "registry.console.elementai.com/snow.rg_climate_benchmark/base:m
 TOOLKIT_DATA = "snow.rg_climate_benchmark.data"
 TOOLKIT_CODE = "snow.rg_climate_benchmark.code"
 TOOLKIT_CODE_VERSION = f"{TOOLKIT_USER}_{GIT_BRANCH}"
-TOOLKIT_BOOTSTRAP_CMD = 'cd /mnt/code/ && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin && echo "Bootstrap completed. Starting execution...\\n\\n\\n"'
+TOOLKIT_BOOTSTRAP_CMD = 'cp -r /mnt/code/* /tmp && cd /tmp && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin && echo "Bootstrap completed. Starting execution...\\n\\n\\n"'
 TOOLKIT_ENVS = [
     "CC_BENCHMARK_SOURCE_DATASETS=/mnt/data/cc_benchmark/source",
     "CC_BENCHMARK_CONVERTED_DATASETS=/mnt/data/cc_benchmark/converted",
