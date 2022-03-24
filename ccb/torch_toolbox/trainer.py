@@ -29,7 +29,7 @@ def train(model_gen, job_dir):
     if hparams.get("logger", None).lower() == "wandb":
         logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
     else:
-        logger = pl.loggers.CSVLogger(job.dir)
+        logger = pl.loggers.CSVLogger(str(job.dir))
     trainer = pl.Trainer(
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
