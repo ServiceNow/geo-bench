@@ -86,12 +86,12 @@ class Job:
 
     def get_metrics(self):
         if self.hparams.get("logger", None) == "wandb":
-            summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
-            with open(summary[0], "r") as infile:
-                data = json.load(infile)
             import wandb
 
             wandb.finish()
+            summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
+            with open(summary[0], "r") as infile:
+                data = json.load(infile)
             return data
         else:
             try:
