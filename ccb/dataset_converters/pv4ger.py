@@ -20,7 +20,7 @@ from ccb import io
 sys.path.append(str(Path.cwd()))
 
 
-DATASET_NAME = "pv4ger_v1.0"
+DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = Path.cwd().parent.parent / io.src_datasets_dir / DATASET_NAME
 DATASET_DIR = Path.cwd().parent.parent / io.datasets_dir / DATASET_NAME
 SPATIAL_RESOLUTION = 0.1
@@ -67,11 +67,10 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir, overwrite=True)
 
-    classification_dir = SRC_DATASET_DIR / "classification"
     rows = []
     for split in ["train", "val", "test"]:
         for label in [0, 1]:
-            split_label_dir = classification_dir / split / str(label)
+            split_label_dir = SRC_DATASET_DIR / split / str(label)
             for path in split_label_dir.iterdir():
                 if path.suffix == ".png":
                     rows.append([split, label, path])
