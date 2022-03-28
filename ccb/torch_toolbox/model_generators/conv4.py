@@ -26,17 +26,17 @@ class Conv4Generator(ModelGenerator):
             "lr_backbone": 1e-3,
             "lr_head": 2e-3,
             "head_type": "linear",
-            "train_iters": 5000,
+            "train_iters": 50000,
             "features_shape": (64,),
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
-            "logger": "csv",
-            "max_epochs": 1,
+            "max_epochs": 10,
             "val_check_interval": 50,
             "limit_val_batches": 50,
             "limit_test_batches": 50,
             "n_gpus": 1,
+            "logger": "wandb",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
