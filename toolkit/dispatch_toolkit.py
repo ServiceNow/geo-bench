@@ -27,10 +27,10 @@ TOOLKIT_DATA = "snow.rg_climate_benchmark.data"
 TOOLKIT_CODE = "snow.rg_climate_benchmark.code"
 TOOLKIT_CODE_VERSION = f"{TOOLKIT_USER}_{GIT_BRANCH}"
 TOOLKIT_BOOTSTRAP_CMD = 'cp -r /mnt/code/* /tmp && cd /tmp && poetry build && pip install dist/climate_change_benchmark-*.whl && export PATH=$PATH:/tmp/.local/bin && echo "Bootstrap completed. Starting execution...\\n\\n\\n"'
-TOOLKIT_ENVS = [
+TOOLKIT_ENVS = (
     "CC_BENCHMARK_SOURCE_DATASETS=/mnt/data/cc_benchmark/source",
     "CC_BENCHMARK_CONVERTED_DATASETS=/mnt/data/cc_benchmark/converted",
-]
+)
 
 # Computational requirements
 TOOLKIT_CPU = 2
@@ -43,7 +43,7 @@ def _load_envs():
     return [env.strip() for env in open(".envs", "r")]
 
 
-def toolkit_job(script: Path):
+def toolkit_job(script: Path, env_vars=()):
     """Launch a job on toolkit along with a specific script (assumed runnable with sh)"""
     job_name = (
         script.parent.name.lower()
@@ -67,7 +67,7 @@ def toolkit_job(script: Path):
     cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION}:/mnt/code"]
 
     # Set all environment variables
-    for e in TOOLKIT_ENVS:
+    for e in TOOLKIT_ENVS + env_vars:
         cmd += ["--env", e]
 
     # TODO: faire poetry install on boot
@@ -82,7 +82,7 @@ def toolkit_job(script: Path):
     print("Launched.")
 
 
-def toolkit_dispatcher(exp_dir, prompt=True):
+def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()):
     """Scans the exp_dir for experiments to launch"""
     exp_dir = Path(exp_dir)
 
@@ -97,7 +97,7 @@ def toolkit_dispatcher(exp_dir, prompt=True):
             return
 
     for script in script_list:
-        toolkit_job(script)
+        toolkit_job(script, env_vars)
 
     print("Done.")
 
@@ -106,10 +106,11 @@ def push_code(dir):
     """Push the local code to the cluster"""
     print("Pushing code...")
     _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_CODE_VERSION}", hide_stderr=True)
-    cmd = f"rsync -a '{dir}' /tmp/rg_climate_benchmark --delete --exclude-from='{dir}/.eaiignore' && \
-           eai data push {TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION} /tmp/rg_climate_benchmark:/ && \
-           rm -rf /tmp/rg_climate_benchmark"
-    _run_shell_cmd(cmd)
+    _run_shell_cmd(f"eai data content rm {TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION} .", hide_stderr=False)
+
+    _run_shell_cmd(f"rsync -a '{dir}/' /tmp/rg_climate_benchmark --delete --exclude-from='{dir}/toolkit/.eaiignore'")
+    _run_shell_cmd(f"eai data push {TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION} /tmp/rg_climate_benchmark:/")
+    _run_shell_cmd("rm -rf /tmp/rg_climate_benchmark")
 
 
 def start():
