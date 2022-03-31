@@ -11,6 +11,7 @@ class DataModule(pl.LightningDataModule):
         batch_size: int,
         num_workers: int,
         val_batch_size: int = None,
+        transform=None,
         collate_fn=None,
     ):
         """DataModule providing dataloaders from task_specs.
@@ -20,6 +21,7 @@ class DataModule(pl.LightningDataModule):
             batch_size: The size of the mini-batch.
             num_workers: The number of parallel workers for loading samples from the hard-drive.
             val_batch_size: Tes size of the batch for the validation set and test set. If None, will use batch_size.
+            transform: Callable transforming a Sample. Executed on a worker and the output will be provided to collate_fn.
             collate_fn: A callable passed to the DataLoader. Maps a list of Sample to dictionnary of stacked torch tensors.
         """
         super().__init__()
@@ -27,11 +29,12 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size or batch_size
         self.num_workers = num_workers
+        self.transform = transform
         self.collate_fn = collate_fn
 
     def train_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="train"),
+            self.task_specs.get_dataset(split="train", transform=self.transform),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -40,9 +43,18 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="valid"),
+            self.task_specs.get_dataset(split="valid", transform=self.transform),
             batch_size=self.val_batch_size,
-            shuffle=True,
+            shuffle=False,
+            num_workers=self.num_workers,
+            collate_fn=self.collate_fn,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.task_specs.get_dataset(split="test", transform=self.transform),
+            batch_size=self.val_batch_size,
+            shuffle=False,
             num_workers=self.num_workers,
             collate_fn=self.collate_fn,
         )

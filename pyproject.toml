@@ -8,7 +8,8 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9.0,<4"
+python = ">=3.8.0,<4"
+wandb = ">=0.10.26"
 earthengine-api = "0.1.269"
 clip = { git = "https://github.com/openai/CLIP.git", rev = "8cad3a736a833bc4c9b4dd34ef12b52ec0e68856" }
 regex = "2021.8.3"

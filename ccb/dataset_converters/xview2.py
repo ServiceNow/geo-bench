@@ -44,7 +44,6 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 # ]
 
 rgb_bands = io.make_rgb_bands(spatial_resolution=1.24)
-bgr_bands = rgb_bands[::-1]
 
 # Todo: document class labels: background, no damage, minor damage, major damage, destroyed
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=1.24, n_classes=5)
@@ -105,7 +104,7 @@ def make_sample(image_A, image_B, mask, sample_name):
         bands = []
         for band_idx in range(n_bands):
             band_data = image["image"][band_idx, :, :]
-            band_info = bgr_bands[band_idx]
+            band_info = rgb_bands[band_idx]
             band = io.Band(
                 data=band_data,
                 band_info=band_info,
@@ -143,7 +142,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         dataset_name=DATASET_NAME,
         patch_size=(1024, 1024),
         n_time_steps=1,
-        bands_info=bgr_bands,
+        bands_info=rgb_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
         eval_loss=io.SegmentationAccuracy,  # TODO probably not the final
@@ -206,4 +205,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(200)
+    convert()
