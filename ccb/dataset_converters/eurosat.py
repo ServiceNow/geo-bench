@@ -1,6 +1,6 @@
 # EuroSat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
-
+import os
 from ccb import io
 import numpy as np
 from pathlib import Path
@@ -55,7 +55,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     offset = 0
     for split_name in ["train", "val", "test"]:
-        eurosat_dataset = EuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True)
+        eurosat_dataset = EuroSAT(
+            root=SRC_DATASET_DIR, split=split_name, transforms=None, download=False, checksum=True
+        )
         for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
             sample_name = f"id_{i + offset:04d}"
 
@@ -76,7 +78,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if max_count is not None and offset >= max_count:
             break
 
-    partition.save(dataset_dir, "original")
+    partition.save(dataset_dir, "original", as_default=True)
 
 
 if __name__ == "__main__":

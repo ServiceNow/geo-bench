@@ -4,7 +4,7 @@ from os import mkdir
 import pickle
 import stat
 import sys
-
+import glob
 from importlib import import_module
 from itertools import chain
 from pathlib import Path
@@ -76,7 +76,7 @@ class Job:
         if hparams_path.exists() and not overwrite:
             raise Exception("hparams alread exists and overwrite is set to False.")
         with open(hparams_path, "w") as fd:
-            json.dump(hparams, fd)
+            json.dump(hparams, fd, indent=4, sort_keys=True)
             self.hparams = hparams
 
     @cached_property
@@ -85,16 +85,28 @@ class Job:
             return pickle.load(fd)
 
     def get_metrics(self):
-        try:
-            with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
-                data = next(csv.DictReader(fd))
+        if self.hparams.get("logger", None) == "wandb":
+            import wandb
+
+            wandb.finish()
+            summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
+            with open(summary[0], "r") as infile:
+                data = json.load(infile)
             return data
-        except FileNotFoundError as e:
-            stderr = self.get_stderr()
-            if stderr is not None:
-                raise Exception(stderr)
-            else:
-                raise e
+        else:
+            try:
+                with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
+                    data = {}
+                    # FIXME: This would be more efficient if done backwards
+                    for entry in csv.DictReader(fd):
+                        data.update({k: v for k, v in entry.items() if v != ""})
+                return data
+            except FileNotFoundError as e:
+                stderr = self.get_stderr()
+                if stderr is not None:
+                    raise Exception(stderr)
+                else:
+                    raise e
 
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)

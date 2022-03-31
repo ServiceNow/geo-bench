@@ -15,7 +15,7 @@ from PIL import Image
 import rasterio
 import datetime
 
-DATASET_NAME = "New Zealand Cattle Detection"
+DATASET_NAME = "nz_cattle"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
@@ -80,17 +80,23 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir)
-    path_list = Path(SRC_DATASET_DIR, "cow_images").iterdir()
+    partition = io.Partition()
+
+    path_list = Path(SRC_DATASET_DIR, 'cow_images').iterdir()
+
     sample_count = 0
+    partition = io.Partition()  # default partition: everything in train
     for file in tqdm(path_list):
         if file.suffix == ".png":
             sample = load_sample(img_path=file)
             sample.write(dataset_dir)
 
+            partition.add('train', sample.sample_name)
+
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
-
+    partition.save(dataset_dir, "nopartition", as_default=True)
 
 if __name__ == "__main__":
     convert()

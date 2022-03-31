@@ -125,7 +125,10 @@ class SiamSegment(LightningModule):
     def configure_optimizers(self):
 
         optimizer_params = [
-            {"params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())), "lr": self.args.lr}
+            {
+                "params": list(set(self.model.parameters()).difference(self.model.encoder.parameters())),
+                "lr": self.args.lr,
+            }
         ]
 
         if self.args.finetune:

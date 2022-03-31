@@ -4,7 +4,7 @@ import pickle
 from pathlib import Path
 from ccb.io.label import Classification
 
-from ccb.io.dataset import Dataset, datasets_dir, BandInfo
+from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 
 
 class TaskSpecifications:
@@ -31,6 +31,7 @@ class TaskSpecifications:
         bands_stats=None,
         label_type=None,
         eval_loss=None,
+        eval_metrics=None,
         spatial_resolution=None,
     ) -> None:
         self.dataset_name = dataset_name
@@ -41,6 +42,7 @@ class TaskSpecifications:
         self.bands_stats = bands_stats
         self.label_type = label_type
         self.eval_loss = eval_loss
+        self.eval_metrics = eval_metrics
         self.spatial_resolution = spatial_resolution
 
     def save(self, directory, overwrite=False):
@@ -50,19 +52,20 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default"):
+    def get_dataset(self, split, partition="default", transform=None):
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
 
-            return torchvision.datasets.MNIST(
-                "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
-            )
+            if transform is None:
+                transform = tt.ToTensor()
+            return torchvision.datasets.MNIST("/tmp/mnist", train=split == "train", transform=transform, download=True)
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition)
+            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform)
 
     def get_dataset_dir(self):
-        return Path(datasets_dir) / self.dataset_name
+        benchmark_name = self.benchmark_name or "default"
+        return CCB_DIR / benchmark_name / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -76,13 +79,10 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield mnist_task_specs
         return
 
-    if benchmark_name == "default":
-        benchmark_dir = Path(datasets_dir)
-    else:
-        raise ValueError(f"Unknown benchmark name: {benchmark_name}.")
+    benchmark_dir = CCB_DIR / benchmark_name
 
     for dataset_dir in benchmark_dir.iterdir():
-        if not dataset_dir.is_dir():
+        if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
         with open(dataset_dir / "task_specs.pkl", "rb") as fd:
@@ -105,6 +105,10 @@ class Accuracy(Loss):
         return float(label != prediction)
 
 
+class CrossEntropy(Loss):
+    pass
+
+
 class SegmentationAccuracy(Loss):
     pass
 
@@ -115,5 +119,6 @@ mnist_task_specs = TaskSpecifications(
     patch_size=(28, 28),
     bands_info=[BandInfo("grey")],
     label_type=Classification(10),
-    eval_loss=Accuracy(),
+    eval_loss=CrossEntropy(),
+    eval_metrics=[Accuracy()],
 )

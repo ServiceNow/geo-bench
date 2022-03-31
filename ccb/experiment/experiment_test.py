@@ -71,13 +71,12 @@ def test_unexisting_path():
         assert isinstance(e, ModuleNotFoundError)
 
 
+@pytest.mark.slow
 def test_experiment_generator_on_mnist():
 
     with tempfile.TemporaryDirectory() as exp_dir:
 
-        experiment_generator(
-            "ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test", make_sub_experiment=False
-        )
+        experiment_generator("ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test")
 
         sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
@@ -85,32 +84,31 @@ def test_experiment_generator_on_mnist():
             job = Job(job_dir)
             print(job_dir)
             metrics = job.get_metrics()
-            assert float(metrics["train_acc1_step"]) > 20
+            assert float(metrics["test_accuracy-1"]) > 0.10
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
 def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(__file__).absolute().parent
 
-    experiments_dir = Path("/tmp/exp_gen_test")
-    experiments_dir.mkdir(parents=True, exist_ok=True)
-
+    experiment_dir = tempfile.mkdtemp(prefix="exp_gen_test_on_benchmark")
+    # experiment_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Generating experiments in {experiment_dir}.")
     cmd = [
         sys.executable,
         str(experiment_generator_dir / "experiment_generator.py"),
         "--model-generator",
-        "ccb.torch_toolbox.model_generators.conv4",
+        "ccb.torch_toolbox.model_generators.conv4_test",
         "--experiment-dir",
-        str(experiments_dir),
+        str(experiment_dir),
         "--benchmark",
-        "default",
+        "ccb-test",
     ]
     subprocess.check_call(cmd)
 
-    exp_dir = list(experiments_dir.iterdir())[0]
-
-    sequential_dispatcher(exp_dir=exp_dir, prompt=False)
-    for ds_dir in Path(exp_dir).iterdir():
+    sequential_dispatcher(exp_dir=experiment_dir, prompt=False)
+    for ds_dir in Path(experiment_dir).iterdir():
         for job_dir in ds_dir.iterdir():
             job = Job(job_dir)
             print(job_dir)
