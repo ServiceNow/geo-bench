@@ -30,6 +30,9 @@ BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
 def load_sample(img_path: Path, label: int):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
+    # Lat/lons are swapped for much of the dataset, fix this.
+    if lat_center < lon_center:
+        lat_center, lon_center = lon_center, lat_center
 
     transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
