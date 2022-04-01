@@ -60,6 +60,27 @@ class TaskSpecifications:
             return torchvision.datasets.MNIST(
                 "/tmp/mnist", train=split == "train", transform=tt.ToTensor(), download=True
             )
+        elif self.benchmark_name == "imagenet":
+            assert split in ["train", "val", "valid"], "Only train and val supported"
+            import torchvision.transforms as tt
+            import torchvision
+            import PIL
+
+            imagenet_mean = [0.485, 0.456, 0.406]
+            imagenet_std = [0.229, 0.224, 0.225]
+            transform = tt.Compose(
+                [
+                    tt.Resize(256, interpolation=PIL.Image.BICUBIC),  # to maintain same ratio w.r.t. 224 images
+                    tt.CenterCrop(224),
+                    tt.ToTensor(),
+                    tt.Normalize(imagenet_mean, imagenet_std),
+                ]
+            )
+
+            dataset = torchvision.datasets.ImageNet(
+                "/mnt/public/datasets/imagenet/raw", split="train" if split == "train" else "val", transform=transform
+            )
+            return dataset
         else:
             return Dataset(self.get_dataset_dir(), split, partition_name=partition)
 
@@ -118,6 +139,16 @@ mnist_task_specs = TaskSpecifications(
     patch_size=(28, 28),
     bands_info=[BandInfo("grey")],
     label_type=Classification(10),
+    eval_loss=CrossEntropy(),
+    eval_metrics=[Accuracy()],
+)
+
+imagenet_task_specs = TaskSpecifications(
+    dataset_name="imagenet",
+    benchmark_name="imagenet",
+    patch_size=(256, 256),
+    bands_info=[BandInfo("red"), BandInfo("green"), BandInfo("blue")],
+    label_type=Classification(1000),
     eval_loss=CrossEntropy(),
     eval_metrics=[Accuracy()],
 )
