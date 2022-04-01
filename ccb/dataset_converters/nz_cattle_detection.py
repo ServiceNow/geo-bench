@@ -82,7 +82,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs.save(dataset_dir)
     partition = io.Partition()
 
-    path_list = Path(SRC_DATASET_DIR, 'cow_images').iterdir()
+    path_list = Path(SRC_DATASET_DIR, "cow_images").iterdir()
 
     sample_count = 0
     partition = io.Partition()  # default partition: everything in train
@@ -91,12 +91,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             sample = load_sample(img_path=file)
             sample.write(dataset_dir)
 
-            partition.add('train', sample.sample_name)
+            partition.add("train", sample.sample_name)
 
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
     partition.save(dataset_dir, "nopartition", as_default=True)
+
 
 if __name__ == "__main__":
     convert()
