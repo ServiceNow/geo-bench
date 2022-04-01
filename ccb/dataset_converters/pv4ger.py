@@ -100,4 +100,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(1000)
+    convert()
