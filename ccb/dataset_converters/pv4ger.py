@@ -21,8 +21,8 @@ sys.path.append(str(Path.cwd()))
 
 
 DATASET_NAME = "pv4ger"
-SRC_DATASET_DIR = Path.cwd().parent.parent / io.src_datasets_dir / DATASET_NAME
-DATASET_DIR = Path.cwd().parent.parent / io.datasets_dir / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
@@ -97,4 +97,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert()
+    convert(1000)
