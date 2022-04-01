@@ -543,7 +543,7 @@ def _largest_shape(band_array):
     return tuple(shape)
 
 
-class Partition(dict):
+class Partition:
     """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
 
     @staticmethod
@@ -591,7 +591,7 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, split=None, partition_name="default") -> None:
+    def __init__(self, dataset_dir, split=None, partition_name="default", transform=None) -> None:
         """
         Load CCB dataset.
         CCB datasets can have different split partitions (e.g. for few-shot learning).
@@ -606,6 +606,7 @@ class Dataset:
         self.dataset_dir = Path(dataset_dir)
         self._task_specs_path = None
         self.split = split
+        self.transform = transform
         self._load_path_list()
         # self._load_partition(partition_name)
         self.set_partition(partition_name)
@@ -774,7 +775,11 @@ class Dataset:
         else:
             sample_name_list = self.active_partition[self.split]
         sample_path = Path(self.dataset_dir, sample_name_list[idx])
-        return load_sample(sample_path)
+        sample = load_sample(sample_path)
+        if self.transform is not None:
+            return self.transform(sample)
+        else:
+            return sample
 
     def __len__(self):
         """
