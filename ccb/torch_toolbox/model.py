@@ -21,6 +21,9 @@ class Model(LightningModule):
         self.loss_function = loss_function
         self.train_metrics = train_metrics or (lambda *args: {})
         self.eval_metrics = eval_metrics or (lambda *args: {})
+        # Make TorchMetrics visible to Torchvision
+        self._train_metrics = self.train_metrics.get_torchmetrics()
+        self._eval_metrics = self.eval_metrics.get_torchmetrics()
         self.hyperparameters = hyperparameters
         self.save_hyperparameters("hyperparameters")
 
@@ -33,10 +36,13 @@ class Model(LightningModule):
         inputs, target = batch
         output = self(inputs)
         loss_train = self.loss_function(output, target)
-        metrics = self.train_metrics(output, target, "train")
-        self.log("train_loss", loss_train, logger=True)
+        return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
+
+    def training_step_end(self, outputs):
+        # update and log
+        metrics = self.train_metrics(outputs["output"], outputs["target"], "train")
+        self.log("train_loss", outputs["loss"], logger=True)
         self.log_dict(metrics)
-        return loss_train
 
     def eval_step(self, batch, batch_idx, prefix):
         images, target = batch
@@ -45,13 +51,25 @@ class Model(LightningModule):
         self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
         metrics = self.eval_metrics(output, target, prefix)
         self.log_dict(metrics, logger=True)
-        return metrics
+        return {"loss": loss.detach(), "output": output.detach(), "target": target.detach()}
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")
 
     def test_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "test")
+
+    def eval_step_end(self, outputs, prefix):
+        # update and log
+        metrics = self.eval_metrics(outputs["output"], outputs["target"], prefix)
+        self.log(f"{prefix}_loss", outputs["loss"], logger=True)
+        self.log_dict(metrics)
+
+    def validation_step_end(self, outputs):
+        self.eval_step_end(outputs, "val")
+
+    def test_step_end(self, outputs):
+        self.eval_step_end(outputs, "test")
 
     def configure_optimizers(self):
         backbone_parameters = self.backbone.parameters()
@@ -119,7 +137,19 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise NotImplementedError()
+        raise None
+
+    def get_transform(self, task_specs, hyperparams):
+        """Generate the collate functions for stacking the mini-batch.
+
+        Args:
+            task_specs (TaskSpecifications): an object describing the task to be performed
+            hyperparams (dict): dictionary containing hyperparameters of the experiment
+
+        Returns:
+            A callable taking an object of type Sample as input. The return will be fed to the collate_fn
+        """
+        return None
 
 
 def head_generator(task_specs, hyperparams):
@@ -182,7 +212,7 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
 
     metrics = {
         io.Classification: [
-            torchmetrics.Accuracy(),
+            torchmetrics.Accuracy(dist_sync_on_step=True),
         ],
         io.SegmentationClasses: [],
     }[task_specs.label_type.__class__]
@@ -224,15 +254,24 @@ def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
 
 class Metrics:
     def __init__(self, metrics: List):
+        super().__init__()
         self.metrics = metrics
 
     def add_metric(self, metric):
         self.metrics.append(metric)
 
+    def get_torchmetrics(self):
+        ret = []
+        for metric in self.metrics:
+            if isinstance(metric, torchmetrics.Metric):
+                ret.append(metric)
+        return torchmetrics.MetricCollection(ret)
+
     def __call__(self, output, target, prefix="", *args, **kwargs) -> dict:
         ret = {}
         for metric in self.metrics:
             if isinstance(metric, torchmetrics.Accuracy):
+                # metric.to(output.device)
                 ret["_".join([prefix, "accuracy-1"])] = metric(output, target)
             else:
                 ret.update(metric(output, target, prefix, *args, **kwargs))

@@ -20,7 +20,7 @@ from ccb import io
 sys.path.append(str(Path.cwd()))
 
 
-DATASET_NAME = "pv4ger_v1.0"
+DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = Path.cwd().parent.parent / io.src_datasets_dir / DATASET_NAME
 DATASET_DIR = Path.cwd().parent.parent / io.datasets_dir / DATASET_NAME
 SPATIAL_RESOLUTION = 0.1
@@ -31,6 +31,9 @@ BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
 def load_sample(img_path: Path, label: int):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
+    # Lat/lons are swapped for much of the dataset, fix this.
+    if lat_center < lon_center:
+        lat_center, lon_center = lon_center, lat_center
 
     transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
@@ -67,11 +70,10 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     )
     task_specs.save(dataset_dir, overwrite=True)
 
-    classification_dir = SRC_DATASET_DIR / "classification"
     rows = []
     for split in ["train", "val", "test"]:
         for label in [0, 1]:
-            split_label_dir = classification_dir / split / str(label)
+            split_label_dir = SRC_DATASET_DIR / split / str(label)
             for path in split_label_dir.iterdir():
                 if path.suffix == ".png":
                     rows.append([split, label, path])

@@ -4,3 +4,4 @@
 *.png
 .git/
 ipynb_checkpoints/
+*.ipynb

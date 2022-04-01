@@ -42,12 +42,13 @@ class MaeGenerator(model.ModelGenerator):
             "lr_backbone": 1e-3,  # adjust for MAE
             "lr_head": 2e-3,
             "head_type": "linear",
-            "train_iters": 50,
+            "train_iters": 50000,
             "features_shape": (768,),  # output dim of backbone, used by head_generator
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
-            "logger": "csv",
+            #"logger": "csv",
+            "logger": "wandb",
             "max_epochs": 1,
             "val_check_interval": 50,
             "limit_val_batches": 50,
