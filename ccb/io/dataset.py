@@ -608,10 +608,8 @@ class Dataset:
         self.split = split
         self.transform = transform
         self._load_path_list()
-        # self._load_partition(partition_name)
         self.set_partition(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
-        # self._load_stats()
 
     #### Loading paths
     def _load_path_list(self) -> None:
@@ -647,7 +645,7 @@ class Dataset:
         """
         List splits for active partition
         """
-        return list(self.active_partition.keys())
+        return list(self.active_partition.partition_dict.keys())
 
     #### Partitions ####
 
@@ -666,12 +664,12 @@ class Dataset:
         return list(self._partition_path_dict.keys())
 
     @lru_cache(maxsize=3)
-    def load_partition(self, partition_name="default"):
+    def load_partition(self, partition_name="default") -> Partition:
         """
         Load and return partition content from json file
         """
         with open(self._partition_path_dict[partition_name], "r") as fd:
-            return json.load(fd)
+            return Partition(json.load(fd))
 
     def _load_partition(self, partition_name):
         """
@@ -773,7 +771,7 @@ class Dataset:
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[self.split]
+            sample_name_list = self.active_partition.partition_dict[self.split]
         sample_path = Path(self.dataset_dir, sample_name_list[idx])
         sample = load_sample(sample_path)
         if self.transform is not None:
@@ -788,14 +786,14 @@ class Dataset:
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[self.split]
+            sample_name_list = self.active_partition.partition_dict[self.split]
         return len(sample_name_list)
 
     def _iter_dataset(self, max_count=None):
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
-            sample_name_list = self.active_partition[self.split]
+            sample_name_list = self.active_partition.partition_dict[self.split]
         sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
         for sample_name in sample_names:
             yield load_sample(Path(self.dataset_dir, sample_name))
@@ -948,6 +946,11 @@ def _date_from_str(date_str):
 def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Sample] = None, assert_dense=True):
     """Verify the intergrity, coherence and consistancy of a list of a dataset."""
 
+    for partition_name in dataset._partition_path_dict.keys():
+        print(f"check integrity of {partition_name}")
+        partition = dataset.load_partition(partition_name)
+        check_partition_integrity(partition, partition_name)
+
     task_specs = dataset.task_specs
     if samples is None:
         samples = dataset.iter_dataset(max_count=max_count)
@@ -971,3 +974,14 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
 
         if assert_dense:
             assert np.all(sample.band_array is not None)
+
+
+def check_partition_integrity(partition: Partition, partition_name: str):
+    all_names = []
+    for split, names in partition.partition_dict.items():
+        if len(names) == 0:
+            warn(f"{split} of {partition_name} is empty.")
+        assert len(set(names)) == len(names), f"Non unique names in split {split}."
+        all_names.extend(names)
+
+    assert len(set(all_names)) == len(all_names), "Overlap between the different subsets."
