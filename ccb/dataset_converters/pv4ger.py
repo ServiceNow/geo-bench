@@ -21,8 +21,8 @@ sys.path.append(str(Path.cwd()))
 
 
 DATASET_NAME = "pv4ger"
-SRC_DATASET_DIR = Path.cwd().parent.parent / io.src_datasets_dir / DATASET_NAME
-DATASET_DIR = Path.cwd().parent.parent / io.datasets_dir / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
@@ -31,6 +31,9 @@ BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
 def load_sample(img_path: Path, label: int):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
+    # Lat/lons are swapped for much of the dataset, fix this.
+    if lat_center < lon_center:
+        lat_center, lon_center = lon_center, lat_center
 
     transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
@@ -97,4 +100,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert()
+    convert(1000)
