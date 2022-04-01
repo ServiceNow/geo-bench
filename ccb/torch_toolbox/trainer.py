@@ -26,7 +26,7 @@ def train(model_gen, job_dir):
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
 
-    if hparams.get("logger", None).lower() == "wandb":
+    if hparams.get("logger", "").lower() == "wandb":
         logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
     else:
         logger = pl.loggers.CSVLogger(str(job.dir))
