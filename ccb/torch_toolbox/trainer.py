@@ -22,14 +22,19 @@ def train(model_gen, job_dir):
         job.task_specs,
         batch_size=hparams["batch_size"],
         num_workers=hparams["num_workers"],
-        transform=model_gen.get_transform(job.task_specs, hparams),
+        train_transform=model_gen.get_transform(job.task_specs, hparams, train=True),
+        eval_transform=model_gen.get_transform(job.task_specs, hparams, train=False),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
-
-    if hparams.get("logger", None).lower() == "wandb":
+    logger_type = hparams.get("logger", None)
+    if logger_type is None:
+        logger_type = ""
+    if logger_type.lower() == "wandb":
         logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
-    else:
+    elif logger_type.lower() in ["csv", ""]:
         logger = pl.loggers.CSVLogger(str(job.dir))
+    else:
+        raise ValueError(f"Logger type ({logger_type}) not recognized.")
     trainer = pl.Trainer(
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
@@ -38,7 +43,7 @@ def train(model_gen, job_dir):
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
-        progress_bar_refresh_rate=0,
+        # progress_bar_refresh_rate=0,
         logger=logger,
     )
     trainer.fit(model, datamodule)

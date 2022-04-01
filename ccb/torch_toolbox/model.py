@@ -5,6 +5,7 @@ from ccb import io
 import numpy as np
 import torch.nn.functional as F
 import torchmetrics
+from ccb.torch_toolbox.modules import ClassificationHead
 
 
 class Model(LightningModule):
@@ -81,10 +82,14 @@ class Model(LightningModule):
         optimizer = torch.optim.Adam(
             [{"params": backbone_parameters, "lr": lr_backbone}, {"params": head_parameters, "lr": lr_head}]
         )
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
-        )
-        return [optimizer], [scheduler]
+        if self.hyperparameters.get("scheduler", None) == "step":
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
+            )
+            return [optimizer], [scheduler]
+        else:
+            scheduler = None
+            return [optimizer]
 
 
 class ModelGenerator:
@@ -139,7 +144,7 @@ class ModelGenerator:
         """
         raise None
 
-    def get_transform(self, task_specs, hyperparams):
+    def get_transform(self, task_specs, hyperparams, train=True):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
@@ -168,9 +173,9 @@ def head_generator(task_specs, hyperparams):
     """
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
-            (in_ch,) = hyperparams["features_shape"]
+            in_ch, *other_dims = hyperparams["features_shape"][-1]
             out_ch = task_specs.label_type.n_classes
-            return torch.nn.Linear(in_ch, out_ch)
+            return ClassificationHead(in_ch, out_ch)
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
