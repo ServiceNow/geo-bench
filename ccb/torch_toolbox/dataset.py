@@ -11,7 +11,8 @@ class DataModule(pl.LightningDataModule):
         batch_size: int,
         num_workers: int,
         val_batch_size: int = None,
-        transform=None,
+        train_transform=None,
+        eval_transform=None,
         collate_fn=None,
     ):
         """DataModule providing dataloaders from task_specs.
@@ -29,12 +30,13 @@ class DataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size or batch_size
         self.num_workers = num_workers
-        self.transform = transform
+        self.train_transform = train_transform
+        self.eval_transform = eval_transform
         self.collate_fn = collate_fn
 
     def train_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="train", transform=self.transform),
+            self.task_specs.get_dataset(split="train", transform=self.train_transform),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -43,7 +45,7 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="valid", transform=self.transform),
+            self.task_specs.get_dataset(split="valid", transform=self.eval_transform),
             batch_size=self.val_batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -52,7 +54,7 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="test", transform=self.transform),
+            self.task_specs.get_dataset(split="test", transform=self.eval_transform),
             batch_size=self.val_batch_size,
             shuffle=False,
             num_workers=self.num_workers,
