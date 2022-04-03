@@ -131,6 +131,11 @@ class Accuracy(Loss):
         return float(label != prediction)
 
 
+class AccuracyTop30(Loss):
+    #TODO: Could be integrated above or with extra argument for TopK
+    pass
+
+
 class CrossEntropy(Loss):
     pass
 
