@@ -710,6 +710,13 @@ class Dataset:
             band_stats[band_name] = Stats(**stats_dict)
         return band_stats
 
+    @cached_property
+    def rgb_stats(self):
+        blue = self.band_stats["02 - Blue"]
+        green = self.band_stats["03 - Green"]
+        red = self.band_stats["04 - Red"]
+        return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
+
     # #### Statistics ####
     # def _load_stats(self):
     #     """
