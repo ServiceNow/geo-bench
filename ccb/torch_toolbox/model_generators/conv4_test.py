@@ -10,7 +10,7 @@ class Conv4GeneratorTest(conv4.Conv4Generator):
         hparams1["num_workers"] = 0
         hparams1["n_gpus"] = 0
         hparams1["logger"] = "csv"
-
+        hparams1["optimizer"] = "adamW"
         hparams2 = hparams1.copy()
         hparams2["lr_head"] = 4e-3
 
