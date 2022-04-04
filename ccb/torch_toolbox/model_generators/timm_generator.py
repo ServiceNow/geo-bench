@@ -56,8 +56,10 @@ class TIMMGenerator(ModelGenerator):
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
         # hyperparameters.update({"std": backbone.default_cfg["std"]})
-        features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
-        features = backbone(features)
+        with torch.no_grad():
+            backbone.eval()
+            features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
+            features = backbone(features)
         shapes = [x.shape[1:] for x in features]  # get the backbone's output features
         hyperparameters.update({"features_shape": shapes})
 
