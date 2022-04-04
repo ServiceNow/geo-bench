@@ -90,6 +90,7 @@ def test_xview2():
 
     converter_tester(xview2)
 
+
 @pytest.mark.converter
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
@@ -97,6 +98,15 @@ def test_pv4ger():
     from ccb.dataset_converters import pv4ger
 
     converter_tester(pv4ger)
+
+
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_forestnet():
+    from ccb.dataset_converters import forestnet
+
+    converter_tester(forestnet)
 
 
 if __name__ == "__main__":

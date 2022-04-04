@@ -60,7 +60,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
-        patch_size=(320, 320),
+        patch_size=(PATCH_SIZE, PATCH_SIZE),
         n_time_steps=1,
         bands_info=BANDS_INFO,
         bands_stats=None,  # Will be automatically written with inspect script
@@ -100,4 +100,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(1000)
+    convert()
