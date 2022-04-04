@@ -56,7 +56,7 @@ def test_load_module():
 
     """
 
-    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4_test")
     assert hasattr(model_generator, "hp_search")
 
 
@@ -76,7 +76,7 @@ def test_experiment_generator_on_mnist():
 
     with tempfile.TemporaryDirectory() as exp_dir:
 
-        experiment_generator("ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test")
+        experiment_generator("ccb.torch_toolbox.model_generators.conv4_test", exp_dir, benchmark_name="test")
 
         sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
