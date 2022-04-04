@@ -29,7 +29,12 @@ class Model(LightningModule):
         self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
-        features = self.backbone(x)
+        if self.hyperparameters["lr_backbone"] == 0:
+            self.backbone.eval()
+            with torch.no_grad():
+                features = self.backbone(x)
+        else:
+            features = self.backbone(x)
         logits = self.head(features)
         return logits
 
@@ -79,9 +84,26 @@ class Model(LightningModule):
         head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
         lr_backbone = self.hyperparameters["lr_backbone"]
         lr_head = self.hyperparameters["lr_head"]
-        optimizer = torch.optim.Adam(
-            [{"params": backbone_parameters, "lr": lr_backbone}, {"params": head_parameters, "lr": lr_head}]
-        )
+        momentum = self.hyperparameters.get("momentum", 0.9)
+        nesterov = self.hyperparameters.get("nesterov", True)
+        weight_decay = self.hyperparameters.get("weight_decay", 1e-4)
+        optimizer_type = self.hyperparameters.get("optimizer", "sgd").lower()
+        to_optimize = []
+        for params, lr in [(backbone_parameters, lr_backbone), (head_parameters, lr_head)]:
+            if lr > 0:
+                to_optimize.append({"params": params, "lr": lr})
+        if optimizer_type == "sgd":
+            optimizer = torch.optim.SGD(
+                to_optimize,
+                momentum=momentum,
+                nesterov=nesterov,
+                weight_decay=weight_decay,
+            )
+        elif optimizer_type == "adam":
+            optimizer = torch.optim.Adam(to_optimize)
+        elif optimizer_type == "adamw":
+            optimizer = torch.optim.AdamW(to_optimize, weight_decay=weight_decay)
+
         if self.hyperparameters.get("scheduler", None) == "step":
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
                 optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]

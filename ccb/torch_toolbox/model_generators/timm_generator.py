@@ -27,13 +27,13 @@ class TIMMGenerator(ModelGenerator):
         self.base_hparams = {
             "backbone": "resnet18",
             "pretrained": True,
-            "lr_backbone": 1e-4,
-            "lr_head": 1e-3,
+            "lr_backbone": 0,
+            "lr_head": 1e-4,
             "optimizer": "sgd",
             "head_type": "linear",
             "loss_type": "crossentropy",
             "batch_size": 128,
-            "num_workers": 4,
+            "num_workers": 8,
             "max_epochs": 10,
             "n_gpus": 1,
             "logger": "wandb",
@@ -52,13 +52,13 @@ class TIMMGenerator(ModelGenerator):
         backbone = timm.create_model(
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=True
         )
-        logging.warn("FIXME: Using ImageNet default input size, mean, and std!")
+        logging.warn("FIXME: Using ImageNet default input size!")
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
-        hyperparameters.update({"mean": backbone.default_cfg["mean"]})
-        hyperparameters.update({"std": backbone.default_cfg["std"]})
+        # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
+        # hyperparameters.update({"std": backbone.default_cfg["std"]})
         features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
         features = backbone(features)
-        shapes = [x.shape[1:] for x in features]
+        shapes = [x.shape[1:] for x in features]  # get the backbone's output features
         hyperparameters.update({"features_shape": shapes})
 
         head = head_generator(task_specs, hyperparameters)
@@ -81,11 +81,9 @@ class TIMMGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
-        mean = hyperparams["mean"]
-        std = hyperparams["std"]
+        mean, std = task_specs.get_dataset(split="train").rgb_stats
         t = []
         t.append(tt.Lambda(lambda x: x.pack_to_3d(band_names=("red", "green", "blue"))[0].astype("float32")))
-        t.append(tt.Lambda(lambda x: x / x.max()))
         t.append(tt.ToTensor())
         t.append(tt.Normalize(mean=mean, std=std))
         if train:
