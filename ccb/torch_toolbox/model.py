@@ -192,8 +192,6 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         task_specs: object of type TaskSpecifications providing information on what type of task we are solving
         features_shape: lists with the shapes of the output features at different depths in the architecture [(ch, h, w), ...]
         hyperparams: dict of hyperparameters.
-        input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
-            the input itself? should it be a dict of shapes?
     """
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
