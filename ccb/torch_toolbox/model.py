@@ -5,6 +5,7 @@ from ccb import io
 import numpy as np
 import torch.nn.functional as F
 import torchmetrics
+from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.modules import ClassificationHead
 
 
@@ -179,7 +180,7 @@ class ModelGenerator:
         return None
 
 
-def head_generator(task_specs, hyperparams):
+def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: dict):
     """
     Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow:
         classification: 2 layer MLP with softmax activation
@@ -195,7 +196,7 @@ def head_generator(task_specs, hyperparams):
     """
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
-            in_ch, *other_dims = hyperparams["features_shape"][-1]
+            in_ch, *other_dims = features_shape[-1]
             out_ch = task_specs.label_type.n_classes
             return ClassificationHead(in_ch, out_ch)
         else:

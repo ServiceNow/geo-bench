@@ -6,6 +6,7 @@ class Conv4GeneratorTest(conv4.Conv4Generator):
     def hp_search(self, task_specs, max_num_configs=10):
         hparams1 = self.base_hparams.copy()
         hparams1["train_iters"] = 10
+        hparams1["val_check_interval"] = 10
         hparams1["num_workers"] = 0
         hparams1["n_gpus"] = 0
         hparams1["logger"] = "csv"

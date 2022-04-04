@@ -27,7 +27,6 @@ class Conv4Generator(ModelGenerator):
             "lr_head": 2e-3,
             "head_type": "linear",
             "train_iters": 50000,
-            "features_shape": (64,),
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
@@ -50,7 +49,7 @@ class Conv4Generator(ModelGenerator):
             hyperparameters (dict): dictionary containing hyperparameters
         """
         backbone = Conv4(self.model_path, task_specs, hyperparameters)
-        head = head_generator(task_specs, hyperparameters)
+        head = head_generator(task_specs, [(64,)], hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
         train_metrics = train_metrics_generator(task_specs, hyperparameters)
         eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
