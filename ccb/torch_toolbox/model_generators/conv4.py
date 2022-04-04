@@ -23,8 +23,8 @@ class Conv4Generator(ModelGenerator):
         self.base_hparams = {
             "lr_milestones": (10, 20),
             "lr_gamma": 0.1,
-            "lr_backbone": 1e-3,
-            "lr_head": 2e-3,
+            "lr_backbone": 4e-3,
+            "lr_head": 4e-3,
             "head_type": "linear",
             "train_iters": 50000,
             "loss_type": "crossentropy",
