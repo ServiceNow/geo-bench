@@ -11,6 +11,7 @@ import argparse
 from ccb.torch_toolbox.dataset import DataModule
 from ccb.experiment.experiment import get_model_generator, Job
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 def train(model_gen, job_dir):
@@ -43,8 +44,9 @@ def train(model_gen, job_dir):
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
-        # progress_bar_refresh_rate=0,
+        progress_bar_refresh_rate=0,
         logger=logger,
+        callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],
     )
     trainer.fit(model, datamodule)
     trainer.test(model, datamodule)

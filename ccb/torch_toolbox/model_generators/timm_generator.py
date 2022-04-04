@@ -61,9 +61,8 @@ class TIMMGenerator(ModelGenerator):
             features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
             features = backbone(features)
         shapes = [x.shape[1:] for x in features]  # get the backbone's output features
-        hyperparameters.update({"features_shape": shapes})
 
-        head = head_generator(task_specs, hyperparameters)
+        head = head_generator(task_specs, shapes, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
         train_metrics = train_metrics_generator(task_specs, hyperparameters)
         eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
