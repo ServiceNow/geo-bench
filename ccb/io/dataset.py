@@ -68,6 +68,7 @@ class BandInfo(object):
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
     def __repr__(self):
+
         return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
@@ -141,13 +142,27 @@ class SegmentationClasses(BandInfo, LabelType):
         self.n_classes = n_classes
         if class_names is not None:
             assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
-        self.class_name = class_names
+        self.class_names = class_names
 
     def assert_valid(self, value):
         assert isinstance(value, Band)
         assert value.band_info == self
         assert np.all(value.data >= 0)
         assert np.all(value.data < self.n_classes)
+
+    @property
+    def class_names(self):
+        return self.class_name  # for backward compatibility with saved pickles with a typo
+
+    def __repr__(self) -> str:
+        if self.class_names is not None:
+            if self.n_classes > 3:
+                names = ", ".join(self.class_names[:3]) + "..."
+            else:
+                names = ", ".join(self.class_names) + "."
+        else:
+            names = "missing class names"
+        return f"{self.n_classes}-SegmentationClasses ({names}) @{self.spatial_resolution}m resolution."
 
 
 sentinel1_8_bands = [
