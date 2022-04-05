@@ -66,12 +66,7 @@ class Conv4Generator(ModelGenerator):
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
 
         if task_specs.dataset_name.lower() == "mnist":
-
-            def mnist_collate(data):
-                x, y = list(zip(*data))
-                return {"input": torch.stack(x, 0), "label": torch.LongTensor(y)}
-
-            return mnist_collate
+            return default_collate
         else:
             return collate_rgb
 
