@@ -17,6 +17,9 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 def train(model_gen, job_dir):
     job = Job(job_dir)
     hparams = job.hparams
+    seed = hparams.get("seed", None)
+    if seed is not None:
+        pl.seed_everything(seed, workers=True)
 
     model = model_gen.generate(job.task_specs, hparams)
     datamodule = DataModule(
@@ -44,6 +47,7 @@ def train(model_gen, job_dir):
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
+        deterministic=hparams.get("deterministic", False),
         progress_bar_refresh_rate=0,
         logger=logger,
         callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],

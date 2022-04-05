@@ -59,7 +59,13 @@ class TaskSpecifications:
 
             if transform is None:
                 transform = tt.ToTensor()
-            return torchvision.datasets.MNIST("/tmp/mnist", train=split == "train", transform=transform, download=True)
+
+            class MNISTDict(torchvision.datasets.MNIST):
+                def __getitem__(self, item):
+                    x, y = super().__getitem__(item)
+                    return {"input": x, "label": y}
+
+            return MNISTDict("/tmp/mnist", train=split == "train", transform=transform, download=True)
 
         elif self.benchmark_name == "imagenet":
             if split == "test":
@@ -82,7 +88,7 @@ class TaskSpecifications:
 
             class ImageNetDict(torchvision.datasets.ImageNet):
                 def __getitem__(self, item):
-                    x, y = super()[item]
+                    x, y = super().__getitem__(item)
                     return {"input": x, "label": y}
 
             dataset = ImageNetDict(
