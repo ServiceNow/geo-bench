@@ -56,13 +56,14 @@ class TaskSpecifications:
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
+
             if transform is None:
                 transform = tt.ToTensor()
             return torchvision.datasets.MNIST("/tmp/mnist", train=split == "train", transform=transform, download=True)
 
         elif self.benchmark_name == "imagenet":
-            if split == 'test':
-                split = 'val'  # ugly fix
+            if split == "test":
+                split = "val"  # ugly fix
             assert split in ["train", "val", "valid"], "Only train and val supported"
             import torchvision.transforms as tt
             import torchvision
@@ -101,7 +102,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
     if benchmark_name == "test":
         yield mnist_task_specs
         return
-    elif benchmark_name == 'imagenet':
+    elif benchmark_name == "imagenet":
         yield imagenet_task_specs
         return
 
@@ -121,6 +122,9 @@ class Loss(object):
     def __call__(self, label, prediction):
         raise NotImplementedError()
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
     @property
     def name(self):
         return self.__class__.__name__.lower()
@@ -132,7 +136,7 @@ class Accuracy(Loss):
 
 
 class AccuracyTop30(Loss):
-    #TODO: Could be integrated above or with extra argument for TopK
+    # TODO: Could be integrated above or with extra argument for TopK
     pass
 
 
