@@ -40,7 +40,8 @@ class Model(LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        inputs, target = batch
+        inputs = batch["input"]
+        target = batch["label"]
         output = self(inputs)
         loss_train = self.loss_function(output, target)
         return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
@@ -52,8 +53,9 @@ class Model(LightningModule):
         self.log_dict(metrics)
 
     def eval_step(self, batch, batch_idx, prefix):
-        images, target = batch
-        output = self(images)
+        inputs = batch["input"]
+        target = batch["label"]
+        output = self(inputs)
         loss = self.loss_function(output, target)
         self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
         metrics = self.eval_metrics(output, target, prefix)

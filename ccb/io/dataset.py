@@ -803,9 +803,9 @@ class Dataset:
         sample_path = Path(self.dataset_dir, sample_name_list[idx])
         sample = load_sample(sample_path)
         if self.transform is not None:
-            return self.transform(sample), sample.label
+            return self.transform(sample)
         else:
-            return sample, sample.label
+            return sample
 
     def __len__(self):
         """

@@ -82,16 +82,31 @@ class TIMMGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
-        mean, std = task_specs.get_dataset(split="train").rgb_stats
-        t = []
-        t.append(tt.Lambda(lambda x: x.pack_to_3d(band_names=("red", "green", "blue"))[0].astype("float32")))
-        t.append(tt.ToTensor())
-        t.append(tt.Normalize(mean=mean, std=std))
-        if train:
-            t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
-        t = tt.Compose(t)
-        return t
+        if task_specs.dataset_name == "imagenet":
+            mean, std = task_specs.get_dataset(split="train").rgb_stats
+            t = []
+            t.append(tt.ToTensor())
+            t.append(tt.Normalize(mean=mean, std=std))
+            if train:
+                t.append(tt.RandomHorizontalFlip())
+                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+            transform = tt.Compose(t)
+        else:
+            mean, std = task_specs.get_dataset(split="train").rgb_stats
+            t = []
+            t.append(tt.ToTensor())
+            t.append(tt.Normalize(mean=mean, std=std))
+            if train:
+                t.append(tt.RandomHorizontalFlip())
+                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+            t = tt.Compose(t)
+
+            def transform(sample: io.Sample):
+                x = sample.pack_to_3d(band_names=("red", "green", "blue"))[0].astype("float32")
+                x = t(x)
+                return {"input": x, "label": sample.label}
+
+        return transform
 
 
 model_generator = TIMMGenerator()
