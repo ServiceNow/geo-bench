@@ -10,7 +10,6 @@
 # For running this code:
 # $ pip install xmltodict
 
-import os
 import re
 from typing import List
 from ccb import io
@@ -18,16 +17,16 @@ import numpy as np
 import rasterio
 from pathlib import Path
 from tqdm import tqdm
-import xml.etree.ElementTree as ET
 import xmltodict
 from warnings import warn
 import csv
 
 DATASET_NAME = "NeonTree"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-ZENODO_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME + "_zenodo")
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+# ZENODO_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME + "_zenodo")
+ZENODO_DATASET_DIR = SRC_DATASET_DIR / "_zenodo"
 
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 
 def read_xml(xml_path):
