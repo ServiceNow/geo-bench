@@ -70,11 +70,16 @@ def test_toolbox_getitem():
     for benchmark_name in ("test", "imagenet", "ccb-test"):
         for task in io.task_iterator(benchmark_name):
             dataset = task.get_dataset(split="valid")
-            data = dataset[0]
-            if benchmark_name != "ccb-test":
-                assert isinstance(data, dict)
+            try:
+                data = dataset[0]
+            except FileNotFoundError as e:
+                print(e)
+                pass
             else:
-                assert isinstance(data, io.Sample)
+                if benchmark_name != "ccb-test":
+                    assert isinstance(data, dict)
+                else:
+                    assert isinstance(data, io.Sample)
 
 
 if __name__ == "__main__":
