@@ -68,24 +68,25 @@ def test_toolbox_timm():
     train_job_on_task(timm_generator.model_generator, task_specs, 0.70)
 
 
+@pytest.mark.skipif(
+    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists() or not Path("/mnt/datasets/public").exists(),
+    reason="Requires presence of the benchmark and ImageNet.",
+)
 def test_toolbox_getitem():
     for benchmark_name in ("test", "imagenet", "ccb-test"):
         for task in io.task_iterator(benchmark_name):
-            try:
-                dataset = task.get_dataset(split="valid")
-                data = dataset[0]
-                if benchmark_name != "ccb-test":
-                    assert isinstance(data, dict)
-                else:
-                    assert isinstance(data, io.Sample)
-            except RuntimeError as e:
-                print(e)
+            dataset = task.get_dataset(split="valid")
+            data = dataset[0]
+            if benchmark_name != "ccb-test":
+                assert isinstance(data, dict)
+            else:
+                assert isinstance(data, io.Sample)
 
 
 if __name__ == "__main__":
     # test_toolbox_brick_kiln()
     # test_toolbox_wandb()
     # test_toolbox_mnist()
-    # test_toolbox_getitem()
+    test_toolbox_getitem()
     # test_toolbox_timm()
-    test_toolbox_seeds()
+    # test_toolbox_seeds()
