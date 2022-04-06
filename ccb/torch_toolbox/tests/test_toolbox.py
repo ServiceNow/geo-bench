@@ -72,7 +72,7 @@ def test_toolbox_getitem():
             dataset = task.get_dataset(split="valid")
             try:
                 data = dataset[0]
-            except FileNotFoundError as e:
+            except RuntimeError as e:
                 print(e)
                 pass
             else:
