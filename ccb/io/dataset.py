@@ -142,7 +142,7 @@ class SegmentationClasses(BandInfo, LabelType):
         self.n_classes = n_classes
         if class_names is not None:
             assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
-        self.class_names = class_names
+        self._class_names = class_names
 
     def assert_valid(self, value):
         assert isinstance(value, Band)
@@ -152,7 +152,10 @@ class SegmentationClasses(BandInfo, LabelType):
 
     @property
     def class_names(self):
-        return self.class_name  # for backward compatibility with saved pickles with a typo
+        if hasattr(self, "_class_names"):
+            return self._class_names
+        else:
+            return self.class_name  # for backward compatibility with saved pickles with a typo
 
     def __repr__(self) -> str:
         if self.class_names is not None:
@@ -162,7 +165,7 @@ class SegmentationClasses(BandInfo, LabelType):
                 names = ", ".join(self.class_names) + "."
         else:
             names = "missing class names"
-        return f"{self.n_classes}-SegmentationClasses ({names}) @{self.spatial_resolution}m resolution."
+        return f"{self.n_classes}-SegmentationClasses, {self.spatial_resolution}m resolution ({names})"
 
 
 sentinel1_8_bands = [

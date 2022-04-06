@@ -14,11 +14,14 @@ class Classification(LabelType):
         self.n_classes = n_classes
         if class_names is not None:
             assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
-        self.class_names = class_names
+        self._class_names = class_names
 
     @property
     def class_names(self):
-        return self.class_name  # for backward compatibility with saved pickles with a typo
+        if hasattr(self, "_class_names"):
+            return self._class_names
+        else:
+            return self.class_name  # for backward compatibility with saved pickles with a typo
 
     def assert_valid(self, value):
         assert isinstance(value, int)
