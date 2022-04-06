@@ -72,14 +72,12 @@ def test_toolbox_getitem():
             dataset = task.get_dataset(split="valid")
             try:
                 data = dataset[0]
-            except RuntimeError as e:
-                print(e)
-                pass
-            else:
                 if benchmark_name != "ccb-test":
                     assert isinstance(data, dict)
                 else:
                     assert isinstance(data, io.Sample)
+            except RuntimeError as e:
+                print(e)
 
 
 if __name__ == "__main__":
