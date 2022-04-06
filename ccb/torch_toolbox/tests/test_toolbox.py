@@ -49,7 +49,9 @@ def test_toolbox_wandb():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not Path(io.CCB_DIR).exists(), reason="Requires presence of the benchmark.")
+@pytest.mark.skipif(
+    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
+)
 def test_toolbox_brick_kiln():
     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
@@ -69,8 +71,8 @@ def test_toolbox_timm():
 def test_toolbox_getitem():
     for benchmark_name in ("test", "imagenet", "ccb-test"):
         for task in io.task_iterator(benchmark_name):
-            dataset = task.get_dataset(split="valid")
             try:
+                dataset = task.get_dataset(split="valid")
                 data = dataset[0]
                 if benchmark_name != "ccb-test":
                     assert isinstance(data, dict)
