@@ -160,13 +160,9 @@ def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count)
     find_missing([zenodo_dataset_dir], file_set)
 
 
-BAND_INFO_LIST = [
-    io.SpectralBand("red"),
-    io.SpectralBand("green"),
-    io.SpectralBand("blue"),
-    io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM")),
-    io.HyperSpectralBands("Neon", n_bands=369),
-]
+BAND_INFO_LIST = io.make_rgb_bands(0.1)
+BAND_INFO_LIST.append(io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM"), spatial_resolution=0.1))
+BAND_INFO_LIST.append(io.HyperSpectralBands("Neon", n_bands=369, spatial_resolution=1))
 
 
 def extract_boxes(boxes, y_offset, x_offset, area_threshold=10):
@@ -281,7 +277,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         eval_loss=io.Accuracy(),  # TODO what loss will we use?
         spatial_resolution=0.1,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
 
     convert_dataset(SRC_DATASET_DIR, ZENODO_DATASET_DIR, dataset_dir, max_count=max_count)
 
