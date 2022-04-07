@@ -5,6 +5,8 @@ from ccb import io
 import numpy as np
 import torch.nn.functional as F
 import torchmetrics
+from ccb.io.task import TaskSpecifications
+from ccb.torch_toolbox.modules import ClassificationHead
 
 
 class Model(LightningModule):
@@ -28,12 +30,18 @@ class Model(LightningModule):
         self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
-        features = self.backbone(x)
+        if self.hyperparameters["lr_backbone"] == 0:
+            self.backbone.eval()
+            with torch.no_grad():
+                features = self.backbone(x)
+        else:
+            features = self.backbone(x)
         logits = self.head(features)
         return logits
 
     def training_step(self, batch, batch_idx):
-        inputs, target = batch
+        inputs = batch["input"]
+        target = batch["label"]
         output = self(inputs)
         loss_train = self.loss_function(output, target)
         return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
@@ -45,8 +53,9 @@ class Model(LightningModule):
         self.log_dict(metrics)
 
     def eval_step(self, batch, batch_idx, prefix):
-        images, target = batch
-        output = self(images)
+        inputs = batch["input"]
+        target = batch["label"]
+        output = self(inputs)
         loss = self.loss_function(output, target)
         self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
         metrics = self.eval_metrics(output, target, prefix)
@@ -78,13 +87,34 @@ class Model(LightningModule):
         head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
         lr_backbone = self.hyperparameters["lr_backbone"]
         lr_head = self.hyperparameters["lr_head"]
-        optimizer = torch.optim.Adam(
-            [{"params": backbone_parameters, "lr": lr_backbone}, {"params": head_parameters, "lr": lr_head}]
-        )
-        scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
-        )
-        return [optimizer], [scheduler]
+        momentum = self.hyperparameters.get("momentum", 0.9)
+        nesterov = self.hyperparameters.get("nesterov", True)
+        weight_decay = self.hyperparameters.get("weight_decay", 1e-4)
+        optimizer_type = self.hyperparameters.get("optimizer", "sgd").lower()
+        to_optimize = []
+        for params, lr in [(backbone_parameters, lr_backbone), (head_parameters, lr_head)]:
+            if lr > 0:
+                to_optimize.append({"params": params, "lr": lr})
+        if optimizer_type == "sgd":
+            optimizer = torch.optim.SGD(
+                to_optimize,
+                momentum=momentum,
+                nesterov=nesterov,
+                weight_decay=weight_decay,
+            )
+        elif optimizer_type == "adam":
+            optimizer = torch.optim.Adam(to_optimize)
+        elif optimizer_type == "adamw":
+            optimizer = torch.optim.AdamW(to_optimize, weight_decay=weight_decay)
+
+        if self.hyperparameters.get("scheduler", None) == "step":
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
+            )
+            return [optimizer], [scheduler]
+        else:
+            scheduler = None
+            return [optimizer]
 
 
 class ModelGenerator:
@@ -139,7 +169,7 @@ class ModelGenerator:
         """
         raise None
 
-    def get_transform(self, task_specs, hyperparams):
+    def get_transform(self, task_specs, hyperparams, train=True):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
@@ -152,7 +182,7 @@ class ModelGenerator:
         return None
 
 
-def head_generator(task_specs, hyperparams):
+def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: dict):
     """
     Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow:
         classification: 2 layer MLP with softmax activation
@@ -162,15 +192,14 @@ def head_generator(task_specs, hyperparams):
 
     Args:
         task_specs: object of type TaskSpecifications providing information on what type of task we are solving
+        features_shape: lists with the shapes of the output features at different depths in the architecture [(ch, h, w), ...]
         hyperparams: dict of hyperparameters.
-        input_shape: list of tuples describing the shape of the input of this module. TO BE DISCUSSED: should this be
-            the input itself? should it be a dict of shapes?
     """
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
-            (in_ch,) = hyperparams["features_shape"]
+            in_ch, *other_dims = features_shape[-1]
             out_ch = task_specs.label_type.n_classes
-            return torch.nn.Linear(in_ch, out_ch)
+            return ClassificationHead(in_ch, out_ch)
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
