@@ -13,6 +13,8 @@ We welcome your contributions! Please see [our wiki](https://github.com/ElementA
 
 ## Getting Started
 
+Quick jump to [launching experiments](https://github.com/ElementAI/climate-change-benchmark/wiki/Running-Experiments-on-EAI-Toolkit).
+
 ### Downloading and Converting Datasets
 
 Read these [instructions](https://github.com/ElementAI/climate-change-benchmark/tree/main/ccb/dataset_converters#readme) for adding a new dataset or downloading & processing an existing dataset.
