@@ -44,8 +44,9 @@ def experiment_generator(
         Name of the experiment.
     """
     experiment_dir = Path(experiment_dir)
+    experiment_prefix = f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
     if experiment_name is not None:
-        experiment_dir /= f"{experiment_name}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+        experiment_dir /= experiment_prefix
 
     model_generator = get_model_generator(model_generator_module_name)
 
@@ -57,10 +58,13 @@ def experiment_generator(
         print(task_specs.dataset_name)
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
+            # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
+            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+
             # Create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name / hparams_string
             job = Job(job_dir)
-            print("  ", hparams_string)
+            print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
             job.write_script(model_generator_module_name)
