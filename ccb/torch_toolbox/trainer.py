@@ -38,6 +38,8 @@ def train(model_gen, job_dir):
         loggers.append(
             pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
         )
+    elif logger_type.lower() == "csv":
+        pass  # csv in in loggers by default
     else:
         raise ValueError(f"Logger type ({logger_type}) not recognized.")
 
