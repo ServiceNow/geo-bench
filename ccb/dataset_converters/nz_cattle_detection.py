@@ -76,7 +76,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.PointAnnotation(),
-        eval_loss=io.Accuracy,  # TODO decide on the loss
+        eval_loss=io.SegmentationAccuracy(),  # TODO decide on the loss
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir)

@@ -21,6 +21,7 @@ from rasterio import warp
 import ipyplot
 from ccb import io
 from PIL import Image, ImageDraw
+from ccb.io import dataset as io_ds
 
 
 def compare(a, b, name, src_a, src_b):
@@ -254,3 +255,44 @@ def map_class_id_to_color(id_array, n_classes, background_id=0, background_color
     colors[background_id, :] = background_color
     image = np.array([map[id_array] for map in colors.T])
     return np.moveaxis(image, 0, 2)
+
+
+def summarize_band_info(band_info_list: List[io.BandInfo]):
+    sentinel2_count = 0
+    sentinel1_count = 0
+    spectral_count = 0
+    elevation_resolution = None
+    hs_resolution = None
+
+    resolution_dict = {}
+
+    for band_info in band_info_list:
+        if isinstance(band_info, io_ds.SpectralBand):
+            spectral_count += 1
+        if isinstance(band_info, io_ds.Sentinel1):
+            sentinel1_count += 1
+        if isinstance(band_info, io_ds.Sentinel2):
+            sentinel2_count += 1
+        if isinstance(band_info, io_ds.ElevationBand):
+            elevation_resolution = band_info.spatial_resolution
+        if isinstance(band_info, io_ds.HyperSpectralBands):
+            hs_resolution = band_info.spatial_resolution
+
+        resolution_dict[band_info.name.lower()] = band_info.spatial_resolution
+        for name in band_info.alt_names:
+            resolution_dict[name.lower()] = band_info.spatial_resolution
+
+    RGB_resolution = [resolution_dict.get(color, None) for color in ("red", "green", "blue")]
+    if RGB_resolution[0] == RGB_resolution[1] and RGB_resolution[0] == RGB_resolution[2]:
+        RGB_resolution = RGB_resolution[0]
+
+    return {
+        "RGB res": RGB_resolution,
+        "NIR res": resolution_dict.get("nir", None),
+        "Sentinel2 count": sentinel2_count,
+        "Sentinel1 count": sentinel1_count,
+        "Elevation res": elevation_resolution,
+        "HS res": hs_resolution,
+        "Spectral count": spectral_count,
+        "Bands count": len(band_info_list),
+    }

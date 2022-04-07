@@ -31,14 +31,16 @@ def train(model_gen, job_dir):
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
     logger_type = hparams.get("logger", None)
+    loggers = [pl.loggers.CSVLogger(str(job.dir))]
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
-        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
-    elif logger_type.lower() in ["csv", ""]:
-        logger = pl.loggers.CSVLogger(str(job.dir))
+        loggers.append(
+            pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
+        )
     else:
         raise ValueError(f"Logger type ({logger_type}) not recognized.")
+
     trainer = pl.Trainer(
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
@@ -49,8 +51,8 @@ def train(model_gen, job_dir):
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
         progress_bar_refresh_rate=0,
-        logger=logger,
         callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],
+        logger=loggers,
     )
     trainer.fit(model, datamodule)
     trainer.test(model, datamodule)

@@ -2,7 +2,6 @@
 # (Available at this webpage: https://stanfordmlgroup.github.io/projects/forestnet/)
 # Unzip the directory, then either place contents in dataset/forestnet_v1.0
 # or create a symlink.
-import sys
 import pickle
 import rasterio
 import datetime
@@ -15,8 +14,8 @@ from ccb import io
 
 
 DATASET_NAME = "forestnet_v1.0"
-SRC_DATASET_DIR = Path(io.src_datasets_dir) / DATASET_NAME
-DATASET_DIR = Path(io.datasets_dir) / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 SPATIAL_RESOLUTION = 15
 PATCH_SIZE = 332
 LABELS = [
