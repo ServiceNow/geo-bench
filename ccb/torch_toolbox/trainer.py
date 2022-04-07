@@ -26,10 +26,9 @@ def train(model_gen, job_dir):
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
 
+    loggers = [pl.loggers.CSVLogger(str(job.dir))]
     if hparams.get("logger", "").lower() == "wandb":
-        logger = pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
-    else:
-        logger = pl.loggers.CSVLogger(str(job.dir))
+        loggers.append(pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir)))
     trainer = pl.Trainer(
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
@@ -39,7 +38,7 @@ def train(model_gen, job_dir):
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         progress_bar_refresh_rate=0,
-        logger=logger,
+        logger=loggers,
     )
     trainer.fit(model, datamodule)
     trainer.test(model, datamodule)
