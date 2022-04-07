@@ -8,8 +8,8 @@ from tqdm import tqdm
 from torchgeo.datasets import So2Sat
 
 DATASET_NAME = "so2sat"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 
 def make_sample(images, label, sample_name, task_specs):
@@ -47,7 +47,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         n_time_steps=1,
         bands_info=io.sentinel1_8_bands + io.sentinel2_13_bands[1:9] + io.sentinel2_13_bands[-2:],
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(17),
+        label_type=io.Classification(17, class_names=So2Sat.classes),
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )

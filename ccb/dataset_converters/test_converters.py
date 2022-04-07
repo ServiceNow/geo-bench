@@ -28,13 +28,13 @@ def test_brick_kiln():
     converter_tester(brick_kiln)
 
 
-@pytest.mark.converter
-@pytest.mark.slow
-@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
-def test_cv4a_kenya_cropy_type():
-    from ccb.dataset_converters import cv4a_kenya_crop_type
+# @pytest.mark.converter
+# @pytest.mark.slow
+# @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+# def test_cv4a_kenya_cropy_type():
+#     from ccb.dataset_converters import cv4a_kenya_crop_type
 
-    converter_tester(cv4a_kenya_crop_type)
+#     converter_tester(cv4a_kenya_crop_type)
 
 
 @pytest.mark.converter
@@ -55,13 +55,13 @@ def test_neon_tree():
     converter_tester(neon_tree)
 
 
-@pytest.mark.converter
-@pytest.mark.slow
-@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
-def test_smallholder_cashews():
-    from ccb.dataset_converters import benin_smallholder_cashews
+# @pytest.mark.converter
+# @pytest.mark.slow
+# @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+# def test_smallholder_cashews():
+#     from ccb.dataset_converters import benin_smallholder_cashews
 
-    converter_tester(benin_smallholder_cashews)
+#     converter_tester(benin_smallholder_cashews)
 
 
 @pytest.mark.converter
@@ -71,6 +71,15 @@ def test_so2sat():
     from ccb.dataset_converters import so2sat
 
     converter_tester(so2sat)
+
+
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_geolifeclef():
+    from ccb.dataset_converters import geolifeclef
+
+    converter_tester(geolifeclef)
 
 
 @pytest.mark.converter
@@ -111,10 +120,10 @@ def test_forestnet():
 
 if __name__ == "__main__":
     test_brick_kiln()
-    test_cv4a_kenya_cropy_type()
+    # test_cv4a_kenya_cropy_type()
     test_eurosat()
     test_neon_tree()
-    test_smallholder_cashews()
+    # test_smallholder_cashews()
     test_so2sat()
     test_nz_cattle_detection()
     test_xview2()

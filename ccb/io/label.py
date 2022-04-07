@@ -14,12 +14,29 @@ class Classification(LabelType):
         self.n_classes = n_classes
         if class_names is not None:
             assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
-        self.class_name = class_names
+        self._class_names = class_names
+
+    @property
+    def class_names(self):
+        if hasattr(self, "_class_names"):
+            return self._class_names
+        else:
+            return self.class_name  # for backward compatibility with saved pickles with a typo
 
     def assert_valid(self, value):
         assert isinstance(value, int)
         assert value >= 0, f"{value} is smaller than 0."
         assert value < self.n_classes, f"{value} is >= to {self.n_classes}."
+
+    def __repr__(self) -> str:
+        if self.class_names is not None:
+            if self.n_classes > 3:
+                names = ", ".join(self.class_names[:3]) + "..."
+            else:
+                names = ", ".join(self.class_names) + "."
+        else:
+            names = "missing class names"
+        return f"{self.n_classes}-classification ({names})"
 
 
 class Regression(LabelType):

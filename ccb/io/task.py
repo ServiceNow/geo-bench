@@ -134,6 +134,9 @@ class Loss(object):
     def __call__(self, label, prediction):
         raise NotImplementedError()
 
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
     @property
     def name(self):
         return self.__class__.__name__.lower()
