@@ -38,15 +38,6 @@ NIR_BAND = io.SpectralBand("NIR", ("nir",), SPATIAL_RESOLUTION, wavelength=0.829
 BAND_INFO_LIST.append(NIR_BAND)
 BAND_INFO_LIST.append(io.ElevationBand("Altitude", ("elevation",), spatial_resolution=SPATIAL_RESOLUTION))
 
-# BAND_INFO_LIST = [
-#     io.SpectralBand("red"),
-#     io.SpectralBand("green"),
-#     io.SpectralBand("blue"),
-#     io.SpectralBand("ir"),
-#     io.ElevationBand("altitude"),
-#     # io.HyperSpectralBands("landcover", n_bands=14),
-# ]
-
 
 def make_sample(observation_id, label, lat, lng, kaggle_sample=False):
 
