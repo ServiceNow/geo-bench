@@ -157,7 +157,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     with open(SRC_DATASET_DIR / "xview2-geotransforms.json") as json_file:
         transforms_json = json.load(json_file)
 
-    for split_name in ["train", "val", "test"]:
+    for split_name in ["train", "test"]:
         xview2_dataset = XView2(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
         for i, tg_sample in enumerate(tqdm(xview2_dataset)):
             # tg_sample dict(
@@ -189,15 +189,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
             sample = make_sample(image_A, image_B, mask, sample_name)
             sample.write(dataset_dir)
-            partition.add(split_name.replace("val", "valid"), sample_name)
+            partition.add(split_name, sample_name)
 
             offset += 1
 
-            # temporary for creating small datasets for development purpose
             if max_count is not None and i + 1 >= max_count:
                 break
 
-        # temporary for creating small datasets for development purpose
         if max_count is not None and offset >= max_count:
             break
 
