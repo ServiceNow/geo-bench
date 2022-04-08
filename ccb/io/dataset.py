@@ -646,25 +646,33 @@ class Dataset:
         self._task_specs_path = None
         self.split = split
         self.transform = transform
-        self._load_path_list()
-        self.set_partition(partition_name)
+        self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
 
     #### Loading paths
-    def _load_path_list(self) -> None:
+    def _load_partitions(self, active_partition_name) -> None:
         """
-        Scan folder for sample folders, task specifications, and partitions
+        Scan directory for partition files
         """
         self._partition_path_dict = {}
+        for p in self.dataset_dir.glob("*_partition.json"):
+            partition_name = p.name.split("_partition.json")[0]
+            self._partition_path_dict[partition_name] = p
+
+        self.set_partition(active_partition_name)
         self._sample_name_list = []
-        for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
-            if p.name.endswith("_partition.json"):
-                partition_name = p.name.split("_partition.json")[0]
-                self._partition_path_dict[partition_name] = p
-            elif p.name == "task_specs.pkl":
-                self._task_specs_path = p
-            elif p.is_dir():
-                self._sample_name_list.append(p.name)
+        for sample_names in self.active_partition.partition_dict.values():
+            self._sample_name_list.extend(sample_names)
+
+        # self._sample_name_list = []
+        # for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
+        #     if p.name.endswith("_partition.json"):
+        #         partition_name = p.name.split("_partition.json")[0]
+        #         self._partition_path_dict[partition_name] = p
+        #     elif p.name == "task_specs.pkl":
+        #         self._task_specs_path = p
+        #     elif p.is_dir():
+        #         self._sample_name_list.append(p.name)
 
     ### Task specifications
     @cached_property
@@ -692,6 +700,7 @@ class Dataset:
         """
         Select active partition by name
         """
+
         if partition_name not in self._partition_path_dict:
             raise ValueError(
                 f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?"
@@ -845,7 +854,7 @@ class Dataset:
             yield load_sample(Path(self.dataset_dir, sample_name))
 
     def iter_dataset(self, max_count=None):
-        n = len(self._sample_name_list)
+        n = len(self)
         if max_count is None:
             max_count = n
         else:
