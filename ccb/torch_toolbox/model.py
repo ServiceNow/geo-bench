@@ -333,7 +333,7 @@ def collate_rgb(samples: List[io.Sample]):
         x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
         label_list.append(sample.label)
 
-    return torch.stack(x_list), stack_labels(label_list)
+    return {"input": torch.stack(x_list), "label": stack_labels(label_list)}
 
 
 def stack_labels(label_list):
