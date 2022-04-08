@@ -115,6 +115,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         with open(dataset_dir / "task_specs.pkl", "rb") as fd:
             task_specs = pickle.load(fd)
 
+        task_specs.benchmark_name = benchmark_name
         yield task_specs
 
 
