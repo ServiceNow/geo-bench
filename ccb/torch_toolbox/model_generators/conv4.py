@@ -14,6 +14,7 @@ from ccb.torch_toolbox.model import (
 )
 import torch
 import torch.nn.functional as F
+from torch.utils.data.dataloader import default_collate
 
 
 class Conv4Generator(ModelGenerator):
@@ -23,11 +24,10 @@ class Conv4Generator(ModelGenerator):
         self.base_hparams = {
             "lr_milestones": (10, 20),
             "lr_gamma": 0.1,
-            "lr_backbone": 1e-3,
-            "lr_head": 2e-3,
+            "lr_backbone": 4e-3,
+            "lr_head": 4e-3,
             "head_type": "linear",
             "train_iters": 50000,
-            "features_shape": (64,),
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
@@ -50,7 +50,7 @@ class Conv4Generator(ModelGenerator):
             hyperparameters (dict): dictionary containing hyperparameters
         """
         backbone = Conv4(self.model_path, task_specs, hyperparameters)
-        head = head_generator(task_specs, hyperparameters)
+        head = head_generator(task_specs, [(64,)], hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
         train_metrics = train_metrics_generator(task_specs, hyperparameters)
         eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
@@ -66,7 +66,7 @@ class Conv4Generator(ModelGenerator):
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
 
         if task_specs.dataset_name.lower() == "mnist":
-            return None  # will use torch's default collate function.
+            return default_collate
         else:
             return collate_rgb
 

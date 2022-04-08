@@ -85,7 +85,7 @@ class Job:
             return pickle.load(fd)
 
     def get_metrics(self):
-        if self.hparams.get("logger", None) == "wandb":
+        if self.hparams.get("logger", "") == "wandb":
             import wandb
 
             wandb.finish()
