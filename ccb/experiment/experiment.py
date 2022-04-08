@@ -95,7 +95,7 @@ class Job:
             return data
         else:
             try:
-                with open(self.dir / "default" / "version_0" / "metrics.csv", "r") as fd:
+                with open(self.dir / "lightning_logs" / "version_0" / "metrics.csv", "r") as fd:
                     data = {}
                     # FIXME: This would be more efficient if done backwards
                     for entry in csv.DictReader(fd):

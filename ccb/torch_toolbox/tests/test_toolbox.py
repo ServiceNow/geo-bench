@@ -84,9 +84,9 @@ def test_toolbox_getitem():
 
 
 if __name__ == "__main__":
-    # test_toolbox_brick_kiln()
-    # test_toolbox_wandb()
-    # test_toolbox_mnist()
+    test_toolbox_brick_kiln()
+    test_toolbox_wandb()
+    test_toolbox_mnist()
     test_toolbox_getitem()
-    # test_toolbox_timm()
-    # test_toolbox_seeds()
+    test_toolbox_timm()
+    test_toolbox_seeds()
