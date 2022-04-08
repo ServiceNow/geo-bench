@@ -643,7 +643,6 @@ class Dataset:
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
         """
         self.dataset_dir = Path(dataset_dir)
-        self._task_specs_path = None
         self.split = split
         self.transform = transform
         self._load_partitions(partition_name)
@@ -677,9 +676,7 @@ class Dataset:
     ### Task specifications
     @cached_property
     def task_specs(self):
-        if self._task_specs_path is None:
-            raise ValueError(f"The file 'task_specs.pkl' does not exist for dataset {self.dataset_dir.name}.")
-        with open(self._task_specs_path, "rb") as fd:
+        with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
 
     #### Splits ####
