@@ -31,7 +31,7 @@ def train(model_gen, job_dir):
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
     logger_type = hparams.get("logger", None)
-    loggers = [pl.loggers.CSVLogger(str(job.dir))]
+    loggers = [pl.loggers.CSVLogger(str(job.dir), name="lightning_logs")]
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
