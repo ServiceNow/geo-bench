@@ -5,7 +5,7 @@
 3. Create a key pair (Access Key ID, Secret Access Key) following the instructions here: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-creds
 4. Clone git repo: git clone https://github.com/kdmayer/3D-PV-Locator.git && cd 3D-PV-Locator
 5. Configure AWS, follow default settings: aws configure
-6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/classification/ dataset/pv4ger_v1.0/
+6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/{classification,segmentation}/ dataset/pv4ger_v1.0/
 """
 import os
 import sys
@@ -22,13 +22,18 @@ sys.path.append(str(Path.cwd()))
 
 DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+CLS_DATASET_DIR = io.CCB_DIR / "converted" / f'{DATASET_NAME}_classification'
+SEG_DATASET_DIR = io.CCB_DIR / "converted" / f'{DATASET_NAME}_segmentation'
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
+LABELS = ("no solar pv", "solar pv")
+SEG_LABEL_BAND = io.SegmentationClasses(
+    "label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS
+)
 
 
-def load_sample(img_path: Path, label: int):
+def get_transform(img_path):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
     # Lat/lons are swapped for much of the dataset, fix this.
@@ -39,8 +44,10 @@ def load_sample(img_path: Path, label: int):
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
     transform = rasterio.transform.from_origin(lon_corner, lat_corner, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
 
-    img = np.array(Image.open(img_path).convert("RGB"))
+    return transform
 
+
+def get_bands(img, transform):
     bands = []
     for i in range(3):
         band_data = io.Band(
@@ -52,41 +59,94 @@ def load_sample(img_path: Path, label: int):
         )
         bands.append(band_data)
 
+    return bands
+
+
+def load_cls_sample(img_path: Path, label: int):
+    transform = get_transform(img_path)
+
+    img = np.array(Image.open(img_path).convert("RGB"))
+
+    bands = get_bands(img, transform)
+
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def load_seg_sample(img_path: Path, mask_path: Path):
+    transform = get_transform(img_path)
+
+    img = np.array(Image.open(img_path).convert("RGB"))
+    mask = np.array(Image.open(mask_path))
+    mask[mask > 0] = 1
+
+    bands = get_bands(img, transform)
+
+    label = io.Band(
+        data=mask, band_info=SEG_LABEL_BAND,
+        spatial_resolution=SPATIAL_RESOLUTION,
+        transform=transform, crs="EPSG:4326"
+    )
+
+    return io.Sample(bands, label=label, sample_name=img_path.stem)
+
+
+def convert(task, max_count=None):
+    if task == "classification":
+        label_type = io.Classification(2, LABELS)
+        eval_loss = io.Accuracy
+        dataset_dir = CLS_DATASET_DIR
+    elif task == "segmentation":
+        label_type = SEG_LABEL_BAND
+        eval_loss = io.SegmentationAccuracy  # TODO probably not the final
+        # eval loss. To be discussed.
+        dataset_dir = SEG_DATASET_DIR
+    else:
+        raise ValueError(f"Task {task} not supported")
+
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     task_specs = io.TaskSpecifications(
-        dataset_name=DATASET_NAME,
+        dataset_name=dataset_dir.name,
         patch_size=(PATCH_SIZE, PATCH_SIZE),
         n_time_steps=1,
         bands_info=BANDS_INFO,
         bands_stats=None,  # Will be automatically written with inspect script
-        label_type=io.Classification(2, ("no solar pv", "solar pv")),
-        eval_loss=io.Accuracy,
+        label_type=label_type,
+        eval_loss=eval_loss,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
     task_specs.save(dataset_dir, overwrite=True)
 
     rows = []
-    for split in ["train", "val", "test"]:
-        for label in [0, 1]:
-            split_label_dir = SRC_DATASET_DIR / split / str(label)
-            for path in split_label_dir.iterdir():
-                if path.suffix == ".png":
-                    rows.append([split, label, path])
+
+    if task == "classification":
+        for split in ["train", "val", "test"]:
+            for label in [0, 1]:
+                split_label_dir = SRC_DATASET_DIR / split / str(label)
+                for path in split_label_dir.iterdir():
+                    if path.suffix == ".png":
+                        rows.append([split, label, path])
+    else:
+        for split in ["train", "val", "test"]:
+            split_dir = SRC_DATASET_DIR / split / "image"
+            for image_path in split_dir.iterdir():
+                if image_path.suffix == ".png":
+                    mask_path = image_path.parent.parent / "mask" / image_path.name
+                    rows.append([split, mask_path, image_path])
 
     df = pd.DataFrame(rows, columns=["Split", "Label", "Path"])
     df["Split"] = df["Split"].str.replace("val", "valid")
+
     partition = io.Partition()
     sample_count = 0
     for _, row in tqdm(df.iterrows(), total=df.shape[0]):
         split = row["Split"]
         path = row["Path"]
         label = row["Label"]
-        sample = load_sample(path, label)
+        if task == "classification":
+            sample = load_cls_sample(path, label)
+        else:
+            sample = load_seg_sample(path, label)
         sample_name = path.stem
         partition.add(split, sample_name)
         sample.write(dataset_dir)
@@ -100,4 +160,5 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert()
+    # convert("classification")
+    convert("segmentation")
