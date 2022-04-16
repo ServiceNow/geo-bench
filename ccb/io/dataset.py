@@ -677,7 +677,11 @@ class Dataset:
     @cached_property
     def task_specs(self):
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
-            return pickle.load(fd)
+            task_specs = pickle.load(fd)
+
+        # banchmark name should follow parent dir
+        task_specs.benchmark_name = self.dataset_dir.parent.name
+        return task_specs
 
     #### Splits ####
 
