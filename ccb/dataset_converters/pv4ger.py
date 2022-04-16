@@ -7,7 +7,6 @@
 5. Configure AWS, follow default settings: aws configure
 6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/{classification,segmentation}/ dataset/pv4ger_v1.0/
 """
-import os
 import sys
 import rasterio
 import numpy as np
@@ -22,15 +21,13 @@ sys.path.append(str(Path.cwd()))
 
 DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-CLS_DATASET_DIR = io.CCB_DIR / "converted" / f'{DATASET_NAME}_classification'
-SEG_DATASET_DIR = io.CCB_DIR / "converted" / f'{DATASET_NAME}_segmentation'
+CLS_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
+SEG_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
 LABELS = ("no solar pv", "solar pv")
-SEG_LABEL_BAND = io.SegmentationClasses(
-    "label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS
-)
+SEG_LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS)
 
 
 def get_transform(img_path):
@@ -82,15 +79,13 @@ def load_seg_sample(img_path: Path, mask_path: Path):
     bands = get_bands(img, transform)
 
     label = io.Band(
-        data=mask, band_info=SEG_LABEL_BAND,
-        spatial_resolution=SPATIAL_RESOLUTION,
-        transform=transform, crs="EPSG:4326"
+        data=mask, band_info=SEG_LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs="EPSG:4326"
     )
 
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def convert(task, max_count=None):
+def convert(max_count=None, task="classification"):
     if task == "classification":
         label_type = io.Classification(2, LABELS)
         eval_loss = io.Accuracy
@@ -101,7 +96,7 @@ def convert(task, max_count=None):
         # eval loss. To be discussed.
         dataset_dir = SEG_DATASET_DIR
     else:
-        raise ValueError(f"Task {task} not supported")
+        raise ValueError(f"Task {task} not supported.")
 
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
@@ -160,5 +155,5 @@ def convert(task, max_count=None):
 
 
 if __name__ == "__main__":
-    # convert("classification")
-    convert("segmentation")
+    convert(task="classification")
+    # convert(task="segmentation")
