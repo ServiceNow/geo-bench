@@ -21,8 +21,9 @@ sys.path.append(str(Path.cwd()))
 
 DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-CLS_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
-SEG_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
+# CLS_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
+# SEG_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
+DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
@@ -85,18 +86,16 @@ def load_seg_sample(img_path: Path, mask_path: Path):
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def convert(max_count=None, task="classification"):
-    if task == "classification":
+def convert(max_count=None, dataset_dir=DATASET_DIR, classification=True):
+    if classification:
         label_type = io.Classification(2, LABELS)
         eval_loss = io.Accuracy
-        dataset_dir = CLS_DATASET_DIR
-    elif task == "segmentation":
+        # dataset_dir = CLS_DATASET_DIR
+    else:
         label_type = SEG_LABEL_BAND
         eval_loss = io.SegmentationAccuracy  # TODO probably not the final
         # eval loss. To be discussed.
-        dataset_dir = SEG_DATASET_DIR
-    else:
-        raise ValueError(f"Task {task} not supported.")
+        dataset_dir = dataset_dir.with_name(f"{DATASET_NAME}_segmentation")
 
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
@@ -114,7 +113,7 @@ def convert(max_count=None, task="classification"):
 
     rows = []
 
-    if task == "classification":
+    if classification:
         for split in ["train", "val", "test"]:
             for label in [0, 1]:
                 split_label_dir = SRC_DATASET_DIR / split / str(label)
@@ -138,7 +137,7 @@ def convert(max_count=None, task="classification"):
         split = row["Split"]
         path = row["Path"]
         label = row["Label"]
-        if task == "classification":
+        if classification:
             sample = load_cls_sample(path, label)
         else:
             sample = load_seg_sample(path, label)
@@ -155,5 +154,5 @@ def convert(max_count=None, task="classification"):
 
 
 if __name__ == "__main__":
-    convert(task="classification")
-    # convert(task="segmentation")
+    convert(classification=True)
+    # convert(classification=False)
