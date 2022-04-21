@@ -4,7 +4,7 @@ from typing import Dict, List
 from ccb import io
 import numpy as np
 
-from ccb.dataset_converters.create_benchmark import resample
+from ccb.benchmark.create_benchmark import resample
 
 
 def make_rand_partition(n=1000):
