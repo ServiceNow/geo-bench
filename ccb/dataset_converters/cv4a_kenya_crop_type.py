@@ -3,7 +3,6 @@ from torchgeo.datasets import cv4a_kenya_crop_type
 from ccb import io
 import datetime
 from pathlib import Path
-from ccb.dataset_converters import util
 from tqdm import tqdm
 
 
@@ -158,4 +157,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert()
+    convert(10)
