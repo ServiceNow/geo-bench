@@ -39,7 +39,7 @@ def test_resample():
     partition, label_map, reverse_label_map = make_rand_partition(n=1000)
     max_sizes = {"train": 100, "valid": 20, "test": 25}
     min_class_sizes = {"train": 10, "valid": 1, "test": 2}
-    partition, _ = resample(
+    partition = resample(
         partition,
         label_map,
         max_sizes=max_sizes,
