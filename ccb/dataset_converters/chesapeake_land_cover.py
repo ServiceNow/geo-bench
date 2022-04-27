@@ -117,6 +117,10 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             label = np.array(dl_sample["mask"])[0]
             crs = dl_sample["crs"][0]
 
+            # if label.shape != (256, 256):
+            #     print(f"Cropping label to 256x256 from shape {label.shape}. ")
+            #     label = label[:256, :256]
+
             sample = make_sample(image, label, sample_name, task_specs, crs)
             sample.write(dataset_dir)
 
