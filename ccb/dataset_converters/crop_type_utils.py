@@ -166,8 +166,6 @@ def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
 def load_geojson_mask(
     filepath: str,
     crop_type_key: str,
-    src_crs: CRS,
-    dest_crs: CRS,
     height: int,
     width: int,
     class2idx: Dict[str, int],
@@ -178,8 +176,6 @@ def load_geojson_mask(
     Args:
         filepath: filepath to label
         crop_type_key: key in geojson file to find label
-        src_crs: source CRS
-        dest_crs: CRS of data in partition that is being created
         height: of image to rasterize corresponding label
         width: of image to rasterize corresponding label
         class2idx: mapping of label class to numerical class
@@ -196,18 +192,10 @@ def load_geojson_mask(
     for feature in data["features"]:
         label = feature["properties"][crop_type_key]
         # issue with fiona installation
-        # https://stackoverflow.com/questions/69237076/attributeerror-partially-initialized-module-fiona-has-no-attribute-loading
-        # shape = fiona_transform.transform_geom(
-        #     src_crs, dest_crs, feature["geometry"]
-        # )
         if label in per_label_shapes:
             per_label_shapes[label].append(feature["geometry"])
         else:
             per_label_shapes[label] = [feature["geometry"]]
-
-    # # Rasterize geometries
-    # width = int(round((query.maxx - query.minx) / self.res))
-    # height = int(round((query.maxy - query.miny) / self.res))
 
     # # DO NOT NEED BOUNDS anymore if you just keep entire image
     transform = rasterio.transform.from_bounds(

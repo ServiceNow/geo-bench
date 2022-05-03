@@ -102,7 +102,6 @@ def make_sample(images: np.array, mask: np.array, sample_name: str, dates: List[
     n_dates, n_bands, _height, _width = images.shape
 
     bands = []
-    n_dates = 3
     for date_idx in range(n_dates):
         for band_idx in range(n_bands):
             band_data = images[date_idx, band_idx, :, :]
@@ -150,8 +149,7 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
         spatial_resolution=10,
     )
     task_specs.save(partition_dir, overwrite=True)
-    import pdb
-    pdb.set_trace()
+
     partition = io.Partition()
 
     # iterate over dataset based on criteria and add to partition
