@@ -40,7 +40,8 @@ def test_load_geojson_mask():
             label["geometry"] = shape
             labels.append(label)
 
-    data_root = tempfile.gettempdir()
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        data_root = tmpdirname
 
     # create the geojson of proper format
     geojson = {
