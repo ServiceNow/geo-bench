@@ -141,7 +141,7 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
-        n_time_steps=13,  # this is not the same for all images
+        n_time_steps=76,  # this is not the same for all images but the max
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
@@ -161,6 +161,7 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
     img_dir_paths = sorted(os.listdir(img_dir))[1:]  # skip aux files
 
     j = 0
+    label_pct = []
     for dirpath in tqdm(label_dir_paths):
         path = os.path.join(label_dir, dirpath)
         # to extract date information and id to match input images
@@ -174,22 +175,26 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
             dest_crs=PARTITION_CRS,
         )
 
-        img_list = [
-            crop_type_utils.load_image_bands(filepath, BANDNAMES, PARTITION_CRS) for filepath in matched_image_dirs
-        ]
+        # img_list = [
+        #     crop_type_utils.load_image_bands(filepath, BANDNAMES, PARTITION_CRS) for filepath in matched_image_dirs
+        # ]
 
-        dates = crop_type_utils.collect_dates(matched_image_dirs, img_dir_regex)
-        dates = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in dates]
+        # dates = crop_type_utils.collect_dates(matched_image_dirs, img_dir_regex)
+        # dates = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in dates]
 
-        # stack to array of T x C x H x W
-        imgs = np.stack(img_list, axis=0)
-        del img_list
+        # # stack to array of T x C x H x W
+        # imgs = np.stack(img_list, axis=0)
+        # del img_list
         mask = np.stack(label, axis=0)
 
         # dataset is said to have all images 256,256 but found 270,270
         if imgs.shape[-2:] != (PATCH_SIZE, PATCH_SIZE) or mask.shape[-2:] != (PATCH_SIZE, PATCH_SIZE):
             imgs = imgs[:, :, 0: PATCH_SIZE, 0:PATCH_SIZE]
             mask = mask[:, 0:PATCH_SIZE, 0:PATCH_SIZE]
+        
+        k = crop_type_utils.compute_area_with_labels(mask)
+        label_pct.append(k)
+        continue
 
         if crop_type_utils.compute_area_with_labels(mask) >= LABEL_THRESH:
             sample_name = dirpath
@@ -205,7 +210,13 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
         j += 1
         if max_count is not None and j >= max_count:
             break
-
+    
+    import pdb
+    pdb.set_trace()
+    import matplotlib.pyplot as plt
+    x = np.array(label_pct)
+    print(len(x[x>LABEL_THRESH])/len(x))
+    plt.hist(x, density=True, bins=10)
     partition.save(partition_dir, "nopartition", as_default=True)
 
 

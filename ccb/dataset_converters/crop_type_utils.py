@@ -2,7 +2,7 @@ import json
 import os
 import re
 from functools import reduce
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import rasterio
@@ -10,7 +10,30 @@ from rasterio.crs import CRS
 from rasterio.features import rasterize
 from rasterio.io import DatasetReader
 from rasterio.vrt import WarpedVRT
+from collections import defaultdict
 
+def percentile_normalization(
+    img: np.array,
+    lower: float = 2,
+    upper: float = 98,
+) -> np.array:
+    """Applies percentile normalization to an input image.
+
+    Args:
+        img: image to normalize
+        lower: lower percentile in range [0,100]
+        upper: upper percentile in range [0,100]
+
+    Returns
+        normalized version of ``img``
+    """
+    assert lower < upper
+    lower_percentile = np.percentile(img, lower)
+    upper_percentile = np.percentile(img, upper)
+    img_normalized = np.clip(
+        (img - lower_percentile) / (upper_percentile - lower_percentile), 0, 1
+    )
+    return img_normalized
 
 def create_patches(
     imgs: np.array,
@@ -138,7 +161,6 @@ def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.a
 
     # stack along band channel dimension
     data = np.concatenate(band_list, axis=0, dtype=np.int16)
-
     return data
 
 
@@ -182,22 +204,17 @@ def load_geojson_mask(
         bounds: image boundaries in CRS
 
     Returns:
-        labels at this query index
+        mask at this filepath
     """
     # only images are patched into tiles, masks are large, so remove duplicates
-    per_label_shapes: Dict[str, List[str]] = {}
-    with open(os.path.join(filepath, "labels.geojson")) as f:
+    per_label_shapes= defaultdict(list)
+    with open(os.path.join(filepath)) as f:
         data = json.load(f)
 
     for feature in data["features"]:
         label = feature["properties"][crop_type_key]
-        # issue with fiona installation
-        if label in per_label_shapes:
-            per_label_shapes[label].append(feature["geometry"])
-        else:
-            per_label_shapes[label] = [feature["geometry"]]
-
-    # # DO NOT NEED BOUNDS anymore if you just keep entire image
+        per_label_shapes[label].append(feature["geometry"])
+    
     transform = rasterio.transform.from_bounds(
         bounds["minx"], bounds["miny"], bounds["maxx"], bounds["maxy"], width, height
     )
@@ -213,10 +230,13 @@ def load_geojson_mask(
             label_mask *= class2idx[label]
             mask_list.append(label_mask)
 
-        mask_stack: "np.typing.NDArray[np.int_]" = np.stack(mask_list, axis=0)
-        # assumes non-overlapping labels
-    masks = np.sum(mask_stack, axis=0, dtype=np.int16)
-    return masks
+        mask_stack = np.stack(mask_list, axis=0)
+         # assumes non-overlapping labels
+        mask = np.max(mask_stack, axis=0, dtype=np.int16)
+    else:
+        mask = np.zeros((height, width))
+   
+    return mask
 
 
 def load_tif_mask(
