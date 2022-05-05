@@ -132,6 +132,12 @@ class ModelGenerator:
         # return hparams_to_string(hp_configs)
         raise NotImplementedError()
 
+    def hp_search_ray(self, max_num_configs=10):
+        """The user can provide a set of `max_num_configs` hyperparameters configuration to search for, based on task_specs"""
+        # hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
+        # return hparams_to_string(hp_configs)
+        raise NotImplementedError()
+
     def generate(self, task_specs, hyperparams):
         """Generate a Model to train
 

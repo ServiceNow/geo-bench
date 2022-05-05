@@ -3,21 +3,19 @@ from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
-    BackBone,
     ModelGenerator,
     Model,
     train_loss_generator,
     train_metrics_generator,
     eval_metrics_generator,
     head_generator,
-    collate_rgb,
 )
 from torch.utils.data.dataloader import default_collate
 import torch
-import torch.nn.functional as F
 import timm
 from torchvision import transforms as tt
 import logging
+from ray import tune
 
 
 class TIMMGenerator(ModelGenerator):
@@ -37,6 +35,10 @@ class TIMMGenerator(ModelGenerator):
             "max_epochs": 10,
             "n_gpus": 1,
             "logger": "wandb",
+            "use_ray": True,
+            "num_hyp_samples": 3,
+            "gpus_per_trial": 1, # num Gpus per hyperparameter search trial
+            "cpus_per_trial": 1, # num Cpus per hyperparameter search trialy
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -74,6 +76,29 @@ class TIMMGenerator(ModelGenerator):
         hparams2["lr_head"] = 4e-3
 
         return hparams_to_string([self.base_hparams, hparams2])
+
+    def hp_search_ray(self, max_num_configs=10):
+        hparams_copy = self.base_hparams.copy()
+
+        # here overwrite all model parameters that you want to have
+        # tuned by ray
+        ray_tune_config = {
+            "lr_head": tune.loguniform(1e-4, 1e-1),
+        }
+
+        assert len(ray_tune_config) <= max_num_configs  
+
+        # need to check that they are present in the base_hparams because 
+        # those params are inherent to model and tunable
+        for param_name, param_tune in ray_tune_config.items():
+            if param_name in hparams_copy:
+                hparams_copy[param_name] = param_tune
+            else:
+                raise ValueError(f"Parameters for ray need to be present in Model Generator base parameters. {param_name} not found.")
+
+        hparams_copy["ray_params"] = ray_tune_config
+
+        return hparams_copy
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate
