@@ -7,6 +7,7 @@ Usage: trainer.py --model-generator path/to/my/model/generator.py
 
 """
 import argparse
+import os
 
 from ccb.torch_toolbox.dataset import DataModule
 from ccb.experiment.experiment import get_model_generator, Job
@@ -16,33 +17,27 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from ray import tune
 import wandb
 from ray.tune import CLIReporter
-from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
-from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
-    TuneReportCheckpointCallback
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
 
-from ray.tune.integration.wandb import (
-    WandbLoggerCallback,
-    WandbTrainableMixin,
-    wandb_mixin,
-)
+from ray.tune.integration.wandb import WandbLoggerCallback
 
 
-def train(config, model_gen, job_dir, num_gpus=1, num_epochs=10) -> None:
+def train(config, model_gen, job_dir) -> None:
     """Train function for Model Generator and Data Module.
     
     Args:
-        config: config contains non-constant hyperparameters being tuned with Ray
+        config: ray tune config contains hyperparameters being tuned with Ray
         model_gen: model generator
         job_dir: job directory
-        num_gpus: number of gpus to use for trainer
-        num_epochs: number of epochs
-
     """
     job = Job(job_dir)
     hparams = job.hparams
-    # hack to set learning rate from config
-    # have to change the use of the hparams.json file
-    hparams["lr_head"] = config["lr_head"]
+    
+    # overwrite job hparams with ray tune config so that they are being tuned
+    for h_param, val in config.items():
+        hparams[h_param] = val
+    
     seed = hparams.get("seed", None)
     if seed is not None:
         pl.seed_everything(seed, workers=True)
@@ -72,8 +67,8 @@ def train(config, model_gen, job_dir, num_gpus=1, num_epochs=10) -> None:
         raise ValueError(f"Logger type ({logger_type}) not recognized.")
 
     trainer = pl.Trainer(
-        gpus=num_gpus, #, was # gpus=hparams.get("n_gpus", 1),
-        max_epochs = num_epochs, # constants, was max_epochs=hparams["max_epochs"],
+        gpus=hparams.get("n_gpus", 1),
+        max_epochs=hparams["max_epochs"],
         max_steps=hparams.get("train_iters", None),
         limit_val_batches=hparams.get("limit_val_batches", 1.0),
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
@@ -96,30 +91,31 @@ def train(config, model_gen, job_dir, num_gpus=1, num_epochs=10) -> None:
     trainer.test(model, datamodule)
     
 # function that handles the hyperparamet tuning
-def tune_train_asha(job_dir, model_gen, your_wandb_api_key, num_samples=3, num_epochs=10, gpus_per_trial=1) -> None:
+def tune_train_with_ray(job_dir, model_gen) -> None:
     """Tune training function with Asynchroneous Hyperband Scheduler.
     
     Args:
         job_dir: job directory for train function
         model_gen: model generator for train function
-        your_wandb_api_key: wandb api key
-        num_samples: number of samples for hyperparameters
-        num_epochs: max num epochs for trainer
-        gpus_per_trial: per single hyperparameter trial how many gpus to use
-    
     """
-    # specify all hyperparameters to search that will be used in train function above
-    config = {
-        "lr_head": tune.loguniform(1e-4, 1e-1),
-    }
+    job = Job(job_dir)
+    config = job.hparams
+    ray_config = job.hparams_ray["ray_params"]
 
+    # add all standard job.hparams to ray_config so that they are stated in wandb
+    # but do not over write tunable parameters
+    for h_param, val in config.items():
+        if h_param not in ray_config:
+            ray_config[h_param] = val
+    
     scheduler = ASHAScheduler(
-        max_t=num_epochs,
+        max_t=config["max_epochs"],
         grace_period=1,
         reduction_factor=2)
 
+    # output to log.out where hyperparam tuning progess is printed
     reporter = CLIReporter(
-        parameter_columns = list(config.keys()), # needs to match config tunable hyperparameters
+        parameter_columns = list(ray_config.keys()), # needs to match config tunable hyperparameters
         metric_columns=["loss", "training_iteration"]) # need to match metrics to track
 
     # wrapper in order to call the train function with its specific arguments
@@ -128,26 +124,25 @@ def tune_train_asha(job_dir, model_gen, your_wandb_api_key, num_samples=3, num_e
     # all hyperparameter search trials
     train_fn_with_parameters = tune.with_parameters(train, 
                                                     model_gen=model_gen,
-                                                    job_dir=job_dir,
-                                                    num_epochs=num_epochs,
-                                                    num_gpus=gpus_per_trial)
+                                                    job_dir=job_dir)
 
-    resources_per_trial = {"cpu": 1, "gpu": gpus_per_trial}
+    resources_per_trial = {"cpu": config["cpus_per_trial"], "gpu": config["gpus_per_trial"]}
 
-    wandb.login(key=your_wandb_api_key)
+    wandb.login(key=os.environ.get("WANDB_API_KEY"))
 
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
         metric="loss",
         mode="min",
-        config=config, # this config will be passed to train function and changes
-        num_samples=num_samples,
+        config=ray_config, # this config will be passed to train function and changes
+        num_samples=config["num_hyp_samples"],
         scheduler=scheduler,
         progress_reporter=reporter,
-        name="tune_train_asha",
+        name="tune_with_ray", # name of directory in job's dataset directory where ray results are saved
         callbacks=[
-            WandbLoggerCallback(api_key=your_wandb_api_key, project="CCB")
+            WandbLoggerCallback(api_key=os.environ.get("WANDB_API_KEY"), project="ccb")
         ],
+        local_dir=job_dir # save ray output in dataset job dir
         )
 
     print("Best hyperparameters found were: ", analysis.best_config)
@@ -170,16 +165,11 @@ def start():
         required=True,
     )
     args = parser.parse_args()
-    api_key = "***REMOVED***"
-    # Load the user-specified model generator
-    model_gen = get_model_generator(args.model_generator)
-    # train(model_gen, args.job_dir)
-    tune_train_asha(
-        model_gen=model_gen, 
-        job_dir=args.job_dir,
-        your_wandb_api_key = api_key
-    )
 
+    tune_train_with_ray(
+        model_gen=get_model_generator(args.model_generator), 
+        job_dir=args.job_dir,
+    )
 
 
 if __name__ == "__main__":

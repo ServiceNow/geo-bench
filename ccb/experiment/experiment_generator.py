@@ -51,11 +51,28 @@ def experiment_generator(
     model_generator = get_model_generator(model_generator_module_name)
 
     print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
+    
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
         print(task_specs.dataset_name)
+
+        if "use_ray" in model_generator.base_hparams and model_generator.base_hparams["use_ray"] is True:
+            #use ray 
+            hparams = model_generator.hp_search_ray()
+
+            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}"
+
+            # create and fill experiment directory
+            job_dir = experiment_dir / task_specs.dataset_name
+            job = Job(job_dir)
+            job.save_hparams(model_generator.base_hparams)
+            job.save_hparams_ray(hparams)
+            job.save_task_specs(task_specs)
+            job.write_script(model_generator_module_name, script_name="ccb-rayTrainer", job_dir=job_dir)
+            continue
+        
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
             # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
@@ -67,7 +84,7 @@ def experiment_generator(
             print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name)
+            job.write_script(model_generator_module_name, script_name="ccb-trainer", job_dir=job_dir)
 
     return experiment_dir
 

@@ -80,6 +80,18 @@ class Job:
             self.hparams = hparams
 
     @cached_property
+    def hparams_ray(self):
+        with open(self.dir / "hparams_ray.pkl", "rb") as fd:
+            return pickle.load(fd)
+
+    def save_hparams_ray(self, hparams_ray, overwrite=False):
+        hparams_path = self.dir / "hparams_ray.pkl"
+        if hparams_path.exists() and not overwrite:
+            raise Exception("hparams alread exists and overwrite is set to False.")
+        with open(hparams_path, "wb") as fd:
+            pickle.dump(hparams_ray, fd, protocol=4)
+
+    @cached_property
     def task_specs(self):
         with open(self.dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
@@ -111,13 +123,20 @@ class Job:
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module):
+    def write_script(self, model_generator_module, script_name, job_dir):
+        """Write run.sh file into experiment directory that will be used to launch to toolkit.
+
+        Args:
+            model_generator_module: what model_generator to use
+            script_name: which script to run, for available scrits see pyproject.toml in root
+            job_dir: job directory from which to run job
+        """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
+                f'cd $(dirname "$0") && {script_name} --model-generator {model_generator_module} --job-dir {job_dir} >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
