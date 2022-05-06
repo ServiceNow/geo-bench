@@ -82,8 +82,15 @@ def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(sample.dates[:1], band_names, resample=resample, fill_value=fill_value)
         img_data = img_data[0].astype(np.float)
-        images.append(img_data)
-        labels.append(sample.label)
+        # TODO We should pass labelType from task specs and compare that instead of the class 
+        # Once we change this function, we should update all inspection notebooks
+        if (isinstance(sample.label, List)):
+            for label in sample.label:
+                images.append(img_data)
+                labels.append(label)                
+        else:
+            images.append(img_data)
+            labels.append(sample.label)
 
     images = float_image_to_uint8(images, percentile_max)
     return images, labels
