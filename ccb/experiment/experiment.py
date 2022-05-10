@@ -113,23 +113,15 @@ class Job:
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module, script_name, job_dir):
-        """Write run.sh file into experiment directory that will be used to launch to toolkit.
-
-        Args:
-            model_generator_module: what model_generator to use
-            script_name: which script to run, for available scrits see pyproject.toml in root
-            job_dir: job directory from which to run job
-        """
+    def write_script(self, model_generator_module):
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && {script_name} --model-generator {model_generator_module} --job-dir {job_dir} >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module} --job-dir . >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
-
 
     def write_wandb_sweep_cl_script(self, model_generator_module: str, job_dir: str, base_sweep_config: str):
         """Write final sweep_config.yaml that can be used to initialize sweep.
