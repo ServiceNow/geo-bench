@@ -89,7 +89,7 @@ def experiment_generator(
             print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name, script_name="ccb-trainer", job_dir=job_dir)
+            job.write_script(model_generator_module_name)
 
     return experiment_dir
 
