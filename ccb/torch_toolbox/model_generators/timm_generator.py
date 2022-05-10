@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -15,6 +15,7 @@ import torch
 import timm
 from torchvision import transforms as tt
 import logging
+import math
 from ray import tune
 
 
@@ -35,10 +36,14 @@ class TIMMGenerator(ModelGenerator):
             "max_epochs": 10,
             "n_gpus": 1,
             "logger": "wandb",
-            "use_ray": True,
+            "use_sweep": False,
+            "n_gpus_sweep": 2, # in dispatch_toolkit.py variable TOOLKIT_GPU has to match this
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
+            "use_ray": False,
             "num_hyp_samples": 3,
             "gpus_per_trial": 1, # num Gpus per hyperparameter search trial
             "cpus_per_trial": 1, # num Cpus per hyperparameter search trialy
+            "use_sweep_cl": True,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -76,6 +81,41 @@ class TIMMGenerator(ModelGenerator):
         hparams2["lr_head"] = 4e-3
 
         return hparams_to_string([self.base_hparams, hparams2])
+
+    def hp_search_wandb(self, max_num_configs=10) -> Dict[str, Any]:
+        """Define hyperparameter search to launch wandb sweeps.
+        
+        Args:
+            max_num_configs: max number of tunable parameters to set
+
+        Returns:
+            the defined wandb speed configurations
+        
+        """
+        # sweep configuration for options see
+        # https://docs.wandb.ai/guides/sweeps/configuration#early_terminate
+        sweep_config = {
+            'method': 'random', #grid, random
+            'metric': {
+            'name': 'val_loss',
+            'goal': 'minimize'   
+            },
+            'parameters': {
+                "lr_head": {
+                    'distribution': 'log_uniform',
+                    'min': math.log(1e-4),
+                    'max': math.log(1e-1)
+                }
+            },
+            'early_terminate': {
+                'type': "hyperband",
+                'min_iter': 100,
+            }
+        }
+
+        assert len(sweep_config["parameters"]) <= max_num_configs
+
+        return sweep_config
 
     def hp_search_ray(self, max_num_configs=10):
         hparams_copy = self.base_hparams.copy()

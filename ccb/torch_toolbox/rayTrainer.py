@@ -19,8 +19,7 @@ import wandb
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
-
-from ray.tune.integration.wandb import WandbLoggerCallback
+from ray.tune.integration.wandb import WandbLoggerCallback, WandbLogger
 
 
 def train(config, model_gen, job_dir) -> None:
@@ -59,7 +58,7 @@ def train(config, model_gen, job_dir) -> None:
         logger_type = ""
     if logger_type.lower() == "wandb":
         loggers.append(
-            pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
+            pl.loggers.WandbLogger(project="ccb", save_dir=str(job.dir))
         )
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
@@ -77,10 +76,10 @@ def train(config, model_gen, job_dir) -> None:
         deterministic=hparams.get("deterministic", False),
         progress_bar_refresh_rate=0,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100)),
-            TuneReportCallback( # add this callback to report metrics to RayTune, find a way to pull them from the model generator
+            # define which metric ray should base optimization on
+            TuneReportCallback(
                     {
-                        "loss": "val_loss",
+                        "val_loss": "val_loss",
                     },
                     on="validation_end"
             )
@@ -102,11 +101,13 @@ def tune_train_with_ray(job_dir, model_gen) -> None:
     config = job.hparams
     ray_config = job.hparams_ray["ray_params"]
 
+    ray_config["wandb"] = {"project": "ccb", "api_key": os.environ.get("WANDB_API_KEY")}
+
     # add all standard job.hparams to ray_config so that they are stated in wandb
     # but do not over write tunable parameters
-    for h_param, val in config.items():
-        if h_param not in ray_config:
-            ray_config[h_param] = val
+    # for h_param, val in config.items():
+    #     if h_param not in ray_config:
+    #         ray_config[h_param] = val
     
     scheduler = ASHAScheduler(
         max_t=config["max_epochs"],
@@ -116,7 +117,7 @@ def tune_train_with_ray(job_dir, model_gen) -> None:
     # output to log.out where hyperparam tuning progess is printed
     reporter = CLIReporter(
         parameter_columns = list(ray_config.keys()), # needs to match config tunable hyperparameters
-        metric_columns=["loss", "training_iteration"]) # need to match metrics to track
+        metric_columns=["val_loss", "test_loss", "training_iteration"]) # need to match metrics to track
 
     # wrapper in order to call the train function with its specific arguments
     # specify the train function and constant arguments separately after
@@ -128,20 +129,21 @@ def tune_train_with_ray(job_dir, model_gen) -> None:
 
     resources_per_trial = {"cpu": config["cpus_per_trial"], "gpu": config["gpus_per_trial"]}
 
-    wandb.login(key=os.environ.get("WANDB_API_KEY"))
+    # wandb.login(key=os.environ.get("WANDB_API_KEY"))
 
     analysis = tune.run(train_fn_with_parameters,
         resources_per_trial=resources_per_trial,
-        metric="loss",
+        metric="val_loss",
         mode="min",
         config=ray_config, # this config will be passed to train function and changes
         num_samples=config["num_hyp_samples"],
         scheduler=scheduler,
         progress_reporter=reporter,
         name="tune_with_ray", # name of directory in job's dataset directory where ray results are saved
-        callbacks=[
-            WandbLoggerCallback(api_key=os.environ.get("WANDB_API_KEY"), project="ccb")
-        ],
+        # callbacks=[
+        #     WandbLoggerCallback(api_key=os.environ.get("WANDB_API_KEY"), project="ccb")
+        # ],
+        loggers = [WandbLogger],
         local_dir=job_dir # save ray output in dataset job dir
         )
 
@@ -170,6 +172,8 @@ def start():
         model_gen=get_model_generator(args.model_generator), 
         job_dir=args.job_dir,
     )
+
+    wandb.finish()
 
 
 if __name__ == "__main__":

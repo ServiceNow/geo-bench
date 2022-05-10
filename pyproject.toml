@@ -9,7 +9,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8.0,<4"
-wandb = ">=0.10.26"
+wandb = "0.12.16"
 earthengine-api = "0.1.269"
 clip = { git = "https://github.com/openai/CLIP.git", rev = "8cad3a736a833bc4c9b4dd34ef12b52ec0e68856" }
 regex = "2021.8.3"
@@ -35,6 +35,7 @@ xmltodict = "0.12.0"
 ray = "1.12.0"
 tabulate = "0.8.9"
 tensorboardx = "2.5"
+"ruamel.yaml" = "0.17.21"
 
 [tool.poetry.dev-dependencies]
 black = "*"
@@ -62,3 +63,4 @@ ccb-expgen = "ccb.experiment.experiment_generator:start"
 ccb-trainer = "ccb.torch_toolbox.trainer:start"
 ccb-rayTrainer = "ccb.torch_toolbox.rayTrainer:start"
 ccb-toolkit = "toolkit.dispatch_toolkit:start"
+ccb-sweep-cl = "ccb.torch_toolbox.wandb_sweep_cl:start"

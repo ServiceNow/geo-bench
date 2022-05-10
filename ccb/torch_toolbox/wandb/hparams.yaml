@@ -1,0 +1,15 @@
+program: ccb-sweep-cl
+entity: nilslehmann
+project: ccb
+method: random
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+  lr_head:
+    distribution: log_uniform
+    max: -2.3025850929940455
+    min: -9.210340371976182
+early_terminate:
+  type: hyperband
+  min_iter: 100
