@@ -32,9 +32,6 @@ torchgeo = "0.2.0"
 torch = "1.10.2"
 h5py = "3.6.0"
 xmltodict = "0.12.0"
-ray = "1.12.0"
-tabulate = "0.8.9"
-tensorboardx = "2.5"
 "ruamel.yaml" = "0.17.21"
 
 [tool.poetry.dev-dependencies]
@@ -61,6 +58,5 @@ exclude = '''
 [tool.poetry.scripts]
 ccb-expgen = "ccb.experiment.experiment_generator:start"
 ccb-trainer = "ccb.torch_toolbox.trainer:start"
-ccb-rayTrainer = "ccb.torch_toolbox.rayTrainer:start"
 ccb-toolkit = "toolkit.dispatch_toolkit:start"
 ccb-sweep-cl = "ccb.torch_toolbox.wandb_sweep_cl:start"
