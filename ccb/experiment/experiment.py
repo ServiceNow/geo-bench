@@ -11,6 +11,8 @@ from pathlib import Path
 from functools import cached_property
 from ccb import io
 from ccb.torch_toolbox.model import ModelGenerator
+from ruamel.yaml import YAML
+import os
 
 
 def get_model_generator(module_name: str) -> ModelGenerator:
@@ -138,6 +140,46 @@ class Job:
             fd.write(
                 f'cd $(dirname "$0") && {script_name} --model-generator {model_generator_module} --job-dir {job_dir} >log.out 2>err.out'
             )
+        script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
+
+
+    def write_wandb_sweep_cl_script(self, model_generator_module: str, job_dir: str, base_sweep_config: str, num_trials: int = 5):
+        """Write run.sh file into experiment directory that will be used to launch to toolkit. 
+        This only initializes the sweep controller. Subsequently have to launch wandb agents that then
+        carry out hparam trials.
+
+        Args:
+            model_generator_module: what model_generator to use
+            job_dir: job directory from which to run job
+            base_sweep_config: path to base sweep config yaml file for wandb
+        """
+        script_path = self.dir / "run.sh"
+        with open(script_path, "w") as fd:
+            fd.write("#!/bin/bash\n")
+            fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
+            # open yaml file and edit the command to include model_genetator_module and job_dir
+            # and save it in job dir
+            yaml = YAML()
+            with open(base_sweep_config,'r') as yamlfile:
+                base_yaml = yaml.load(yamlfile) # Note the safe_load
+            
+            base_yaml['command'] = [ # commands needed to run actual training script
+                "${program}",
+                "--model_generator", model_generator_module, 
+                "--job_dir", str(job_dir)]
+
+            # add a name to yaml which will function as the sweep_id that can be used to launch agents
+            base_yaml['name'] = "_".join(str(job_dir).split("/")[-2:])
+
+            save_path = os.path.join(job_dir, "sweep_config.yaml")
+            yaml.indent(sequence=4, offset=2)
+            with open(save_path,'w') as yamlfile:
+                yaml.dump(base_yaml, yamlfile)
+
+            fd.write(
+                f"wandb sweep {save_path}\n"
+            )
+
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def get_stderr(self):

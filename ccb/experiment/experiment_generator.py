@@ -5,6 +5,9 @@ Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  
 
 """
 import argparse
+import os
+from pyexpat import model
+import wandb
 
 from datetime import datetime
 from pathlib import Path
@@ -58,6 +61,27 @@ def experiment_generator(
                 continue
         print(task_specs.dataset_name)
 
+        if "use_sweep_cl" in model_generator.base_hparams and model_generator.base_hparams["use_sweep_cl"] is True:
+            #use wandb sweep for hyperparameter search
+            
+            # # add sweep id to parameters to run script later
+            hparams = model_generator.base_hparams
+            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}"
+
+            # create and fill experiment directory
+            job_dir = experiment_dir / task_specs.dataset_name
+            job = Job(job_dir)
+            job.save_hparams(hparams)
+            job.save_task_specs(task_specs)
+
+            job.write_wandb_sweep_cl_script(
+                model_generator_module_name, 
+                job_dir=job_dir,
+                base_sweep_config=hparams["sweep_config_yaml_path"],
+            )
+
+            continue
+
         if "use_ray" in model_generator.base_hparams and model_generator.base_hparams["use_ray"] is True:
             #use ray 
             hparams = model_generator.hp_search_ray()
@@ -76,7 +100,7 @@ def experiment_generator(
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
             # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}'#/{hparams_string}'
 
             # Create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name / hparams_string
