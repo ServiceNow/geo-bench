@@ -36,14 +36,10 @@ class TIMMGenerator(ModelGenerator):
             "max_epochs": 10,
             "n_gpus": 1,
             "logger": "wandb",
-            "use_sweep": False,
-            "n_gpus_sweep": 2, # in dispatch_toolkit.py variable TOOLKIT_GPU has to match this
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
-            "use_ray": False,
-            "num_hyp_samples": 3,
-            "gpus_per_trial": 1, # num Gpus per hyperparameter search trial
-            "cpus_per_trial": 1, # num Cpus per hyperparameter search trialy
             "use_sweep_cl": True,
+            "num_agents": 4,
+            "num_trials_per_agent": 3,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
