@@ -5,13 +5,9 @@ Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  
 
 """
 import argparse
-import os
-from pyexpat import model
-import wandb
 
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 
 from ccb.experiment.experiment import Job
 from ccb.experiment.experiment import get_model_generator
