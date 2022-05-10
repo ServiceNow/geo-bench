@@ -66,7 +66,7 @@ def experiment_generator(
             
             # # add sweep id to parameters to run script later
             hparams = model_generator.base_hparams
-            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}"
+            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
@@ -80,21 +80,6 @@ def experiment_generator(
                 base_sweep_config=hparams["sweep_config_yaml_path"],
             )
 
-            continue
-
-        if "use_ray" in model_generator.base_hparams and model_generator.base_hparams["use_ray"] is True:
-            #use ray 
-            hparams = model_generator.hp_search_ray()
-
-            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}"
-
-            # create and fill experiment directory
-            job_dir = experiment_dir / task_specs.dataset_name
-            job = Job(job_dir)
-            job.save_hparams(model_generator.base_hparams)
-            job.save_hparams_ray(hparams)
-            job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name, script_name="ccb-rayTrainer", job_dir=job_dir)
             continue
         
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):

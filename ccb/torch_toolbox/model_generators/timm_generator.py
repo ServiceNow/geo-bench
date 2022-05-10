@@ -16,7 +16,6 @@ import timm
 from torchvision import transforms as tt
 import logging
 import math
-from ray import tune
 
 
 class TIMMGenerator(ModelGenerator):
@@ -77,64 +76,6 @@ class TIMMGenerator(ModelGenerator):
         hparams2["lr_head"] = 4e-3
 
         return hparams_to_string([self.base_hparams, hparams2])
-
-    def hp_search_wandb(self, max_num_configs=10) -> Dict[str, Any]:
-        """Define hyperparameter search to launch wandb sweeps.
-        
-        Args:
-            max_num_configs: max number of tunable parameters to set
-
-        Returns:
-            the defined wandb speed configurations
-        
-        """
-        # sweep configuration for options see
-        # https://docs.wandb.ai/guides/sweeps/configuration#early_terminate
-        sweep_config = {
-            'method': 'random', #grid, random
-            'metric': {
-            'name': 'val_loss',
-            'goal': 'minimize'   
-            },
-            'parameters': {
-                "lr_head": {
-                    'distribution': 'log_uniform',
-                    'min': math.log(1e-4),
-                    'max': math.log(1e-1)
-                }
-            },
-            'early_terminate': {
-                'type': "hyperband",
-                'min_iter': 100,
-            }
-        }
-
-        assert len(sweep_config["parameters"]) <= max_num_configs
-
-        return sweep_config
-
-    def hp_search_ray(self, max_num_configs=10):
-        hparams_copy = self.base_hparams.copy()
-
-        # here overwrite all model parameters that you want to have
-        # tuned by ray
-        ray_tune_config = {
-            "lr_head": tune.loguniform(1e-4, 1e-1),
-        }
-
-        assert len(ray_tune_config) <= max_num_configs  
-
-        # need to check that they are present in the base_hparams because 
-        # those params are inherent to model and tunable
-        for param_name, param_tune in ray_tune_config.items():
-            if param_name in hparams_copy:
-                hparams_copy[param_name] = param_tune
-            else:
-                raise ValueError(f"Parameters for ray need to be present in Model Generator base parameters. {param_name} not found.")
-
-        hparams_copy["ray_params"] = ray_tune_config
-
-        return hparams_copy
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate
