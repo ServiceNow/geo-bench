@@ -82,18 +82,6 @@ class Job:
             self.hparams = hparams
 
     @cached_property
-    def hparams_ray(self):
-        with open(self.dir / "hparams_ray.pkl", "rb") as fd:
-            return pickle.load(fd)
-
-    def save_hparams_ray(self, hparams_ray, overwrite=False):
-        hparams_path = self.dir / "hparams_ray.pkl"
-        if hparams_path.exists() and not overwrite:
-            raise Exception("hparams alread exists and overwrite is set to False.")
-        with open(hparams_path, "wb") as fd:
-            pickle.dump(hparams_ray, fd, protocol=4)
-
-    @cached_property
     def task_specs(self):
         with open(self.dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
