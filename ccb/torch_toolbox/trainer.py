@@ -54,7 +54,7 @@ def train(model_gen, job_dir):
         callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],
         logger=loggers,
     )
-    trainer.fit(model, datamodule)
+    trainer.fit(model, datamodule, ckpt_path=job_dir)
     trainer.test(model, datamodule)
 
 
