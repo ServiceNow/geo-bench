@@ -59,14 +59,14 @@ def test_toolbox_brick_kiln():
 
 
 # # this test is too slow
-# @pytest.mark.slow
-# @pytest.mark.skipif(
-#     not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
-# )
-# def test_toolbox_timm():
-#     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
-#         task_specs = pickle.load(fd)
-#     train_job_on_task(timm_generator.model_generator, task_specs, 0.70)
+@pytest.mark.slow
+@pytest.mark.skipif(
+    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
+)
+def test_toolbox_timm():
+    with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
+        task_specs = pickle.load(fd)
+    train_job_on_task(timm_generator.model_generator, task_specs, 0.70)
 
 
 @pytest.mark.skipif(
@@ -85,6 +85,7 @@ def test_toolbox_getitem():
 
 
 if __name__ == "__main__":
+    # test_toolbox_timm()
     test_toolbox_brick_kiln()
     test_toolbox_wandb()
     test_toolbox_mnist()

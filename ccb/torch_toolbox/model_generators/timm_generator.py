@@ -25,7 +25,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18",
+            "backbone": "vit_tiny_patch16_224",
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
@@ -50,8 +50,9 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters (dict): dictionary containing hyperparameters
         """
         backbone = timm.create_model(
-            hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=True
+            hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
+        setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
         logging.warn("FIXME: Using ImageNet default input size!")
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
@@ -60,7 +61,7 @@ class TIMMGenerator(ModelGenerator):
             backbone.eval()
             features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
             features = backbone(features)
-        shapes = [x.shape[1:] for x in features]  # get the backbone's output features
+        shapes = [features.shape[1:]]  # get the backbone's output features
 
         head = head_generator(task_specs, shapes, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
