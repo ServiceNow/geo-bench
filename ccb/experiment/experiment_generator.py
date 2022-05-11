@@ -62,7 +62,6 @@ def experiment_generator(
             
             # # add sweep id to parameters to run script later
             hparams = model_generator.base_hparams
-            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
@@ -81,7 +80,7 @@ def experiment_generator(
         for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
             # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}'#/{hparams_string}'
+            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
 
             # Create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name / hparams_string
