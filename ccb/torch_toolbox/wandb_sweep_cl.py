@@ -37,7 +37,7 @@ def train(args):
         logger_type = ""
     if logger_type.lower() == "wandb":
         loggers.append(
-            pl.loggers.WandbLogger(project="ccb", name=str(job_dir) + "/" + hparams["backbone"], save_dir=str(job.dir))
+            pl.loggers.WandbLogger(project="ccb", name=hparams["name"], save_dir=str(job.dir))
         )
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
