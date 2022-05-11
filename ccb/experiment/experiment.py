@@ -123,11 +123,11 @@ class Job:
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
-    def write_wandb_sweep_cl_script(self, model_generator_module: str, job_dir: str, base_sweep_config: str):
+    def write_wandb_sweep_cl_script(self, model_generator_module_name: str, job_dir: str, base_sweep_config: str):
         """Write final sweep_config.yaml that can be used to initialize sweep.
 
         Args:
-            model_generator_module: what model_generator to use
+            model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
             base_sweep_config: path to base sweep config yaml file for wandb
         """
@@ -137,12 +137,13 @@ class Job:
         
         base_yaml['command'] = [ # commands needed to run actual training script
             "${program}",
-            "--model_generator", model_generator_module, 
+            "--model_generator", model_generator_module_name, 
             "--job_dir", str(job_dir),
         ]
 
-        # add a name to yaml which will function as the sweep_id that can be used to launch agents
-        base_yaml['name'] = "_".join(str(job_dir).split("/")[-2:])
+        # sweep name that will be seen on wandb
+        backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
+        base_yaml['name'] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
