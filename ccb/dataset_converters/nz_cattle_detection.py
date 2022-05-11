@@ -7,8 +7,6 @@
 
 from ccb import io
 import numpy as np
-import csv
-from ccb.dataset_converters import util
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
