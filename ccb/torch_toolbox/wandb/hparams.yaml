@@ -10,6 +10,11 @@ parameters:
     distribution: log_uniform
     max: -2.3025850929940455
     min: -9.210340371976182
+  optimizer:
+    distribution: categorical
+    values:
+    - sgd
+    - adam
 early_terminate:
   type: hyperband
   min_iter: 100

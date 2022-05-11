@@ -12,10 +12,7 @@ import pytorch_lightning as pl
 
 
 def train(args):
-    # parser = argparse.ArgumentParser()
-    # args, unknown = parser.parse_known_args() 
-    print(args)
-    print("inside  HLKDHGSKL train function")
+    
     model_gen = get_model_generator(args.model_generator)
     job = Job(args.job_dir)
 
