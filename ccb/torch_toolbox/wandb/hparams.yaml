@@ -1,4 +1,4 @@
-program: ccb-sweep-cl
+program: ccb-trainer
 entity: climate-benchmark
 project: ccb
 method: random
@@ -7,6 +7,10 @@ metric:
   name: val_loss
 parameters:
   lr_head:
+    distribution: log_uniform
+    max: -2.3025850929940455
+    min: -9.210340371976182
+  lr_backbone:
     distribution: log_uniform
     max: -2.3025850929940455
     min: -9.210340371976182
