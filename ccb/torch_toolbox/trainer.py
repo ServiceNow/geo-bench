@@ -2,22 +2,25 @@
 """
 Trains the model using job information contained in the current directory.
 Expects to find files "hparams.json" and "task_specs.json".
+
 Usage: trainer.py --model-generator path/to/my/model/generator.py
+
 """
 import argparse
-import wandb
+
 from ccb.torch_toolbox.dataset import DataModule
 from ccb.experiment.experiment import get_model_generator, Job
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
+import os
+import glob
 
 
 def train(model_gen, job_dir):
-    wandb.login(key="***REMOVED***")
     job = Job(job_dir)
     hparams = job.hparams
     seed = hparams.get("seed", None)
-    print(seed)
     if seed is not None:
         pl.seed_everything(seed, workers=True)
 
@@ -35,16 +38,24 @@ def train(model_gen, job_dir):
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
-        print(hparams["wandb_group"])
         loggers.append(
-            pl.loggers.WandbLogger(project="ccb", entity="climate-benchmark", group=hparams.get("wandb_group", None), save_dir=str(job.dir))
+            pl.loggers.WandbLogger(project="ccb", entity="climate-benchmark", group=hparams.get("wandb_group", None), name=hparams.get("name", None), save_dir=str(job.dir))
         )
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
     else:
         raise ValueError(f"Logger type ({logger_type}) not recognized.")
 
+
+    ckpt_dir = os.path.join(job_dir, "checkpoint")
+    checkpoint_callback = ModelCheckpoint(
+        dirpath=ckpt_dir,
+        monitor='val_loss',
+        mode='min',
+    )
+
     trainer = pl.Trainer(
+        default_root_dir=job_dir,
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
         max_steps=hparams.get("train_iters", None),
@@ -53,12 +64,19 @@ def train(model_gen, job_dir):
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
-        # progress_bar_refresh_rate=0,
-        enable_progress_bar = False,
-        callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],
+        progress_bar_refresh_rate=0,
+        callbacks=[
+            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100)),
+            checkpoint_callback],
         logger=loggers,
     )
-    trainer.fit(model, datamodule)#, ckpt_path=job_dir)
+    # check if ckpt_path exists, otherwise train from scratch
+    ckpt_path = os.path.join(ckpt_dir, "*.ckpt")
+    if glob.glob(ckpt_path):
+        trainer.fit(model, datamodule, ckpt_path=ckpt_path)
+    else:
+        trainer.fit(model, datamodule)
+
     trainer.test(model, datamodule)
 
 
