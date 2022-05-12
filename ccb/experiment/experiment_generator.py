@@ -60,8 +60,10 @@ def experiment_generator(
         if "use_sweep_cl" in model_generator.base_hparams and model_generator.base_hparams["use_sweep_cl"] is True:
             #use wandb sweep for hyperparameter search
             
-            # # add sweep id to parameters to run script later
             hparams = model_generator.base_hparams
+            # add dataset/model generator name to parameters which will be logged to make filtering easier
+            hparams["dataset_name"] = task_specs.dataset_name
+            hparams["model_generator_name"] = model_generator_module_name
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
@@ -126,11 +128,9 @@ def start():
 
     args = parser.parse_args()
 
-    # Generate experiments
     experiment_generator(
         args.model_generator, args.experiment_dir, benchmark_name=args.benchmark, experiment_name=args.experiment_name
     )
-
 
 if __name__ == "__main__":
     start()
