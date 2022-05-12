@@ -1,5 +1,5 @@
 program: ccb-sweep-cl
-entity: nilslehmann
+entity: climate-benchmark
 project: ccb
 method: random
 metric:
