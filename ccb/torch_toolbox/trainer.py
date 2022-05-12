@@ -5,7 +5,7 @@ Expects to find files "hparams.json" and "task_specs.json".
 Usage: trainer.py --model-generator path/to/my/model/generator.py
 """
 import argparse
-
+import wandb
 from ccb.torch_toolbox.dataset import DataModule
 from ccb.experiment.experiment import get_model_generator, Job
 import pytorch_lightning as pl
@@ -13,9 +13,11 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 def train(model_gen, job_dir):
+    wandb.login(key="***REMOVED***")
     job = Job(job_dir)
     hparams = job.hparams
     seed = hparams.get("seed", None)
+    print(seed)
     if seed is not None:
         pl.seed_everything(seed, workers=True)
 
@@ -33,8 +35,9 @@ def train(model_gen, job_dir):
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
+        print(hparams["wandb_group"])
         loggers.append(
-            pl.loggers.WandbLogger(project="ccb", name=hparams.get("name", str(job.dir)), save_dir=str(job.dir))
+            pl.loggers.WandbLogger(project="ccb", entity="climate-benchmark", group=hparams.get("wandb_group", None), save_dir=str(job.dir))
         )
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
@@ -50,11 +53,12 @@ def train(model_gen, job_dir):
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
-        progress_bar_refresh_rate=0,
+        # progress_bar_refresh_rate=0,
+        enable_progress_bar = False,
         callbacks=[EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100))],
         logger=loggers,
     )
-    trainer.fit(model, datamodule, ckpt_path=job_dir)
+    trainer.fit(model, datamodule)#, ckpt_path=job_dir)
     trainer.test(model, datamodule)
 
 
