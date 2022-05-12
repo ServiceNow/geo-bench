@@ -25,7 +25,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "convnext_base", # convnext_base, vit_tiny_patch16_224
+            "backbone": "resnet18", # convnext_base, vit_tiny_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,

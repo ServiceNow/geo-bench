@@ -137,8 +137,8 @@ class Job:
         
         base_yaml['command'] = [ # commands needed to run actual training script
             "${program}",
-            "--model_generator", model_generator_module_name, 
-            "--job_dir", str(job_dir),
+            "--model-generator", model_generator_module_name, 
+            "--job-dir", str(job_dir),
         ]
 
         # sweep name that will be seen on wandb
