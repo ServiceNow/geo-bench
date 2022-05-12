@@ -11,6 +11,7 @@ from rasterio.features import rasterize
 from rasterio.io import DatasetReader
 from rasterio.vrt import WarpedVRT
 from collections import defaultdict
+import geopandas
 
 def percentile_normalization(
     img: np.array,
@@ -186,56 +187,43 @@ def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
 
 
 def load_geojson_mask(
-    filepath: str,
+    img_filepath: str,
+    geojson_filepath: str,
     crop_type_key: str,
-    height: int,
-    width: int,
     class2idx: Dict[str, int],
-    bounds: Dict[str, float],
 ) -> np.array:
     """Load the mask.
 
     Args:
-        filepath: filepath to label
+        img_filepath: filepath to a tif image that contains raster information
+        geojson_path: path to geojson file that contains label information
         crop_type_key: key in geojson file to find label
-        height: of image to rasterize corresponding label
-        width: of image to rasterize corresponding label
         class2idx: mapping of label class to numerical class
-        bounds: image boundaries in CRS
 
     Returns:
         mask at this filepath
     """
-    # only images are patched into tiles, masks are large, so remove duplicates
-    per_label_shapes= defaultdict(list)
-    with open(os.path.join(filepath)) as f:
-        data = json.load(f)
+    img_src = rasterio.open(img_filepath)
+    gdf = geopandas.GeoDataFrame.from_file(geojson_filepath)
 
-    for feature in data["features"]:
-        label = feature["properties"][crop_type_key]
-        per_label_shapes[label].append(feature["geometry"])
+    mask_list = []
+    unique_crops = gdf[crop_type_key].unique()  
+    for crop_name in unique_crops:
+        crop_gdf = gdf[gdf[crop_type_key]==crop_name]
+        raster_mask = rasterio.features.rasterize(
+            shapes=[g for g in crop_gdf.geometry],
+            out_shape=img_src.shape,
+            transform=img_src.transform
+        )
+        # assign correct segmentation label
+        raster_mask *= class2idx[crop_name]
+        mask_list.append(raster_mask)
     
-    transform = rasterio.transform.from_bounds(
-        bounds["minx"], bounds["miny"], bounds["maxx"], bounds["maxy"], width, height
-    )
-    if per_label_shapes:
-        # create a mask tensor per class that is being found and then concatenate
-        # to single segmentation mask with labels
-        mask_list = []
-        for label, shapes in per_label_shapes.items():
 
-            label_mask = rasterize(shapes, out_shape=(int(height), int(width)), transform=transform)
-
-            # assign correct segmentation label
-            label_mask *= class2idx[label]
-            mask_list.append(label_mask)
-
-        mask_stack = np.stack(mask_list, axis=0)
-         # assumes non-overlapping labels
-        mask = np.max(mask_stack, axis=0, dtype=np.int16)
-    else:
-        mask = np.zeros((height, width))
-   
+    mask_stack = np.stack(mask_list, axis=0)
+    # assumes non-overlapping labels
+    mask = np.max(mask_stack, axis=0)
+    
     return mask
 
 
