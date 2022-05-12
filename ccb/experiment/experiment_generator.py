@@ -77,20 +77,20 @@ def experiment_generator(
                 base_sweep_config=hparams["sweep_config_yaml_path"],
             )
 
-            continue
+        else:
         
-        for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
+            for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
-            # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+                # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
+                hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
 
-            # Create and fill experiment directory
-            job_dir = experiment_dir / task_specs.dataset_name / hparams_string
-            job = Job(job_dir)
-            print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
-            job.save_hparams(hparams)
-            job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name)
+                # Create and fill experiment directory
+                job_dir = experiment_dir / task_specs.dataset_name / hparams_string
+                job = Job(job_dir)
+                print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
+                job.save_hparams(hparams)
+                job.save_task_specs(task_specs)
+                job.write_script(model_generator_module_name)
 
     return experiment_dir
 

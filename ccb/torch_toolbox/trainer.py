@@ -50,6 +50,7 @@ def train(model_gen, job_dir):
     ckpt_dir = os.path.join(job_dir, "checkpoint")
     checkpoint_callback = ModelCheckpoint(
         dirpath=ckpt_dir,
+        save_top_k=1,
         monitor='val_loss',
         mode='min',
     )
@@ -70,13 +71,16 @@ def train(model_gen, job_dir):
             checkpoint_callback],
         logger=loggers,
     )
-    # check if ckpt_path exists, otherwise train from scratch
-    ckpt_path = os.path.join(ckpt_dir, "*.ckpt")
-    if glob.glob(ckpt_path):
-        trainer.fit(model, datamodule, ckpt_path=ckpt_path)
-    else:
-        trainer.fit(model, datamodule)
 
+    # check if ckpt_path exists, otherwise train from scratch
+    # lighting only saves the best checkpoint 
+    ckpt_path = glob.glob(os.path.join(ckpt_dir, "*.ckpt"))
+    if ckpt_path:
+        ckpt_path = ckpt_path[0]
+    else:
+        ckpt_path = None
+
+    trainer.fit(model, datamodule, ckpt_path=ckpt_path)
     trainer.test(model, datamodule)
 
 
