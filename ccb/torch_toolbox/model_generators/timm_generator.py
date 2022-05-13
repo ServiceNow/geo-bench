@@ -25,7 +25,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "convnext_base", # resnet18, convnext_base, vit_tiny_patch16_224
+            "backbone": "vit_tiny_patch16_224", # resnet18, convnext_base, vit_tiny_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
@@ -41,8 +41,8 @@ class TIMMGenerator(ModelGenerator):
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
             "use_sweep": True,
-            "num_agents": 1,
-            "num_trials_per_agent": 1,
+            "num_agents": 5,
+            "num_trials_per_agent": 4,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -91,6 +91,7 @@ class TIMMGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
+
         if task_specs.dataset_name == "imagenet":
             mean, std = task_specs.get_dataset(split="train").rgb_stats
             t = []
@@ -108,6 +109,11 @@ class TIMMGenerator(ModelGenerator):
             if train:
                 t.append(tt.RandomHorizontalFlip())
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+
+            # transformer models require certain input size
+            if hyperparams["backbone"] in ["convnext_base", "vit_tiny_patch16_224"]:
+                t.append(tt.Resize((224, 224)))
+
             t = tt.Compose(t)
 
             def transform(sample: io.Sample):

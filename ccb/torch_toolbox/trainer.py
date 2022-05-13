@@ -14,7 +14,6 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import os
-import glob
 
 
 def train(model_gen, job_dir):
@@ -53,6 +52,7 @@ def train(model_gen, job_dir):
         save_top_k=1,
         monitor='val_loss',
         mode='min',
+        every_n_epochs=1,
     )
 
     trainer = pl.Trainer(
@@ -72,11 +72,8 @@ def train(model_gen, job_dir):
         logger=loggers,
     )
 
-    # check if ckpt_path exists, otherwise train from scratch
-    # lighting only saves the best checkpoint 
-    ckpt_path = glob.glob(os.path.join(ckpt_dir, "*.ckpt"))
-    if ckpt_path:
-        ckpt_path = ckpt_path[0]
+    if "ckpt_path" in hparams:
+        ckpt_path = hparams["ckpt_path"]
     else:
         ckpt_path = None
 
