@@ -25,22 +25,24 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18", # convnext_base, vit_tiny_patch16_224
+            "backbone": "convnext_base", # resnet18, convnext_base, vit_tiny_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
             "optimizer": "sgd",
+            "momentum": 0.9,
             "head_type": "linear",
+            "hidden_size": 128,
             "loss_type": "crossentropy",
             "batch_size": 128,
-            "num_workers": 8,
+            "num_workers": 4,
             "max_epochs": 10,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
-            "use_sweep_cl": True,
-            "num_agents": 4,
-            "num_trials_per_agent": 3,
+            "use_sweep": True,
+            "num_agents": 1,
+            "num_trials_per_agent": 1,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -57,6 +59,7 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         logging.warn("FIXME: Using ImageNet default input size!")
+        # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
         # hyperparameters.update({"std": backbone.default_cfg["std"]})
@@ -65,6 +68,8 @@ class TIMMGenerator(ModelGenerator):
             features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
             features = backbone(features)
         shapes = [features.shape[1:]] # get the backbone's output features
+
+        hyperparameters.update({"n_backbone_features" : shapes[0][0]})
 
         head = head_generator(task_specs, shapes, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)

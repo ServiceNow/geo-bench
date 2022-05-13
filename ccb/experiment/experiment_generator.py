@@ -50,18 +50,18 @@ def experiment_generator(
     model_generator = get_model_generator(model_generator_module_name)
 
     print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
-    
+
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
         print(task_specs.dataset_name)
 
-        if "use_sweep_cl" in model_generator.base_hparams and model_generator.base_hparams["use_sweep_cl"] is True:
+        if "use_sweep" in model_generator.base_hparams and model_generator.base_hparams["use_sweep"] is True:
             #use wandb sweep for hyperparameter search
-            
-            hparams = model_generator.base_hparams
-            # add dataset/model generator name to parameters which will be logged to make filtering easier
+            model = model_generator.generate(task_specs, model_generator.base_hparams)
+            hparams = model.hyperparameters
+
             hparams["dataset_name"] = task_specs.dataset_name
             hparams["model_generator_name"] = model_generator_module_name
 
@@ -72,13 +72,13 @@ def experiment_generator(
             job.save_task_specs(task_specs)
 
             job.write_wandb_sweep_cl_script(
-                model_generator_module_name, 
+                model_generator_module_name,
                 job_dir=job_dir,
                 base_sweep_config=hparams["sweep_config_yaml_path"],
             )
 
         else:
-        
+
             for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
                 # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
@@ -90,7 +90,7 @@ def experiment_generator(
                 print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
                 job.save_hparams(hparams)
                 job.save_task_specs(task_specs)
-                job.write_script(model_generator_module_name)
+                job.write_script(model_generator_module_name, job_dir)
 
     return experiment_dir
 
