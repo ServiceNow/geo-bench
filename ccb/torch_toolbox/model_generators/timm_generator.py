@@ -25,7 +25,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "vit_tiny_patch16_224", # resnet18, convnext_base, vit_tiny_patch16_224
+            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
@@ -36,13 +36,13 @@ class TIMMGenerator(ModelGenerator):
             "loss_type": "crossentropy",
             "batch_size": 128,
             "num_workers": 4,
-            "max_epochs": 10,
+            "max_epochs": 200,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
             "use_sweep": True,
-            "num_agents": 5,
-            "num_trials_per_agent": 4,
+            "num_agents": 4,
+            "num_trials_per_agent": 5,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -67,9 +67,9 @@ class TIMMGenerator(ModelGenerator):
             backbone.eval()
             features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
             features = backbone(features)
-        shapes = [features.shape[1:]] # get the backbone's output features
+        shapes = [features.shape[1:]]  # get the backbone's output features
 
-        hyperparameters.update({"n_backbone_features" : shapes[0][0]})
+        hyperparameters.update({"n_backbone_features": shapes[0][0]})
 
         head = head_generator(task_specs, shapes, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
@@ -111,7 +111,7 @@ class TIMMGenerator(ModelGenerator):
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
             # transformer models require certain input size
-            if hyperparams["backbone"] in ["convnext_base", "vit_tiny_patch16_224"]:
+            if hyperparams["backbone"] in ["vit_tiny_patch16_224"]:
                 t.append(tt.Resize((224, 224)))
 
             t = tt.Compose(t)

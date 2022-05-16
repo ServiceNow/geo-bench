@@ -27,6 +27,7 @@ class Conv4Generator(ModelGenerator):
             "lr_backbone": 4e-3,
             "lr_head": 4e-3,
             "head_type": "linear",
+            "hidden_size": 128,
             "train_iters": 50000,
             "loss_type": "crossentropy",
             "batch_size": 32,

@@ -199,7 +199,7 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         if hyperparams["head_type"] == "linear":
             in_ch, *other_dims = features_shape[-1]
             out_ch = task_specs.label_type.n_classes
-            return ClassificationHead(in_ch, out_ch, hidden_size = hyperparams["hidden_size"])
+            return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
