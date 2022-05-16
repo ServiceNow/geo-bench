@@ -33,6 +33,8 @@ torch = "1.10.2"
 h5py = "3.6.0"
 xmltodict = "0.12.0"
 "ruamel.yaml" = "0.17.21"
+timm = "0.5.4"
+segmentation-models-pytorch = { git = "https://github.com/ElementAI/segmentation_models.pytorch.git", rev = "903115cb156e7bd6d28148e7db66584b3b81b4a8" }
 
 [tool.poetry.dev-dependencies]
 black = "*"

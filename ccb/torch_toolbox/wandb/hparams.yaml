@@ -25,6 +25,12 @@ parameters:
   hidden_size:
     distribution: categorical
     values: [128, 256, 512]
+# which optimizer to use
+  optimizer:
+    distribution: categorical
+    values:
+    - sgd
+    - adamw
 early_terminate:
   type: hyperband
   min_iter: 100

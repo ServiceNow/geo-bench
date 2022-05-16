@@ -126,7 +126,7 @@ class Job:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module} --job-dir {job_dir} >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
@@ -139,24 +139,25 @@ class Job:
             base_sweep_config: path to base sweep config yaml file for wandb
         """
         yaml = YAML()
-        with open(base_sweep_config,'r') as yamlfile:
-            base_yaml = yaml.load(yamlfile) # Note the safe_load
+        with open(base_sweep_config, "r") as yamlfile:
+            base_yaml = yaml.load(yamlfile)  # Note the safe_load
 
-        base_yaml['command'] = [ # commands needed to run actual training script
+        base_yaml["command"] = [  # commands needed to run actual training script
             "${program}",
-            "--model-generator", model_generator_module_name,
-            "--job-dir", str(job_dir),
+            "--model-generator",
+            model_generator_module_name,
+            "--job-dir",
+            str(job_dir),
         ]
 
         # sweep name that will be seen on wandb
         backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
-        base_yaml['name'] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
+        base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
-        with open(save_path,'w') as yamlfile:
+        with open(save_path, "w") as yamlfile:
             yaml.dump(base_yaml, yamlfile)
-
 
     def get_stderr(self):
         try:

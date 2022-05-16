@@ -43,7 +43,9 @@ def experiment_generator(
         Name of the experiment.
     """
     experiment_dir = Path(experiment_dir)
-    experiment_prefix = f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    experiment_prefix = (
+        f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    )
     if experiment_name is not None:
         experiment_dir /= experiment_prefix
 
@@ -58,7 +60,7 @@ def experiment_generator(
         print(task_specs.dataset_name)
 
         if "use_sweep" in model_generator.base_hparams and model_generator.base_hparams["use_sweep"] is True:
-            #use wandb sweep for hyperparameter search
+            # use wandb sweep for hyperparameter search
             model = model_generator.generate(task_specs, model_generator.base_hparams)
             hparams = model.hyperparameters
 
@@ -82,12 +84,12 @@ def experiment_generator(
             for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
                 # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-                hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+                hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
 
                 # Create and fill experiment directory
                 job_dir = experiment_dir / task_specs.dataset_name / hparams_string
                 job = Job(job_dir)
-                print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
+                print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
                 job.save_hparams(hparams)
                 job.save_task_specs(task_specs)
                 job.write_script(model_generator_module_name, job_dir)
@@ -131,6 +133,7 @@ def start():
     experiment_generator(
         args.model_generator, args.experiment_dir, benchmark_name=args.benchmark, experiment_name=args.experiment_name
     )
+
 
 if __name__ == "__main__":
     start()
