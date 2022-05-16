@@ -38,20 +38,25 @@ def train(model_gen, job_dir):
         logger_type = ""
     if logger_type.lower() == "wandb":
         loggers.append(
-            pl.loggers.WandbLogger(project="ccb", entity="climate-benchmark", group=hparams.get("wandb_group", None), name=hparams.get("name", None), save_dir=str(job.dir))
+            pl.loggers.WandbLogger(
+                project="ccb",
+                entity="climate-benchmark",
+                group=hparams.get("wandb_group", None),
+                name=hparams.get("name", None),
+                save_dir=str(job.dir),
+            )
         )
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
     else:
         raise ValueError(f"Logger type ({logger_type}) not recognized.")
 
-
     ckpt_dir = os.path.join(job_dir, "checkpoint")
     checkpoint_callback = ModelCheckpoint(
         dirpath=ckpt_dir,
         save_top_k=1,
-        monitor='val_loss',
-        mode='min',
+        monitor="val_loss",
+        mode="min",
         every_n_epochs=1,
     )
 
@@ -65,10 +70,11 @@ def train(model_gen, job_dir):
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
-        progress_bar_refresh_rate=0,
+        enable_progress_bar=False,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 100)),
-            checkpoint_callback],
+            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 10), min_delta=1e-4),
+            checkpoint_callback,
+        ],
         logger=loggers,
     )
 
