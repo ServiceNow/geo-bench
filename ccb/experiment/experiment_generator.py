@@ -8,7 +8,6 @@ import argparse
 
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 
 from ccb.experiment.experiment import Job
 from ccb.experiment.experiment import get_model_generator
@@ -44,30 +43,56 @@ def experiment_generator(
         Name of the experiment.
     """
     experiment_dir = Path(experiment_dir)
-    experiment_prefix = f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    experiment_prefix = (
+        f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    )
     if experiment_name is not None:
         experiment_dir /= experiment_prefix
 
     model_generator = get_model_generator(model_generator_module_name)
 
     print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
+
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
         print(task_specs.dataset_name)
-        for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
-            # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+        if "use_sweep" in model_generator.base_hparams and model_generator.base_hparams["use_sweep"] is True:
+            # use wandb sweep for hyperparameter search
+            model = model_generator.generate(task_specs, model_generator.base_hparams)
+            hparams = model.hyperparameters
 
-            # Create and fill experiment directory
-            job_dir = experiment_dir / task_specs.dataset_name / hparams_string
+            hparams["dataset_name"] = task_specs.dataset_name
+            hparams["model_generator_name"] = model_generator_module_name
+
+            # create and fill experiment directory
+            job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
-            print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name)
+
+            job.write_wandb_sweep_cl_script(
+                model_generator_module_name,
+                job_dir=job_dir,
+                base_sweep_config=hparams["sweep_config_yaml_path"],
+            )
+
+        else:
+
+            for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
+
+                # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
+                hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
+
+                # Create and fill experiment directory
+                job_dir = experiment_dir / task_specs.dataset_name / hparams_string
+                job = Job(job_dir)
+                print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
+                job.save_hparams(hparams)
+                job.save_task_specs(task_specs)
+                job.write_script(model_generator_module_name, job_dir)
 
     return experiment_dir
 
@@ -105,7 +130,6 @@ def start():
 
     args = parser.parse_args()
 
-    # Generate experiments
     experiment_generator(
         args.model_generator, args.experiment_dir, benchmark_name=args.benchmark, experiment_name=args.experiment_name
     )
