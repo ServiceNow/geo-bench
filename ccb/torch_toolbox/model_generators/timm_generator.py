@@ -59,6 +59,7 @@ class TIMMGenerator(ModelGenerator):
         backbone = timm.create_model(
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
+        setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
         logging.warn("FIXME: Using ImageNet default input size!")
         # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
