@@ -1,0 +1,36 @@
+program: ccb-trainer
+entity: climate-benchmark
+project: ccb
+method: random
+metric:
+  goal: minimize
+  name: val_loss
+parameters:
+# lr_head sample between 1e-1 and 1e-4
+  lr_head:
+    distribution: log_uniform
+    max: -2.3025850929940455
+    min: -9.210340371976182
+# lr_head sample between 1e-1 and 1e-4
+  lr_backbone:
+    distribution: log_uniform
+    max: -2.3025850929940455
+    min: -9.210340371976182
+# momentum sample between 0.8 and 0.95
+  momentum:
+    distribution: uniform
+    max: 0.95
+    min: 0.85
+# hidden size of classifier
+  hidden_size:
+    distribution: categorical
+    values: [128, 256, 512]
+# which optimizer to use
+  optimizer:
+    distribution: categorical
+    values:
+    - sgd
+    - adamw
+early_terminate:
+  type: hyperband
+  min_iter: 100
