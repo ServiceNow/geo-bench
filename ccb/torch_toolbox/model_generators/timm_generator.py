@@ -18,6 +18,7 @@ import torch.nn.functional as F
 import timm
 from torchvision import transforms as tt
 import logging
+import time
 
 
 class TIMMGenerator(ModelGenerator):
@@ -25,22 +26,22 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224
+            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
             "optimizer": "sgd",
             "momentum": 0.9,
             "head_type": "linear",
-            "hidden_size": 128,
+            "hidden_size": 512,
             "loss_type": "crossentropy",
-            "batch_size": 128,
+            "batch_size": 256,
             "num_workers": 4,
-            "max_epochs": 200,
+            "max_epochs": 5,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
-            "use_sweep": True,
+            "use_sweep": False,
             "num_agents": 4,
             "num_trials_per_agent": 5,
         }
@@ -91,7 +92,6 @@ class TIMMGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
-
         if task_specs.dataset_name == "imagenet":
             mean, std = task_specs.get_dataset(split="train").rgb_stats
             t = []
@@ -111,7 +111,7 @@ class TIMMGenerator(ModelGenerator):
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
             # transformer models require certain input size
-            if hyperparams["backbone"] in ["vit_tiny_patch16_224"]:
+            if hyperparams["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]:
                 t.append(tt.Resize((224, 224)))
 
             t = tt.Compose(t)
