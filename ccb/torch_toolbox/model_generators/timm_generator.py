@@ -18,6 +18,7 @@ import torch.nn.functional as F
 import timm
 from torchvision import transforms as tt
 import logging
+import time
 
 
 class TIMMGenerator(ModelGenerator):
@@ -25,18 +26,24 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "vit_tiny_patch16_224",
+            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224
             "pretrained": True,
             "lr_backbone": 0,
             "lr_head": 1e-4,
             "optimizer": "sgd",
+            "momentum": 0.9,
             "head_type": "linear",
+            "hidden_size": 512,
             "loss_type": "crossentropy",
-            "batch_size": 128,
-            "num_workers": 8,
-            "max_epochs": 10,
+            "batch_size": 256,
+            "num_workers": 4,
+            "max_epochs": 5,
             "n_gpus": 1,
             "logger": "wandb",
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
+            "use_sweep": False,
+            "num_agents": 4,
+            "num_trials_per_agent": 5,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -54,6 +61,7 @@ class TIMMGenerator(ModelGenerator):
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
         logging.warn("FIXME: Using ImageNet default input size!")
+        # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
         # hyperparameters.update({"std": backbone.default_cfg["std"]})
@@ -62,6 +70,8 @@ class TIMMGenerator(ModelGenerator):
             features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
             features = backbone(features)
         shapes = [features.shape[1:]]  # get the backbone's output features
+
+        hyperparameters.update({"n_backbone_features": shapes[0][0]})
 
         head = head_generator(task_specs, shapes, hyperparameters)
         loss = train_loss_generator(task_specs, hyperparameters)
@@ -100,6 +110,11 @@ class TIMMGenerator(ModelGenerator):
             if train:
                 t.append(tt.RandomHorizontalFlip())
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+
+            # transformer models require certain input size
+            if hyperparams["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]:
+                t.append(tt.Resize((224, 224)))
+
             t = tt.Compose(t)
 
             def transform(sample: io.Sample):
