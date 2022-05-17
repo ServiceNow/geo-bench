@@ -32,6 +32,7 @@ def train(model_gen, job_dir):
         eval_transform=model_gen.get_transform(job.task_specs, hparams, train=False),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
     )
+
     logger_type = hparams.get("logger", None)
     loggers = [pl.loggers.CSVLogger(str(job.dir), name="lightning_logs")]
     if logger_type is None:
@@ -70,6 +71,7 @@ def train(model_gen, job_dir):
         val_check_interval=hparams.get("val_check_interval", 1.0),
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
+        log_every_n_steps=hparams.get("log_every_n_steps", 10),
         enable_progress_bar=False,
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 10), min_delta=1e-4),
@@ -78,10 +80,7 @@ def train(model_gen, job_dir):
         logger=loggers,
     )
 
-    if "ckpt_path" in hparams:
-        ckpt_path = hparams["ckpt_path"]
-    else:
-        ckpt_path = None
+    ckpt_path = hparams.get("ckpt_path", None)
 
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
     trainer.test(model, datamodule)
