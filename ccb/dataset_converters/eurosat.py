@@ -51,31 +51,30 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
 
-    offset = 0
+    sample_id = 0
     for split_name in ["train", "val", "test"]:
         eurosat_dataset = EuroSAT(
             root=SRC_DATASET_DIR, split=split_name, transforms=None, download=False, checksum=True
         )
-        for i, tg_sample in enumerate(tqdm(eurosat_dataset)):
-            sample_name = f"id_{i + offset:04d}"
+        for tg_sample in tqdm(eurosat_dataset):
+            sample_name = f"id_{sample_id:04d}"
 
             images = np.array(tg_sample["image"])
             label = tg_sample["label"]
 
             sample = make_sample(images, int(label), sample_name)
             sample.write(dataset_dir)
-            partition.add(split_name, sample_name)
+            _split_name = {"val": "valid"}.get(split_name, split_name)
+            partition.add(_split_name, sample_name)
 
-            offset += 1
+            sample_id += 1
 
-            # temporary for creating small datasets for development purpose
-            if max_count is not None and i + 1 >= max_count:
+            if max_count is not None and sample_id >= max_count:
                 break
 
-        # temporary for creating small datasets for development purpose
-        if max_count is not None and offset >= max_count:
+        if max_count is not None and sample_id >= max_count:
             break
 
     partition.save(dataset_dir, "original", as_default=True)
