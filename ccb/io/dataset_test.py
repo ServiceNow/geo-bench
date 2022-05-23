@@ -204,7 +204,7 @@ def test_dataset_statistics():
         partition.save(directory=dataset_dir, partition_name="default")
 
         # Compute statistics : this will create all_bandstats.json
-        produce_band_stats(dataset_dir, use_splits=False, values_per_image=None, samples=None)
+        produce_band_stats(io.Dataset(dataset_dir), use_splits=False, values_per_image=None, samples=None)
 
         # Reload dataset with statistics
         ds2 = io.Dataset(dataset_dir)
@@ -235,9 +235,9 @@ def test_dataset_statistics():
 
 
 if __name__ == "__main__":
-    test_pack_4d_dense()
-    test_pack_4d_multi_band()
-    test_write_read()
-    test_dataset_partition()
-    test_dataset_withnopartition()
+    # test_pack_4d_dense()
+    # test_pack_4d_multi_band()
+    # test_write_read()
+    # test_dataset_partition()
+    # test_dataset_withnopartition()
     test_dataset_statistics()
