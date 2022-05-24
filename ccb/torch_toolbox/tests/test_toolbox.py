@@ -21,7 +21,7 @@ def train_job_on_task(model_generator, task_specs, threshold, logger=None, **kwa
         hparams.update(kwargs)
         job.save_hparams(hparams)
 
-        trainer.train(model_gen=model_generator, job_dir=job_dir)
+        trainer.train(model_gen=model_generator, job_dir=job_dir, wandb_mode="standard")
         hparams = job.hparams
 
         metrics = job.get_metrics()
@@ -56,7 +56,6 @@ def test_toolbox_brick_kiln():
     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
     train_job_on_task(conv4_test.model_generator, task_specs, 0.70)
-
 
 
 # this test is too slow
