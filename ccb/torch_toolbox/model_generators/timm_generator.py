@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -26,22 +26,23 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224
+            "backbone": "vit_small_patch16_224",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
             "pretrained": True,
-            "lr_backbone": 0,
+            "lr_backbone": 1e-6,
             "lr_head": 1e-4,
             "optimizer": "sgd",
             "momentum": 0.9,
+            "weight_decay": 0.0001,
             "head_type": "linear",
             "hidden_size": 512,
             "loss_type": "crossentropy",
-            "batch_size": 256,
+            "batch_size": 64,
             "num_workers": 4,
-            "max_epochs": 5,
+            "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
-            "use_sweep": False,
+            "num_seeds": 3,
             "num_agents": 4,
             "num_trials_per_agent": 5,
         }
@@ -60,6 +61,17 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
+        # freeze intital layers and only have last 25% of layers be trainable
+        # num_layers = int(len(list(backbone.children())) * 0.75)
+        # if hyperparameters["backbone"] in ["resnet18", "resnet50", "convnext_basehparams"]:
+        #     for layer_idx, layer in enumerate(backbone.children()):
+        #         if layer_idx < num_layers:
+        #             for param in layer.parameters():
+        #                 param.requires_grad = False
+        #         else:
+        #             for param in layer.parameters():
+        #                 param.requires_grad = True
+
         logging.warn("FIXME: Using ImageNet default input size!")
         # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
@@ -112,8 +124,17 @@ class TIMMGenerator(ModelGenerator):
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
             # transformer models require certain input size
-            if hyperparams["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]:
+            if hyperparams["backbone"] in [
+                "vit_tiny_patch16_224",
+                "vit_small_patch16_224",
+                "resnet50",
+                "resnet18",
+                "convnext_base",
+            ]:
                 t.append(tt.Resize((224, 224)))
+
+            elif hyperparams["backbone"] in ["swinv2_tiny_window16_256"]:
+                t.append(tt.Resize((256, 256)))
 
             t = tt.Compose(t)
 
@@ -125,4 +146,6 @@ class TIMMGenerator(ModelGenerator):
         return transform
 
 
-model_generator = TIMMGenerator()
+def model_generator(hparams: Dict[str, Any]) -> TIMMGenerator:
+    model_generator = TIMMGenerator(hparams=hparams)
+    return model_generator

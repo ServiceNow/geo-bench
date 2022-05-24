@@ -6,17 +6,17 @@ metric:
   goal: minimize
   name: val_loss
 parameters:
-# lr_head sample between 1e-1 and 1e-4
+# lr_head sample between 1e-1 (-2.3025850929940455) and 1e-4 (-9.210340371976182)
   lr_head:
     distribution: log_uniform
     max: -2.3025850929940455
     min: -9.210340371976182
-# lr_head sample between 1e-1 and 1e-4
+# lr_head sample between 1e-3 (-6.90775527898) and 1e-5 (-11.512925465)
   lr_backbone:
     distribution: log_uniform
-    max: -2.3025850929940455
-    min: -9.210340371976182
-# momentum sample between 0.8 and 0.95
+    max: -6.90775527898
+    min: -11.512925465
+# momentum sample between 0.85 and 0.95
   momentum:
     distribution: uniform
     max: 0.95
@@ -26,11 +26,16 @@ parameters:
     distribution: categorical
     values: [128, 256, 512]
 # which optimizer to use
-  optimizer:
+  # optimizer:
+  #   distribution: categorical
+  #   values:
+  #   - sgd
+  #   - adamw
+  batch_size:
     distribution: categorical
-    values:
-    - sgd
-    - adamw
-early_terminate:
-  type: hyperband
-  min_iter: 100
+    values: [32, 64]
+# # weight decay
+#   weight_decay:
+#     distribution: log_uniform
+#     max: -6.90775527898
+#     min: -11.512925465

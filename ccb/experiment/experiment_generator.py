@@ -12,6 +12,7 @@ from pathlib import Path
 from ccb.experiment.experiment import Job
 from ccb.experiment.experiment import get_model_generator
 from ccb import io
+import json
 
 
 def experiment_generator(
@@ -21,6 +22,7 @@ def experiment_generator(
     max_num_configs: int = 10,
     benchmark_name: str = "default",
     experiment_name: str = None,
+    wandb_mode: str = "standard",
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
@@ -38,6 +40,7 @@ def experiment_generator(
         The name of the benchmark on which to conduct the experiment (default: "default").
     experiment_name: str
         The name of the current experiment. Will be used as a prefix to the results directory (default: None).
+    wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
 
     Returns:
         Name of the experiment.
@@ -49,8 +52,6 @@ def experiment_generator(
     if experiment_name is not None:
         experiment_dir /= experiment_prefix
 
-    model_generator = get_model_generator(model_generator_module_name)
-
     print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
 
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
@@ -59,7 +60,9 @@ def experiment_generator(
                 continue
         print(task_specs.dataset_name)
 
-        if "use_sweep" in model_generator.base_hparams and model_generator.base_hparams["use_sweep"] is True:
+        if wandb_mode == "sweep":
+            model_generator = get_model_generator(model_generator_module_name)
+
             # use wandb sweep for hyperparameter search
             model = model_generator.generate(task_specs, model_generator.base_hparams)
             hparams = model.hyperparameters
@@ -79,7 +82,42 @@ def experiment_generator(
                 base_sweep_config=hparams["sweep_config_yaml_path"],
             )
 
+        elif wandb_mode == "seeded_runs":
+            NUM_SEEDS = 3
+
+            # not sure yet how to best handle this, does not make sense via model generator
+            best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
+
+            # use wandb sweep for hyperparameter search
+            with open(best_param_path, "r") as f:
+                best_params = json.load(f)
+
+            backbone_names = list(best_params[task_specs.dataset_name].keys())
+
+            for back_name in backbone_names:
+                backbone_config = best_params[task_specs.dataset_name][back_name]
+                benchmark_name = backbone_config["benchmark_name"]
+                model_generator_name = backbone_config["model_generator_name"]
+
+                model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
+
+                hparams = model_generator.base_hparams
+
+                backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
+                for i in range(NUM_SEEDS):
+                    # set seed to be used in experiment
+                    backbone_config["seed"] = i
+                    # run name as displayed in wandb
+                    # wandb group
+
+                    job_dir = experiment_dir / task_specs.dataset_name / back_name / f"seed_{i}"
+                    job = Job(job_dir)
+                    job.save_hparams(backbone_config)
+                    job.save_task_specs(task_specs)
+                    job.write_script(model_generator_name, job_dir=job_dir, wandb_mode=wandb_mode)
+
         else:
+            model_generator = get_model_generator(model_generator_module_name)
 
             for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
@@ -92,7 +130,7 @@ def experiment_generator(
                 print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
                 job.save_hparams(hparams)
                 job.save_task_specs(task_specs)
-                job.write_script(model_generator_module_name, job_dir)
+                job.write_script(model_generator_module_name, job_dir, wandb_mode=wandb_mode)
 
     return experiment_dir
 
