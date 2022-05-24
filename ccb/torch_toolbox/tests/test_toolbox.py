@@ -55,7 +55,7 @@ def test_toolbox_wandb():
 def test_toolbox_brick_kiln():
     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
-    train_job_on_task(conv4_test.model_generator, task_specs, 0.70)
+    train_job_on_task(conv4_test.model_generator, task_specs, 0.40)
 
 
 # this test is too slow
@@ -85,9 +85,9 @@ def test_toolbox_getitem():
 
 
 if __name__ == "__main__":
-    # test_toolbox_timm()
+    test_toolbox_timm()
     # test_toolbox_brick_kiln()
-    test_toolbox_wandb()
-    test_toolbox_mnist()
-    test_toolbox_getitem()
-    test_toolbox_seeds()
+    # test_toolbox_wandb()
+    # test_toolbox_mnist()
+    # test_toolbox_getitem()
+    # test_toolbox_seeds()
