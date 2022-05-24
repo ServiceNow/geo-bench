@@ -54,7 +54,10 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default", transform=None):
+    def get_dataset(self, split, partition="default", transform=None, format='hdf5'):
+        '''
+        format: 'hdfs' or 'tif' 
+        '''
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
@@ -99,7 +102,7 @@ class TaskSpecifications:
             return dataset
 
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform)
+            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform, format=format)
 
     def get_dataset_dir(self):
         benchmark_name = self.benchmark_name or "default"
