@@ -18,9 +18,7 @@ parser.add_argument("--values-per-image", default=1000, help="values per image")
 parser.add_argument("--samples", default=1000, help="dataset subset size")
 
 
-def produce_band_stats(dataset_dir, use_splits=False, values_per_image=1000, samples=1000):
-
-    dataset = Dataset(dataset_dir)
+def produce_band_stats(dataset: io.Dataset, use_splits=False, values_per_image=1000, samples=1000):
 
     if use_splits:
         for partition in dataset.list_partitions():
@@ -48,11 +46,12 @@ def produce_band_stats(dataset_dir, use_splits=False, values_per_image=1000, sam
         print("Statistics written to {stats_fname}.")
 
 
-def start():
-    args = parser.parse_args()
-    produce_band_stats(args.dataset, args.splits, args.values_per_image, args.samples)
+def produce_all_band_stats(benchmark_name):
+
+    for task in io.task_iterator(benchmark_name=benchmark_name):
+        print(f"Producing bandstats for dataset {task.dataset_name} of benchmark {benchmark_name}.")
+        produce_band_stats(task.get_dataset(split=None))
 
 
 if __name__ == "__main__":
-    # start()
-    produce_band_stats(io.CCB_DIR / "classification" / "brick_kiln_v1.0")
+    produce_all_band_stats(benchmark_name="converted")

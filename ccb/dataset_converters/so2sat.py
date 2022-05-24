@@ -51,7 +51,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
     n_samples = 0
     for split_name in ["train", "validation", "test"]:
         so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
