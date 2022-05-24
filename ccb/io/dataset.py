@@ -714,6 +714,7 @@ class Dataset:
             dataset_dir: the path containing the samples of the dataset.
             split: Specify split to use or None for all
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
+            format: 'hdfs' or 'tif' 
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
