@@ -12,10 +12,14 @@ from tqdm import tqdm
 import numpy as np
 
 
-def load_label(sample_dir):
-    label_file = Path(sample_dir, "label.json")
-    with open(label_file, "r") as fd:
-        label = json.load(fd)
+def load_label(sample_path):
+    if sample_path.suffix == ".hdf5":
+        sample = io.load_sample_hdf5(sample_path, label_only=True)
+        label = sample.label
+    else:
+        label_file = Path(sample_path, "label.json")
+        with open(label_file, "r") as fd:
+            label = json.load(fd)
     return label
 
 
@@ -47,39 +51,37 @@ def get_samples_and_verify_partition(dataset_dir, partition_name="default"):
         if answer.lower() == "y":
             partition.save(dataset_dir, partition_name)
 
-    sample_dirs = []
-    for sample_dir in tqdm(
+    sample_names = []
+    for file_name in tqdm(
         list(dataset_dir.glob("*")), desc=f"Collecting list of subdirectories in {dataset_dir.name}."
     ):
-        if sample_dir.is_dir():
-            sample_dirs.append(sample_dir)
+        if file_name.is_dir() or file_name.suffix == ".hdf5":
+            sample_names.append(file_name)
 
-    if len(all_samples) != len(sample_dirs):
+    if len(all_samples) != len(sample_names):
         warn(
-            f"Partition {partition_name} has {len(all_samples)}, but there is {len(sample_dirs)} samples in the directory."
+            f"Partition {partition_name} has {len(all_samples)}, but there is {len(sample_names)} samples in the directory."
         )
-    return sample_dirs
+    return sample_names
 
 
 def load_label_map(dataset_dir, max_count=None):
 
-    sample_dirs = get_samples_and_verify_partition(dataset_dir)
+    sample_paths = get_samples_and_verify_partition(dataset_dir)
 
     label_map = defaultdict(list)
 
-    if max_count is not None and len(sample_dirs) > max_count:
-        sample_dirs = np.random.choice(sample_dirs, max_count)
+    if max_count is not None and len(sample_paths) > max_count:
+        sample_paths = np.random.choice(sample_paths, max_count)
 
-    for sample_dir in tqdm(sample_dirs, desc="Loading labels."):
-        label = load_label(sample_dir)
-        label_map[label].append(sample_dir.name)
+    for sample_path in tqdm(sample_paths, desc="Loading labels."):
+        label = load_label(sample_path)
+        label_map[label].append(sample_path.stem)
     return label_map
 
 
 def write_all_label_map(benchmark_name="converted", max_count=None):
     for task in io.task_iterator(benchmark_name=benchmark_name):
-        if task.dataset_name != "pv4ger_classification":
-            continue
 
         dataset_dir = task.get_dataset_dir()
         if task.label_type.__class__.__name__ != "Classification":

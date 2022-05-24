@@ -123,6 +123,7 @@ def transform_dataset(
     resampler=None,
     sample_converter=None,
     delete_existing=False,
+    hdf5=True,
 ):
 
     dataset = io.Dataset(dataset_dir, partition_name=partition_name)
@@ -150,8 +151,13 @@ def transform_dataset(
     for split_name, sample_names in new_partition.partition_dict.items():
         print(f"  Converting {len(sample_names)} samples from {split_name} split.")
         for sample_name in tqdm(sample_names):
+
             if sample_converter is None:
-                shutil.copytree(dataset_dir / sample_name, new_dataset_dir / sample_name, dirs_exist_ok=True)
+                if hdf5:
+                    sample_name += ".hdf5"
+                    shutil.copyfile(dataset_dir / sample_name, new_dataset_dir / sample_name)
+                else:
+                    shutil.copytree(dataset_dir / sample_name, new_dataset_dir / sample_name, dirs_exist_ok=True)
             else:
                 raise NotImplementedError()
 
@@ -176,13 +182,13 @@ def make_classification_benchmark():
 
     default_resampler = make_resampler(max_sizes={"train": 5000, "valid": 1000, "test": 1000})
     specs = {
-        # "eurosat": (default_sizes, None),
-        # "brick_kiln_v1.0": (default_sizes, None),
-        # "so2sat": (default_sizes, None),
+        "eurosat": (default_resampler, None),
+        "brick_kiln_v1.0": (default_resampler, None),
+        # "so2sat": (default_resampler, None),
         "pv4ger_classification": (default_resampler, None),
         # "geolifeclef-2021": ({"train": 10000, "valid": 5000, "test": 5000}, None),
     }
-    _make_benchmark("classification_test", specs)
+    _make_benchmark("classification_v0.3", specs)
 
 
 def make_segmentation_benchmark():
@@ -197,5 +203,5 @@ def make_segmentation_benchmark():
 
 
 if __name__ == "__main__":
-    # make_classification_benchmark()
-    make_segmentation_benchmark()
+    make_classification_benchmark()
+    # make_segmentation_benchmark()
