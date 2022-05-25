@@ -26,7 +26,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "vit_small_patch16_224",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
             "pretrained": True,
             "lr_backbone": 1e-6,
             "lr_head": 1e-4,
@@ -38,7 +38,7 @@ class TIMMGenerator(ModelGenerator):
             "loss_type": "crossentropy",
             "batch_size": 64,
             "num_workers": 4,
-            "max_epochs": 500,
+            "max_epochs": 2,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
@@ -61,18 +61,8 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-        # freeze intital layers and only have last 25% of layers be trainable
-        # num_layers = int(len(list(backbone.children())) * 0.75)
-        # if hyperparameters["backbone"] in ["resnet18", "resnet50", "convnext_basehparams"]:
-        #     for layer_idx, layer in enumerate(backbone.children()):
-        #         if layer_idx < num_layers:
-        #             for param in layer.parameters():
-        #                 param.requires_grad = False
-        #         else:
-        #             for param in layer.parameters():
-        #                 param.requires_grad = True
 
-        logging.warn("FIXME: Using ImageNet default input size!")
+        logging.warning("FIXME: Using ImageNet default input size!")
         # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
@@ -106,7 +96,7 @@ class TIMMGenerator(ModelGenerator):
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
         if task_specs.dataset_name == "imagenet":
-            mean, std = task_specs.get_dataset(split="train").rgb_stats
+            mean, std = task_specs.get_dataset(split="train").rgb_stats()
             t = []
             t.append(tt.ToTensor())
             t.append(tt.Normalize(mean=mean, std=std))
@@ -115,7 +105,7 @@ class TIMMGenerator(ModelGenerator):
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
             transform = tt.Compose(t)
         else:
-            mean, std = task_specs.get_dataset(split="train").rgb_stats
+            mean, std = task_specs.get_dataset(split="train").rgb_stats()
             t = []
             t.append(tt.ToTensor())
             t.append(tt.Normalize(mean=mean, std=std))
@@ -146,6 +136,6 @@ class TIMMGenerator(ModelGenerator):
         return transform
 
 
-def model_generator(hparams: Dict[str, Any]) -> TIMMGenerator:
+def model_generator(hparams: Dict[str, Any] = {}) -> TIMMGenerator:
     model_generator = TIMMGenerator(hparams=hparams)
     return model_generator
