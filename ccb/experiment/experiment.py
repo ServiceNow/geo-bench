@@ -1,4 +1,5 @@
 import csv
+from typing import Dict, Any
 import json
 from os import mkdir
 import pickle
@@ -15,20 +16,20 @@ from ruamel.yaml import YAML
 import os
 
 
-def get_model_generator(module_name: str) -> ModelGenerator:
+def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:
     """
     Parameters:
     -----------
     module_name: str
         The module_name of the model generator module.
-
+    hparams:
+        hparameter dict to overwrite the default base values
     Returns:
     --------
     model_generator: a model_generator function loaded from the module.
-
     """
 
-    return import_module(module_name).model_generator
+    return import_module(module_name).model_generator(hparams)
 
 
 def hparams_to_string(hp_configs):
