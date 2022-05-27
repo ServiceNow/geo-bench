@@ -1,4 +1,5 @@
 from typing import List
+import numpy as np
 
 
 class LabelType(object):
@@ -37,6 +38,14 @@ class Classification(LabelType):
         else:
             names = "missing class names"
         return f"{self.n_classes}-classification ({names})"
+
+
+class SemanticSegmentation(Classification):
+    def assert_valid(self, value):
+        assert isinstance(value, np.ndarray)
+        assert len(value.shape) == 2
+        assert (value >= 0).all(), f"{value} is smaller than 0."
+        assert (value < self.n_classes).all(), f"{value} is >= to {self.n_classes}."
 
 
 class Regression(LabelType):

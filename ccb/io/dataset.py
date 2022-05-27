@@ -714,7 +714,7 @@ class Dataset:
             dataset_dir: the path containing the samples of the dataset.
             split: Specify split to use or None for all
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
-            format: 'hdfs' or 'tif' 
+            format: 'hdfs' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
@@ -752,11 +752,7 @@ class Dataset:
     @cached_property
     def task_specs(self):
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
-            task_specs = pickle.load(fd)
-
-        # banchmark name should follow parent dir
-        task_specs.benchmark_name = self.dataset_dir.parent.name
-        return task_specs
+            return pickle.load(fd)
 
     #### Splits ####
 

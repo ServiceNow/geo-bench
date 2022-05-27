@@ -5,8 +5,6 @@ from pathlib import Path
 from ccb.io.label import Classification
 
 from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
-from typing import Generator
-import json
 
 
 class TaskSpecifications:
@@ -54,10 +52,10 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default", transform=None, format='hdf5'):
-        '''
-        format: 'hdfs' or 'tif' 
-        '''
+    def get_dataset(self, split, partition="default", transform=None, format="hdf5"):
+        """
+        format: 'hdfs' or 'tif'
+        """
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
@@ -113,18 +111,8 @@ class TaskSpecifications:
     def benchmark_name(self):
         return "default"
 
-    @cached_property
-    def label_map(self):
-        label_map_path = self.get_dataset_dir() / "label_map.json"
-        if label_map_path.exists():
-            with open(label_map_path, "r") as fp:
-                label_map = json.load(fp)
-            return label_map
-        else:
-            return None
 
-
-def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecifications, None, None]:
+def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
 
     if benchmark_name == "test":
         yield mnist_task_specs
