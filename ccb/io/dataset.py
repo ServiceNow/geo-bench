@@ -552,6 +552,7 @@ def write_sample_tif(sample, dataset_dir):
         else:
             with open(Path(dst_dir, "label.json"), "w") as fd:
                 json.dump(sample.label, fd)
+    return dst_dir
 
 
 def write_sample_hdf5(sample: Sample, dataset_dir):
