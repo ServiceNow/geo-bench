@@ -618,6 +618,69 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
     return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
+def write_sample_npz(sample: Sample, dataset_dir):
+    sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
+
+    bands = sample.bands
+    band_dict = {}
+    attr_dict = {}
+    bands_order = []
+
+    if sample.label is not None:
+        if isinstance(sample.label, Band):
+            if not isinstance(sample.label.band_info, LabelType):
+                raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
+            assert sample.label.band_info.name == "label"
+            bands.append(sample.label)
+        else:
+            attr_dict["label"] = sample.label
+
+    for band in bands:
+        band_descriptor = band.get_descriptor()
+        band_dict[band_descriptor] = band.data
+        attrs = dict(
+            date=band.date,
+            date_id=band.date_id,
+            spatial_resolution=band.spatial_resolution,
+            band_info=band.band_info,
+            meta_info=band.meta_info,
+        )
+        bands_order.append(band_descriptor)
+        attr_dict[band_descriptor] = attrs
+
+        # h5_band.attrs["pickle"] = str(pickle.dumps(attrs))
+    attr_dict["bands_order"] = bands_order
+    band_dict["pickle"] = str(pickle.dumps(attr_dict))  # seems to be faster to do it in a single one pickle
+    # band_dict["attr"] = attr_dict
+    np.savez(sample_path, **band_dict)
+    return sample_path
+
+
+def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
+    band_dict = np.load(sample_path, allow_pickle=True)
+    attr_dict = pickle.loads(ast.literal_eval(str(band_dict["pickle"])))
+    # attr_dict = band_dict["attr"]
+
+    band_names = attr_dict["bands_order"]
+    bands = []
+    label = None
+    for band_name in band_names:
+
+        if label_only and band_name != "label":
+            continue
+
+        band = Band(data=band_dict[band_name], **attr_dict[band_name])
+        if band_name == "label":
+            label = band
+        else:
+            bands.append(band)
+
+    if label is None:
+        label = attr_dict.get("label", None)
+
+    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+
+
 def load_sample_tif(sample_dir, band_names=None):
     sample_dir = Path(sample_dir)
     band_list = []
