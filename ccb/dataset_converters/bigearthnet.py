@@ -1,4 +1,3 @@
-import os
 from ccb import io
 import numpy as np
 from pathlib import Path
@@ -52,7 +51,15 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs.save(dataset_dir)
     n_samples = 0
     for split_name in ["train", "val", "test"]:
-        bigearthnet_dataset = BigEarthNet(root=SRC_DATASET_DIR, split=split_name, bands="s2", download=False, transforms=None, checksum=False, num_classes=43)
+        bigearthnet_dataset = BigEarthNet(
+            root=SRC_DATASET_DIR,
+            split=split_name,
+            bands="s2",
+            download=False,
+            transforms=None,
+            checksum=False,
+            num_classes=43,
+        )
 
         for i, tg_sample in enumerate(tqdm(bigearthnet_dataset)):
             sample_name = f"id_{n_samples:04d}"
@@ -78,4 +85,4 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
 
 if __name__ == "__main__":
-    convert(200)
+    convert()
