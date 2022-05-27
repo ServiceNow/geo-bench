@@ -59,7 +59,7 @@ def test_read_write_speed(writer, reader, n=100, max_shape=96):
 
 if __name__ == "__main__":
 
-    test_read_write_speed(io.write_sample_hdf5, io.load_sample_hdf5, max_shape=48)
+    # test_read_write_speed(io.write_sample_npz, io.load_sample_npz, max_shape=48)
 
     test_read_write_speed(io.write_sample_hdf5, io.load_sample_hdf5, max_shape=384)
 
