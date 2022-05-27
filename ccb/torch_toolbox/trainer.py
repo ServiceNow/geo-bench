@@ -72,7 +72,8 @@ def train(model_gen, job_dir):
         accelerator=hparams.get("accelerator", None),
         deterministic=hparams.get("deterministic", False),
         log_every_n_steps=hparams.get("log_every_n_steps", 10),
-        enable_progress_bar=False,
+        enable_progress_bar=hparams.get("enable_progress_bar", False),
+        fast_dev_run=hparams.get("fast_dev_run", False),
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 10), min_delta=1e-4),
             checkpoint_callback,
