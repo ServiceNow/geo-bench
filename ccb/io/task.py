@@ -7,6 +7,7 @@ from ccb.io.label import Classification
 from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 from typing import Generator
 import json
+import numpy as np
 
 
 class TaskSpecifications:
@@ -54,10 +55,10 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default", transform=None, format='hdf5'):
-        '''
-        format: 'hdfs' or 'tif' 
-        '''
+    def get_dataset(self, split, partition="default", transform=None, format="hdf5"):
+        """
+        format: 'hdfs' or 'tif'
+        """
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
@@ -161,6 +162,11 @@ class Loss(object):
 class Accuracy(Loss):
     def __call__(self, prediction, label):
         return float(label != prediction)
+
+
+class MultilabelAccuracy(Loss):
+    def __call__(self, prediction, label):
+        return np.mean(label != prediction)
 
 
 class AccuracyTop30(Loss):
