@@ -45,7 +45,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         bands_info=io.sentinel2_13_bands[0:10] + io.sentinel2_13_bands[-2:],
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.MultiLabelClassification(43),
-        eval_loss=io.Accuracy,
+        eval_loss=io.MultilabelAccuracy,
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir)
@@ -65,11 +65,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             sample_name = f"id_{n_samples:04d}"
 
             images = np.array(tg_sample["image"])
-            label = tg_sample["label"]
+            label = np.array(tg_sample["label"])
 
-            labels = [i for i, e in enumerate(label) if e == 1]
-
-            sample = make_sample(images, labels, sample_name, task_specs)
+            sample = make_sample(images, label, sample_name, task_specs)
             sample.write(dataset_dir)
 
             partition.add(split_name.replace("val", "valid"), sample_name)
