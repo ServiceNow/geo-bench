@@ -5,6 +5,9 @@ from pathlib import Path
 from ccb.io.label import Classification
 
 from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
+from typing import Generator
+import json
+import numpy as np
 
 
 class TaskSpecifications:
@@ -149,6 +152,11 @@ class Loss(object):
 class Accuracy(Loss):
     def __call__(self, prediction, label):
         return float(label != prediction)
+
+
+class MultilabelAccuracy(Loss):
+    def __call__(self, prediction, label):
+        return np.mean(label != prediction)
 
 
 class AccuracyTop30(Loss):

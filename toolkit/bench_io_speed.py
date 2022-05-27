@@ -47,20 +47,20 @@ def test_read_write_speed(writer, reader, n=100, max_shape=96):
 
     sizes = 0
     for sample_path in sample_paths:
-        sizes += os.path.getsize(sample_path)
+        # sizes += os.path.getsize(sample_path)
         sample = reader(sample_path)
 
     t2 = time.time()
 
-    print(f"wrting time: {t1-t0}.")
-    print(f"reading time: {t2-t1}.")
-    print(f"average size: {sizes/len(sample_paths)/1e6} MB.")
+    print(f"wrting time: {t1-t0:.2f}.")
+    print(f"reading time: {t2-t1:.2f}.")
+    print(f"average size: {sizes/len(sample_paths)/1e6:.2f} MB.")
 
 
 if __name__ == "__main__":
 
-    test_read_write_speed(io.write_sample_hdf5, io.load_sample_hdf5, max_shape=48)
+    # test_read_write_speed(io.write_sample_npz, io.load_sample_npz, max_shape=384)
 
-    test_read_write_speed(io.write_sample_hdf5, io.load_sample_hdf5, max_shape=384)
+    # test_read_write_speed(io.write_sample_hdf5, io.load_sample_hdf5, max_shape=384)
 
-    # test_read_write_speed(io.write_sample_tif, io.load_sample_tif, max_shape=48)
+    test_read_write_speed(io.write_sample_tif, io.load_sample_tif, max_shape=384)
