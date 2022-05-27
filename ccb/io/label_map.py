@@ -10,6 +10,7 @@ from warnings import warn
 from ccb import io
 from tqdm import tqdm
 import numpy as np
+from ccb.io import bandstats
 
 
 def load_label(sample_path):
@@ -80,14 +81,17 @@ def load_label_map(dataset_dir, max_count=None):
     return label_map
 
 
-def write_all_label_map(benchmark_name="converted", max_count=None):
+def write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True):
     for task in io.task_iterator(benchmark_name=benchmark_name):
 
-        dataset_dir = task.get_dataset_dir()
+        if compute_band_stats:
+            bandstats.produce_band_stats(task.get_dataset())
+
         if task.label_type.__class__.__name__ != "Classification":
             print(f"Skipping {task.dataset_name}.")
             continue
 
+        dataset_dir = task.get_dataset_dir()
         print(f"Producing Label Map for {dataset_dir}.")
         label_map = load_label_map(dataset_dir, max_count=max_count)
 

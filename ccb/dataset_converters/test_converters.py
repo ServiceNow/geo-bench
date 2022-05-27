@@ -127,12 +127,22 @@ def test_forestnet():
     converter_tester(forestnet)
 
 
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_bigearthnet():
+    from ccb.dataset_converters import bigearthnet
+
+    converter_tester(bigearthnet)
+
+
 if __name__ == "__main__":
-    test_brick_kiln()
-    # test_cv4a_kenya_cropy_type()
-    test_eurosat()
-    test_neon_tree()
-    # test_smallholder_cashews()
-    test_so2sat()
-    test_nz_cattle_detection()
-    test_xview2()
+    # test_brick_kiln()
+    # # test_cv4a_kenya_cropy_type()
+    # test_eurosat()
+    # test_neon_tree()
+    # # test_smallholder_cashews()
+    # test_so2sat()
+    # test_nz_cattle_detection()
+    # test_xview2()
+    test_bigearthnet()
