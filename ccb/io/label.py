@@ -1,4 +1,6 @@
+from types import new_class
 from typing import List
+import numpy as np
 
 
 class LabelType(object):
@@ -84,5 +86,6 @@ class MultiLabelClassification(LabelType):
         self.class_name = class_names
 
     def assert_valid(self, value):
-        assert isinstance(value, list)
-        assert not any(elem > self.n_classes or elem < 0 for elem in value), f"{value} has an item which is higher than the number of classes: {self.n_classes}."
+        assert isinstance(value, np.ndarray)
+        assert len(value) == self.n_classes
+        assert all(np.unique(value) == [0, 1])
