@@ -558,20 +558,23 @@ def write_sample_hdf5(sample: Sample, dataset_dir):
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.hdf5"
 
     with h5py.File(sample_path, "w") as fp:
+        bands = sample.bands
 
         attr_dict = {}
-        bands = sample.bands
+        bands_order = []
 
         if sample.label is not None:
             if isinstance(sample.label, Band):
                 if not isinstance(sample.label.band_info, LabelType):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
+                assert sample.label.band_info.name == "label"
                 bands.append(sample.label)
             else:
                 attr_dict["label"] = sample.label
 
-        for band in sample.bands:
-            fp.create_dataset(name=band.band_info.name, data=band.data)
+        for band in bands:
+            band_descriptor = band.get_descriptor()
+            fp.create_dataset(name=band_descriptor, data=band.data)
             attrs = dict(
                 date=band.date,
                 date_id=band.date_id,
@@ -579,11 +582,11 @@ def write_sample_hdf5(sample: Sample, dataset_dir):
                 band_info=band.band_info,
                 meta_info=band.meta_info,
             )
-
-            attr_dict[band.band_info.name] = attrs
+            bands_order.append(band_descriptor)
+            attr_dict[band_descriptor] = attrs
 
             # h5_band.attrs["pickle"] = str(pickle.dumps(attrs))
-
+        attr_dict["bands_order"] = bands_order
         fp.attrs["pickle"] = str(pickle.dumps(attr_dict))  # seems to be faster to do it in a single one pickle
     return sample_path
 
@@ -592,18 +595,19 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
     with h5py.File(sample_path, "r") as fp:
 
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
+        band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
         label = None
-        for ds_name in fp.keys():
+        for band_name in band_names:
 
-            if label_only and ds_name != "label":
+            if label_only and band_name != "label":
                 continue
 
-            h5_band = fp[ds_name]
+            h5_band = fp[band_name]
             # attrs = pickle.loads(ast.literal_eval(data.attrs["pickle"]))
 
-            band = Band(data=np.array(h5_band), **attr_dict[ds_name])
-            if ds_name == "label":
+            band = Band(data=np.array(h5_band), **attr_dict[band_name])
+            if band_name == "label":
                 label = band
             else:
                 bands.append(band)
@@ -714,7 +718,7 @@ class Dataset:
             dataset_dir: the path containing the samples of the dataset.
             split: Specify split to use or None for all
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
-            format: 'hdfs' or 'tif' 
+            format: 'hdfs' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
