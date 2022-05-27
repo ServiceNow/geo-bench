@@ -86,12 +86,13 @@ def extract_images(
             sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
         )
         img_data = img_data[0].astype(np.float)
-        # TODO We should pass labelType from task specs and compare that instead of the class 
+        # TODO We should pass labelType from task specs and compare that instead of the class
         # Once we change this function, we should update all inspection notebooks
-        if (isinstance(sample.label, List)):
-            for label in sample.label:
-                images.append(img_data)
-                labels.append(label)                
+        if isinstance(sample.label, np.ndarray):
+            for i, label in enumerate(sample.label):
+                if label == 1:
+                    images.append(img_data)
+                    labels.append(i)
         else:
             images.append(img_data)
             labels.append(sample.label)
@@ -162,7 +163,7 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
         scale = np.array([1.0, 1.0])
-    if isinstance(label, (list, tuple)):
+    if isinstance(label, (list, tuple)):  # TODO hack tha needs to change
         im = Image.fromarray(image)
         ctxt = ImageDraw.Draw(im)
         for obj in label:
