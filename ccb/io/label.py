@@ -73,3 +73,16 @@ class PointAnnotation(LabelType):
             assert isinstance(point, (list, tuple))
             assert len(point) == 2
             assert tuple(point) >= (0, 0)
+
+
+class MultiLabelClassification(LabelType):
+    def __init__(self, n_classes, class_names=None) -> None:
+        super().__init__()
+        self.n_classes = n_classes
+        if class_names is not None:
+            assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
+        self.class_name = class_names
+
+    def assert_valid(self, value):
+        assert isinstance(value, list)
+        assert not any(elem > self.n_classes or elem < 0 for elem in value), f"{value} has an item which is higher than the number of classes: {self.n_classes}."
