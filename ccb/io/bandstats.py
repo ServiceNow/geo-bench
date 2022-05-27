@@ -7,7 +7,7 @@ import argparse
 import json
 import os
 
-from ccb.io.dataset import Dataset, compute_dataset_statistics
+from ccb.io.dataset import compute_dataset_statistics
 from ccb import io
 
 
