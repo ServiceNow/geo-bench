@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -72,7 +72,9 @@ class Conv4Generator(ModelGenerator):
             return collate_rgb
 
 
-model_generator = Conv4Generator()
+def model_generator(hparams: Dict[str, Any] = {}) -> Conv4Generator:
+    model_generator = Conv4Generator(hparams=hparams)
+    return model_generator
 
 
 class Conv4(BackBone):

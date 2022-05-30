@@ -1,5 +1,4 @@
 import csv
-from typing import Dict, Any
 import json
 from os import mkdir
 import pickle
@@ -14,6 +13,7 @@ from ccb import io
 from ccb.torch_toolbox.model import ModelGenerator
 from ruamel.yaml import YAML
 import os
+from typing import Dict, Any
 
 
 def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:
@@ -36,23 +36,30 @@ def hparams_to_string(hp_configs):
     """
     Generate a string respresentation of the meaningful hyperparameters. This string will be used for file names and
     job names, to be able to distinguish them easily.
-
     Parameters:
     -----------
     hp_configs: list of dicts
         A list of dictionnaries that each contain one hyperparameter configuration
-
     Returns:
     --------
     A list of pairs of hyperparameter combinations (dicts from the input, string representation)
-
     """
     # Find which hyperparameters vary between hyperparameter combinations
     keys = set(chain.from_iterable(combo.keys() for combo in hp_configs))
 
     # TODO find a solution for unhashable hparams such as list, or print a more
     # useful error message.
-    active_keys = [k for k in keys if len(set(combo[k] for combo in hp_configs)) > 1]
+    # active_keys = [k for k in keys if len(set(combo[k] for combo in hp_configs)) > 1]
+    active_keys = []
+    # assuming that all the dicts in hp_configs have the same keys
+    hp_config_keys = [[key for key in combo] for combo in hp_configs]
+
+    for keys in zip(*hp_config_keys):
+        first_val = hp_configs[0][keys[0]]
+        for idx, key in enumerate(keys):
+            val = hp_configs[idx][keys[idx]]
+            if first_val != val:
+                active_keys.append(key)
 
     # Pretty print a HP combination
     def _format_combo(trial_id, hps):
@@ -114,26 +121,24 @@ class Job:
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module_name: str, job_dir: str):
+    def write_script(self, model_generator_module_name: str, job_dir: str, wandb_mode: str):
         """Write bash scrip that can be executed to run job.
-
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
-            base_sweep_config: path to base sweep config yaml file for wandb
+            wandb_mode: wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} --wandb-mode {wandb_mode} >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(self, model_generator_module_name: str, job_dir: str, base_sweep_config: str):
         """Write final sweep_config.yaml that can be used to initialize sweep.
-
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
@@ -149,6 +154,8 @@ class Job:
             model_generator_module_name,
             "--job-dir",
             str(job_dir),
+            "--wandb-mode",
+            "sweep",
         ]
 
         # sweep name that will be seen on wandb
