@@ -6,7 +6,7 @@ import pytest
 
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
-    data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(np.float)
+    data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(float)
     data *= 2.1
     if len(shape) == 3 and shape[2] > 1:
         band_info = io.MultiBand(band_name, alt_names=alt_band_names, spatial_resolution=20, n_bands=shape[2])
@@ -63,7 +63,23 @@ def test_write_read():
         sample.write(dataset_dir)
         band_names = [band.band_info.name for band in sample.bands]
         # define task_spec for dataset
-        # BandInfo
+
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample.bands
+        ]
+
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            patch_size=(16, 16),
+            bands_info=bands_info,
+        )
+        task_specs.save(dataset_dir, overwrite=True)
+
         partition = io.Partition()
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
@@ -96,11 +112,19 @@ def test_dataset_partition():
 
         band_names = [band.band_info.name for band in sample1.bands]
 
-        # bands_info = [io.SpectralBand()]
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample1.bands
+        ]
+
         task_specs = io.TaskSpecifications(
             dataset_name="test",
             patch_size=(16, 16),
-            bands_info=io.sentinel2_13_bands,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
@@ -221,6 +245,22 @@ def test_dataset_statistics():
         sample3.write(dataset_dir)
 
         band_names = [band.band_info.name for band in sample1.bands]
+
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample1.bands
+        ]
+
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            patch_size=(16, 16),
+            bands_info=bands_info,
+        )
+        task_specs.save(dataset_dir, overwrite=True)
 
         # Default partition, only train
         partition = io.Partition()

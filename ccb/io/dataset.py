@@ -415,7 +415,7 @@ class Sample(object):
         self.band_name_map, self.band_info_list = _map_bands(band_info_set.keys())
         self.band_names = [band_info.name for band_info in self.band_info_list]
 
-        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=np.object)
+        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=object)
 
         for band in bands:
             band_idx = self.band_name_map[band.band_info.name]
