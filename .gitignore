@@ -142,3 +142,5 @@ dmypy.json
 .pyre/
 .DS_Store
 .vscode/
+lightning_logs*/
+checkpoints/

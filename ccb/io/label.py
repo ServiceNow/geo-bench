@@ -41,6 +41,14 @@ class Classification(LabelType):
         return f"{self.n_classes}-classification ({names})"
 
 
+class SemanticSegmentation(Classification):
+    def assert_valid(self, value):
+        assert isinstance(value, np.ndarray)
+        assert len(value.shape) == 2
+        assert (value >= 0).all(), f"{value} is smaller than 0."
+        assert (value < self.n_classes).all(), f"{value} is >= to {self.n_classes}."
+
+
 class Regression(LabelType):
     def __init__(self, min_val=None, max_val=None) -> None:
         super().__init__()

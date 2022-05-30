@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torchmetrics
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.modules import ClassificationHead
+from ccb.torch_toolbox.utils import tensor2colors
 
 
 class Model(LightningModule):
@@ -21,11 +22,8 @@ class Model(LightningModule):
         self.backbone = backbone
         self.head = head
         self.loss_function = loss_function
-        self.train_metrics = train_metrics or (lambda *args: {})
-        self.eval_metrics = eval_metrics or (lambda *args: {})
-        # Make TorchMetrics visible to Torchvision
-        self._train_metrics = self.train_metrics.get_torchmetrics()
-        self._eval_metrics = self.eval_metrics.get_torchmetrics()
+        self.train_metrics = train_metrics
+        self.eval_metrics = eval_metrics
         self.hyperparameters = hyperparameters
         self.save_hyperparameters("hyperparameters")
 
@@ -48,9 +46,12 @@ class Model(LightningModule):
 
     def training_step_end(self, outputs):
         # update and log
-        metrics = self.train_metrics(outputs["output"], outputs["target"], "train")
         self.log("train_loss", outputs["loss"], logger=True)
-        self.log_dict(metrics)
+        self.train_metrics(outputs["output"].argmax(1), outputs["target"])
+        self.log_dict(self.train_metrics)
+
+    def training_epoch_end(self, outputs):
+        self.train_metrics.reset()
 
     def eval_step(self, batch, batch_idx, prefix):
         inputs = batch["input"]
@@ -58,9 +59,8 @@ class Model(LightningModule):
         output = self(inputs)
         loss = self.loss_function(output, target)
         self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
-        metrics = self.eval_metrics(output, target, prefix)
-        self.log_dict(metrics, logger=True)
-        return {"loss": loss.detach(), "output": output.detach(), "target": target.detach()}
+
+        return {"loss": loss.detach(), "input": inputs.detach(), "output": output.detach(), "target": target.detach()}
 
     def validation_step(self, batch, batch_idx):
         return self.eval_step(batch, batch_idx, "val")
@@ -70,15 +70,40 @@ class Model(LightningModule):
 
     def eval_step_end(self, outputs, prefix):
         # update and log
-        metrics = self.eval_metrics(outputs["output"], outputs["target"], prefix)
         self.log(f"{prefix}_loss", outputs["loss"], logger=True)
-        self.log_dict(metrics)
+        self.eval_metrics.update(outputs["output"].argmax(1), outputs["target"])
+        # self.log_dict({f"{prefix}_{k}": v for k, v in eval_metrics.items()}, logger=True)
 
     def validation_step_end(self, outputs):
         self.eval_step_end(outputs, "val")
 
     def test_step_end(self, outputs):
         self.eval_step_end(outputs, "test")
+
+    def validation_epoch_end(self, outputs):
+        eval_metrics = self.eval_metrics.compute()
+        self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
+        self.eval_metrics.reset()
+        if self.hyperparameters.get("log_segmentation_masks", False):
+            import wandb
+
+            current_element = int(torch.randint(0, outputs[0]["input"].shape[0], size=(1,)))
+            image = outputs[0]["input"][current_element].permute(1, 2, 0).cpu().numpy()
+            pred_mask = outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
+            gt_mask = outputs[0]["target"][current_element].cpu().numpy()
+            image = wandb.Image(
+                image,
+                masks={
+                    "predictions": {"mask_data": pred_mask},
+                    "ground_truth": {"mask_data": gt_mask},
+                },
+            )
+            wandb.log({"segmentation_images": image})
+
+    def test_epoch_end(self, outputs):
+        eval_metrics = self.eval_metrics.compute()
+        self.log_dict({f"test_{k}": v for k, v in eval_metrics.items()}, logger=True)
+        self.eval_metrics.reset()
 
     def configure_optimizers(self):
         backbone_parameters = self.backbone.parameters()
@@ -202,6 +227,11 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
             return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
+    elif isinstance(task_specs.label_type, io.SemanticSegmentation):
+        if hyperparams["head_type"].split("-")[0] == "smp":  # smp: segmentation-models-pytorch
+            return lambda *args: args
+        else:
+            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
         raise ValueError(f"Unrecognized task: {task_specs.task_type}")
 
@@ -247,10 +277,9 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("train_metrics", ()):
-        metrics.append(METRIC_MAP[metric_name])
+        metrics.extend(METRIC_MAP[metric_name])
 
-    # The Metrics().__call__(input, targets) accumulates all metrics in a dict
-    return Metrics(metrics)
+    return torchmetrics.MetricCollection(metrics)
 
 
 def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
@@ -261,13 +290,13 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
         io.Classification: [
             torchmetrics.Accuracy(),
         ],
-        io.SegmentationClasses: (),
+        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("eval_metrics", ()):
-        metrics.append(METRIC_MAP[metric_name])
+        metrics.extend(METRIC_MAP[metric_name])
 
-    return Metrics(metrics)
+    return torchmetrics.MetricCollection(metrics)
 
 
 def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
@@ -279,32 +308,6 @@ def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
     ]
 
     return loss
-
-
-class Metrics:
-    def __init__(self, metrics: List):
-        super().__init__()
-        self.metrics = metrics
-
-    def add_metric(self, metric):
-        self.metrics.append(metric)
-
-    def get_torchmetrics(self):
-        ret = []
-        for metric in self.metrics:
-            if isinstance(metric, torchmetrics.Metric):
-                ret.append(metric)
-        return torchmetrics.MetricCollection(ret)
-
-    def __call__(self, output, target, prefix="", *args, **kwargs) -> dict:
-        ret = {}
-        for metric in self.metrics:
-            if isinstance(metric, torchmetrics.Accuracy):
-                # metric.to(output.device)
-                ret["_".join([prefix, "accuracy-1"])] = metric(output, target)
-            else:
-                ret.update(metric(output, target, prefix, *args, **kwargs))
-        return ret
 
 
 class BackBone(torch.nn.Module):
