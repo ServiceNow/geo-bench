@@ -38,6 +38,7 @@ def experiment_generator(
     experiment_name: str
         The name of the current experiment. Will be used as a prefix to the results directory (default: None).
     wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+
     Returns:
         Name of the experiment.
     """
@@ -82,7 +83,8 @@ def experiment_generator(
             NUM_SEEDS = 3
 
             # not sure yet how to best handle this, does not make sense via model generator
-            best_param_path = "/mnt/data/experiments/nils/best_hparams_found_all_bands.json"
+            best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
+
 
             # use wandb sweep for hyperparameter search
             with open(best_param_path, "r") as f:

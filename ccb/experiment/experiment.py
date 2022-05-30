@@ -24,6 +24,7 @@ def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> Model
         The module_name of the model generator module.
     hparams:
         hparameter dict to overwrite the default base values
+        
     Returns:
     --------
     model_generator: a model_generator function loaded from the module.
@@ -127,6 +128,7 @@ class Job:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
             wandb_mode: wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
