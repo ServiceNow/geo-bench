@@ -10,7 +10,9 @@ from ccb import io
 from pathlib import Path
 
 
-def train_job_on_task(model_generator, task_specs, threshold, check_logs=True, logger=None, **kwargs):
+def train_job_on_task(
+    model_generator, task_specs, threshold, check_logs=True, logger=None, metric_name="Accuracy", **kwargs
+):
     with tempfile.TemporaryDirectory(prefix="ccb_mnist_test") as job_dir:
         job = Job(job_dir)
         task_specs.save(job.dir)
@@ -29,7 +31,9 @@ def train_job_on_task(model_generator, task_specs, threshold, check_logs=True, l
 
             metrics = job.get_metrics()
             print(metrics)
-            assert float(metrics["test_Accuracy"]) > threshold  # has to be better than random after seeing 20 batches
+            assert (
+                float(metrics[f"test_{metric_name}"]) > threshold
+            )  # has to be better than random after seeing 20 batches
             return metrics
 
         return None
@@ -63,10 +67,12 @@ def test_toolbox_brick_kiln():
     train_job_on_task(conv4_test.model_generator(), task_specs, 0.40)
 
 
-# def test_toolbox_segmentation():
-#     with open(Path(io.CCB_DIR) / "segmentation_v0.1/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
-#         task_specs = pickle.load(fd)
-#     train_job_on_task(py_segmentation_generator.model_generator, task_specs, 0.70, check_logs=False)
+def test_toolbox_segmentation():
+    with open(Path(io.CCB_DIR) / "segmentation_v0.1/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
+        task_specs = pickle.load(fd)
+    train_job_on_task(py_segmentation_generator.model_generator, task_specs, 0.70, check_logs=False)
+
+
 # this test is too slow
 
 
@@ -90,6 +96,24 @@ def test_toolbox_timm():
     train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70)
 
 
+def test_toolbox_bigearthnet():
+    hparams = {
+        "backbone": "resnet18",
+        "pretrained": True,
+        "lr_backbone": 1e-6,
+        "lr_head": 1e-4,
+        "optimizer": "sgd",
+        "momentum": 0.9,
+        "batch_size": 32,
+        "max_epochs": 1,
+        "fast_dev_run": True,
+        "logger": "csv",
+    }
+    with open(Path(io.CCB_DIR) / "classification_v0.4/bigearthnet" / "task_specs.pkl", "rb") as fd:
+        task_specs = pickle.load(fd)
+    train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70, check_logs=False)
+
+
 @pytest.mark.skipif(
     not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists() or not Path("/mnt/datasets/public").exists(),
     reason="Requires presence of the benchmark and ImageNet.",
@@ -109,8 +133,9 @@ if __name__ == "__main__":
     # test_toolbox_timm()
     # test_toolbox_brick_kiln()
     # test_toolbox_wandb()
-    test_toolbox_mnist()
-    test_toolbox_getitem()
-    test_toolbox_seeds()
+    # test_toolbox_mnist()
+    # test_toolbox_getitem()
+    # test_toolbox_seeds()
     # test_toolbox_segmentation()
+    test_toolbox_bigearthnet()
     pass
