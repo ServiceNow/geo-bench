@@ -19,10 +19,12 @@ import json
 
 def train(model_gen, job_dir, wandb_mode) -> None:
     """Train a model from the model generator on datamodule.
+    
     Args:
         model_gen: model generator
         job_dir: job directory that contains task_specs and hparams.json
         wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+
     """
     job = Job(job_dir)
     hparams = job.hparams
@@ -31,6 +33,7 @@ def train(model_gen, job_dir, wandb_mode) -> None:
         pl.seed_everything(seed, workers=True)
 
     model = model_gen.generate(job.task_specs, hparams)
+
     datamodule = DataModule(
         job.task_specs,
         batch_size=hparams["batch_size"],

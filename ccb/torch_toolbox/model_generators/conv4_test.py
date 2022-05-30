@@ -1,3 +1,4 @@
+from typing import Dict, Any
 from ccb.experiment.experiment import hparams_to_string
 from ccb.torch_toolbox.model_generators import conv4
 from typing import Dict, Any

@@ -25,3 +25,11 @@ parameters:
   hidden_size:
     distribution: categorical
     values: [128, 256, 512]
+  batch_size:
+    distribution: categorical
+    values: [32, 64]
+# # weight decay
+#   weight_decay:
+#     distribution: log_uniform
+#     max: -6.90775527898
+#     min: -11.512925465
