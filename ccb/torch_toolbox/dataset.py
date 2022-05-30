@@ -55,6 +55,7 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
+
             self.task_specs.get_dataset(
                 split="valid", transform=self.eval_transform, band_names=self.band_names, format=self.format
             ),
