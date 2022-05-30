@@ -46,7 +46,7 @@ class Model(LightningModule):
     def training_step_end(self, outputs):
         # update and log
         self.log("train_loss", outputs["loss"], logger=True)
-        self.train_metrics(outputs["output"].argmax(1), outputs["target"])
+        self.train_metrics(outputs["output"], outputs["target"])
         self.log_dict(self.train_metrics)
 
     def training_epoch_end(self, outputs):
@@ -70,7 +70,7 @@ class Model(LightningModule):
     def eval_step_end(self, outputs, prefix):
         # update and log
         self.log(f"{prefix}_loss", outputs["loss"], logger=True)
-        self.eval_metrics.update(outputs["output"].argmax(1), outputs["target"])
+        self.eval_metrics.update(outputs["output"], outputs["target"])
         # self.log_dict({f"{prefix}_{k}": v for k, v in eval_metrics.items()}, logger=True)
 
     def validation_step_end(self, outputs):
@@ -226,13 +226,20 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
             return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
+    elif isinstance(task_specs.label_type, io.MultiLabelClassification):
+        if hyperparams["head_type"] == "linear":
+            in_ch, *other_dims = features_shape[-1]
+            out_ch = task_specs.label_type.n_classes
+            return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
+        else:
+            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     elif isinstance(task_specs.label_type, io.SemanticSegmentation):
         if hyperparams["head_type"].split("-")[0] == "smp":  # smp: segmentation-models-pytorch
             return lambda *args: args
         else:
             raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
-        raise ValueError(f"Unrecognized task: {task_specs.task_type}")
+        raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
 def vit_head_generator(task_specs, hyperparams, input_shape):
@@ -270,6 +277,9 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
 
     metrics = {
         io.Classification: [
+            torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1),
+        ],
+        io.MultiLabelClassification: [
             torchmetrics.Accuracy(dist_sync_on_step=True),
         ],
         io.SegmentationClasses: [],
@@ -289,7 +299,11 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
         io.Classification: [
             torchmetrics.Accuracy(),
         ],
-        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
+        io.SegmentationClasses: [
+            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2),
+        ],
+        io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("eval_metrics", ()):
@@ -298,13 +312,24 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     return torchmetrics.MetricCollection(metrics)
 
 
+def _balanced_binary_cross_entropy_with_logits(inputs, targets):
+    classes = targets.shape[-1]
+    inputs = inputs.view(-1, classes)
+    targets = targets.view(-1, classes).float()
+    loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    # to balance divide background class by the amount of labels with background class. Deactivated for the moment
+    return loss.mean()
+
+
 def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
     """
     Returns the appropriate loss function depending on the task_specs.
     """
-    loss = {io.Classification: F.cross_entropy, io.SegmentationClasses: F.cross_entropy}[
-        task_specs.label_type.__class__
-    ]
+    loss = {
+        io.Classification: F.cross_entropy,
+        io.MultiLabelClassification: _balanced_binary_cross_entropy_with_logits,
+        io.SegmentationClasses: F.cross_entropy,
+    }[task_specs.label_type.__class__]
 
     return loss
 

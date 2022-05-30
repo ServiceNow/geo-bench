@@ -36,7 +36,7 @@ class DataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="train", transform=self.train_transform, format="tif"),
+            self.task_specs.get_dataset(split="train", transform=self.train_transform, format="hdf5"),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
