@@ -24,20 +24,15 @@ class Conv4Generator(ModelGenerator):
 
         self.base_hparams = {
             "backbone": "conv4",
-            "lr_milestones": (10, 20),
             "lr_gamma": 0.1,
             "lr_backbone": 4e-3,
             "lr_head": 4e-3,
             "head_type": "linear",
             "hidden_size": 128,
-            "train_iters": 50000,
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
-            "max_epochs": 10,
-            "val_check_interval": 50,
-            "limit_val_batches": 50,
-            "limit_test_batches": 50,
+            "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
@@ -46,7 +41,7 @@ class Conv4Generator(ModelGenerator):
             "num_trials_per_agent": 5,
             "band_names": ["red", "green", "blue"],
             "image_size": 224,
-            "format": "tif",
+            "format": "hdf5",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -88,6 +83,10 @@ class Conv4Generator(ModelGenerator):
             if train:
                 t.append(tt.RandomHorizontalFlip())
                 t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+            transform = tt.Compose(t)
+        elif task_specs.dataset_name.lower() == "mnist":
+            t = []
+            t.append(tt.ToTensor())
             transform = tt.Compose(t)
         else:
             mean, std = task_specs.get_dataset(
