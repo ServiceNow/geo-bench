@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import List, Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -33,9 +33,9 @@ class TIMMGenerator(ModelGenerator):
             "head_type": "linear",
             "hidden_size": 512,
             "loss_type": "crossentropy",
-            "batch_size": 32,
+            "batch_size": 64,
             "num_workers": 4,
-            "max_epochs": 10,
+            "max_epochs": 2,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
@@ -45,7 +45,7 @@ class TIMMGenerator(ModelGenerator):
             "band_names": ["red", "green", "blue", "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
             "image_size": 224,
             "format": "hdf5",
-            "new_channel_init_method": "random",  # random, new_channels_zero, clone_random_rgb_channel
+            "new_channel_init_method": "random",  # random, clone_random_rgb_channel
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -61,7 +61,13 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-
+        
+        logging.warning("FIXME: Using ImageNet default input size!")
+        # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
+        hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
+        # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
+        # hyperparameters.update({"std": backbone.default_cfg["std"]})
+        
         new_in_channels = len(hyperparameters["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if hyperparameters["backbone"] in ["resnet18", "resnet50"]:
@@ -258,6 +264,9 @@ class TIMMGenerator(ModelGenerator):
 
             t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
 
+            elif hyperparams["backbone"] in ["swinv2_tiny_window16_256"]:
+                t.append(tt.Resize((256, 256)))
+
             t = tt.Compose(t)
 
             def transform(sample: io.Sample):
@@ -267,7 +276,6 @@ class TIMMGenerator(ModelGenerator):
 
         return transform
 
-
-def model_generator(hparams: Dict[str, Any]) -> TIMMGenerator:
+def model_generator(hparams: Dict[str, Any] = {}) -> TIMMGenerator:
     model_generator = TIMMGenerator(hparams=hparams)
     return model_generator
