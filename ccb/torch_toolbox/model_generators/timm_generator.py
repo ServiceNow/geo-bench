@@ -61,13 +61,13 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-        
+
         logging.warning("FIXME: Using ImageNet default input size!")
         # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
         hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
         # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
         # hyperparameters.update({"std": backbone.default_cfg["std"]})
-        
+
         new_in_channels = len(hyperparameters["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if hyperparameters["backbone"] in ["resnet18", "resnet50"]:
@@ -173,8 +173,7 @@ class TIMMGenerator(ModelGenerator):
         Returns:
             newly initialized input Conv2d layer
         """
-        # method = self.base_hparams.get("new_channel_init_method", "random")
-        method = "new_channels_zero"
+        method = self.base_hparams.get("new_channel_init_method", "random")
 
         dataset = task_specs.get_dataset(
             split="train", band_names=hyperparams["band_names"], format=hyperparams["format"]
@@ -241,7 +240,7 @@ class TIMMGenerator(ModelGenerator):
     def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
-        c, h, w = hyperparams["input_size"]
+        _, h, w = hyperparams["input_size"]
         if task_specs.dataset_name == "imagenet":
             mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
             t = []
@@ -264,9 +263,6 @@ class TIMMGenerator(ModelGenerator):
 
             t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
 
-            elif hyperparams["backbone"] in ["swinv2_tiny_window16_256"]:
-                t.append(tt.Resize((256, 256)))
-
             t = tt.Compose(t)
 
             def transform(sample: io.Sample):
@@ -275,6 +271,7 @@ class TIMMGenerator(ModelGenerator):
                 return {"input": x, "label": sample.label}
 
         return transform
+
 
 def model_generator(hparams: Dict[str, Any] = {}) -> TIMMGenerator:
     model_generator = TIMMGenerator(hparams=hparams)
