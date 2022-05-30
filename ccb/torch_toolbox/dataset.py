@@ -36,7 +36,7 @@ class DataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="train", transform=self.train_transform),
+            self.task_specs.get_dataset(split="train", transform=self.train_transform, format="tif"),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
@@ -45,7 +45,7 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="valid", transform=self.eval_transform),
+            self.task_specs.get_dataset(split="valid", transform=self.eval_transform, format="hdf5"),
             batch_size=self.val_batch_size,
             shuffle=False,
             num_workers=self.num_workers,
@@ -54,7 +54,7 @@ class DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(
-            self.task_specs.get_dataset(split="test", transform=self.eval_transform),
+            self.task_specs.get_dataset(split="test", transform=self.eval_transform, format="hdf5"),
             batch_size=self.val_batch_size,
             shuffle=False,
             num_workers=self.num_workers,
