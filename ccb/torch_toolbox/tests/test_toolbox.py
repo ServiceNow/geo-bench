@@ -73,10 +73,10 @@ def test_toolbox_brick_kiln():
 #     train_job_on_task(timm_generator.model_generator, task_specs, 0.70)
 
 
-def test_toolbox_segmentation():
-    with open(Path(io.CCB_DIR) / "segmentation_v0.1/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
-        task_specs = pickle.load(fd)
-    train_job_on_task(py_segmentation_generator.model_generator, task_specs, 0.70, check_logs=False)
+# def test_toolbox_segmentation():
+#     with open(Path(io.CCB_DIR) / "segmentation_v0.1/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
+#         task_specs = pickle.load(fd)
+#     train_job_on_task(py_segmentation_generator.model_generator, task_specs, 0.70, check_logs=False)
 
 
 @pytest.mark.skipif(
@@ -98,8 +98,8 @@ if __name__ == "__main__":
     # test_toolbox_timm()
     # test_toolbox_brick_kiln()
     # test_toolbox_wandb()
-    # test_toolbox_mnist()
-    # test_toolbox_getitem()
-    # test_toolbox_seeds()
-    test_toolbox_segmentation()
+    test_toolbox_mnist()
+    test_toolbox_getitem()
+    test_toolbox_seeds()
+    # test_toolbox_segmentation()
     pass
