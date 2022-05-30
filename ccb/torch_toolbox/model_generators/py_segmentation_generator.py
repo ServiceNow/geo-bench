@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -51,6 +51,7 @@ class SegmentationGenerator(ModelGenerator):
             "enable_progress_bar": False,
             "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
             "fast_dev_run": True,  # runs 1 train, 1 validation, and 1 test batch.
+            "format": "tif",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -161,4 +162,6 @@ class SegmentationGenerator(ModelGenerator):
         return transform
 
 
-model_generator = SegmentationGenerator()
+def model_generator(hparams: Dict[str, Any] = {}) -> SegmentationGenerator:
+    model_generator = SegmentationGenerator(hparams=hparams)
+    return model_generator
