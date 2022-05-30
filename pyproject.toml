@@ -34,7 +34,7 @@ torch = "1.10.2"
 h5py = "3.3.0"
 xmltodict = "0.12.0"
 "ruamel.yaml" = "0.17.21"
-timm = "0.5.4"
+timm = { git = "https://github.com/rwightman/pytorch-image-models.git", branch = "master"}
 
 [tool.poetry.dev-dependencies]
 black = "*"
