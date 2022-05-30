@@ -13,14 +13,17 @@ from ccb import io
 from ccb.torch_toolbox.model import ModelGenerator
 from ruamel.yaml import YAML
 import os
+from typing import Dict, Any
 
 
-def get_model_generator(module_name: str) -> ModelGenerator:
+def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:
     """
     Parameters:
     -----------
     module_name: str
         The module_name of the model generator module.
+    hparams:
+        hparameter dict to overwrite the default base values
 
     Returns:
     --------
@@ -28,7 +31,7 @@ def get_model_generator(module_name: str) -> ModelGenerator:
 
     """
 
-    return import_module(module_name).model_generator
+    return import_module(module_name).model_generator(hparams)
 
 
 def hparams_to_string(hp_configs):
@@ -113,20 +116,21 @@ class Job:
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module_name: str, job_dir: str):
+    def write_script(self, model_generator_module_name: str, job_dir: str, wandb_mode: str):
         """Write bash scrip that can be executed to run job.
 
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
-            base_sweep_config: path to base sweep config yaml file for wandb
+            wandb_mode: wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} --wandb-mode {wandb_mode} >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
@@ -148,6 +152,8 @@ class Job:
             model_generator_module_name,
             "--job-dir",
             str(job_dir),
+            "--wandb-mode",
+            "sweep",
         ]
 
         # sweep name that will be seen on wandb
