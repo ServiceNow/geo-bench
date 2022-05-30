@@ -1,15 +1,12 @@
-# So2Sat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
-
-import os
 from ccb import io
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from torchgeo.datasets import So2Sat
+from torchgeo.datasets import BigEarthNet
 
-DATASET_NAME = "so2sat"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+DATASET_NAME = "bigearthnet"
+SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
 def make_sample(images, label, sample_name, task_specs):
@@ -43,28 +40,37 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
-        patch_size=(32, 32),
+        patch_size=(120, 120),
         n_time_steps=1,
-        bands_info=io.sentinel1_8_bands + io.sentinel2_13_bands[1:9] + io.sentinel2_13_bands[-2:],
+        bands_info=io.sentinel2_13_bands[0:10] + io.sentinel2_13_bands[-2:],
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(17, class_names=So2Sat.classes),
-        eval_loss=io.Accuracy,
+        label_type=io.MultiLabelClassification(43),
+        eval_loss=io.MultilabelAccuracy,
         spatial_resolution=10,
     )
-    task_specs.save(dataset_dir, overwrite=True)
+    task_specs.save(dataset_dir)
     n_samples = 0
-    for split_name in ["train", "validation", "test"]:
-        so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
-        for i, tg_sample in enumerate(tqdm(so2sat_dataset)):
-            sample_name = f"id_{i:04d}"
+    for split_name in ["train", "val", "test"]:
+        bigearthnet_dataset = BigEarthNet(
+            root=SRC_DATASET_DIR,
+            split=split_name,
+            bands="s2",
+            download=False,
+            transforms=None,
+            checksum=False,
+            num_classes=43,
+        )
+
+        for i, tg_sample in enumerate(tqdm(bigearthnet_dataset)):
+            sample_name = f"id_{n_samples:04d}"
 
             images = np.array(tg_sample["image"])
-            label = tg_sample["label"]
+            label = np.array(tg_sample["label"])
 
-            sample = make_sample(images, int(label), sample_name, task_specs)
+            sample = make_sample(images, label, sample_name, task_specs)
             sample.write(dataset_dir)
 
-            partition.add(split_name.replace("validation", "valid"), sample_name)
+            partition.add(split_name.replace("val", "valid"), sample_name)
 
             n_samples += 1
             if max_count is not None and n_samples >= max_count:
