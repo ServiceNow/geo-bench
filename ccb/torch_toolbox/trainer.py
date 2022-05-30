@@ -2,9 +2,7 @@
 """
 Trains the model using job information contained in the current directory.
 Expects to find files "hparams.json" and "task_specs.json".
-
 Usage: trainer.py --model-generator path/to/my/model/generator.py
-
 """
 import argparse
 
@@ -14,9 +12,18 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 import os
+import string
+import random
+import json
 
 
-def train(model_gen, job_dir):
+def train(model_gen, job_dir, wandb_mode) -> None:
+    """Train a model from the model generator on datamodule.
+    Args:
+        model_gen: model generator
+        job_dir: job directory that contains task_specs and hparams.json
+        wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+    """
     job = Job(job_dir)
     hparams = job.hparams
     seed = hparams.get("seed", None)
@@ -31,6 +38,8 @@ def train(model_gen, job_dir):
         train_transform=model_gen.get_transform(job.task_specs, hparams, train=True),
         eval_transform=model_gen.get_transform(job.task_specs, hparams, train=False),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
+        band_names=hparams.get("band_names", ("red", "green", "blue")),
+        format=hparams.get("format", "hdf5"),
     )
 
     logger_type = hparams.get("logger", None)
@@ -38,13 +47,29 @@ def train(model_gen, job_dir):
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
+        # if id is present in hparam, continue run. does not work with wandb sweeps
+        if "wandb_run_id" in hparams and wandb_mode != "sweep":
+            run_id = hparams["wandb_run_id"]
+            resume_flag = "allow"
+        elif wandb_mode == "sweep":
+            resume_flag = True
+            run_id = None
+        else:
+            run_id = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8))
+            hparams["wandb_run_id"] = run_id
+            with open(os.path.join(job_dir, "hparams.json"), "w") as f:
+                json.dump(hparams, f)
+            resume_flag = "allow"
+
         loggers.append(
             pl.loggers.WandbLogger(
                 project="ccb",
                 entity="climate-benchmark",
+                id=run_id,
                 group=hparams.get("wandb_group", None),
                 name=hparams.get("name", None),
                 save_dir=str(job.dir),
+                resume=resume_flag,
             )
         )
     elif logger_type.lower() == "csv":
@@ -65,7 +90,7 @@ def train(model_gen, job_dir):
         default_root_dir=job_dir,
         gpus=hparams.get("n_gpus", 1),
         max_epochs=hparams["max_epochs"],
-        max_steps=hparams.get("train_iters", None),
+        max_steps=hparams.get("train_iters", -1),
         limit_val_batches=hparams.get("limit_val_batches", 1.0),
         limit_test_batches=hparams.get("limit_val_batches", 1.0),
         val_check_interval=hparams.get("val_check_interval", 1.0),
@@ -74,7 +99,7 @@ def train(model_gen, job_dir):
         log_every_n_steps=hparams.get("log_every_n_steps", 10),
         enable_progress_bar=False,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 10), min_delta=1e-4),
+            EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 30), min_delta=1e-5),
             checkpoint_callback,
         ],
         logger=loggers,
@@ -102,11 +127,18 @@ def start():
         help="Path to the job.",
         required=True,
     )
+
+    parser.add_argument(
+        "--wandb-mode",
+        help="Running sweeps, seeded runs or standard.",
+        required=True,
+        choices=["sweep", "seeded_runs", "standard"],
+    )
     args = parser.parse_args()
 
     # Load the user-specified model generator
     model_gen = get_model_generator(args.model_generator)
-    train(model_gen, args.job_dir)
+    train(model_gen, args.job_dir, args.wandb_mode)
 
 
 if __name__ == "__main__":
