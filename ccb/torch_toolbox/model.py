@@ -7,7 +7,6 @@ import torch.nn.functional as F
 import torchmetrics
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.modules import ClassificationHead
-from ccb.torch_toolbox.utils import tensor2colors
 
 
 class Model(LightningModule):
