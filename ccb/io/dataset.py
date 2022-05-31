@@ -1,6 +1,7 @@
 import ast
 from multiprocessing.sharedctypes import Value
 import pathlib
+from attr import attr
 import numpy as np
 from numpy.lib.function_base import percentile
 import rasterio
@@ -16,7 +17,8 @@ from warnings import warn
 from ccb.io.label import LabelType
 from collections import OrderedDict, defaultdict
 from tqdm import tqdm
-
+import h5py
+from typing import Sequence
 
 # Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -72,6 +74,7 @@ class BandInfo(object):
         return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
+        """The name of the band repated with the numbef or channels"""
         return [self.name]
 
 
@@ -122,6 +125,7 @@ class MultiBand(BandInfo):
         self.n_bands = n_bands
 
     def expand_name(self):
+        """The name of the band repated with the numbef or channels"""
         return [self.name] * self.n_bands
 
 
@@ -348,7 +352,7 @@ class Band:
         return file_path
 
 
-def load_band(file_path):
+def load_band_tif(file_path):
     with rasterio.open(file_path) as src:
         tags = pickle.loads(ast.literal_eval(src.tags()["data"]))
         data = src.read()
@@ -411,7 +415,7 @@ class Sample(object):
         self.band_name_map, self.band_info_list = _map_bands(band_info_set.keys())
         self.band_names = [band_info.name for band_info in self.band_info_list]
 
-        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=np.object)
+        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=object)
 
         for band in bands:
             band_idx = self.band_name_map[band.band_info.name]
@@ -512,41 +516,175 @@ class Sample(object):
         assert data_4d.shape[0] == 1
         return data_4d[0], band_names
 
-    def write(self, dataset_dir):
+    def write(self, dataset_dir, format="hdf5"):
+        writer = dict(hdf5=write_sample_hdf5, tif=write_sample_tif)[format]
+        return writer(sample=self, dataset_dir=dataset_dir)
 
-        dst_dir = pathlib.Path(dataset_dir, self.sample_name)
-        dst_dir.mkdir(exist_ok=True, parents=True)
 
-        file_set = set()
+def write_sample_tif(sample, dataset_dir):
 
-        # the band index ensure to keep band order and loading by band name.
-        band_index = OrderedDict()  # TODO maybe replace this band_index with a structure similar to band array.
-        for i, band in enumerate(self.bands):
-            file = band.write_to_geotiff(dst_dir)
-            band_name = band.band_info.name
-            if band_name not in band_index:
-                band_index[band_name] = [file.name]
-            else:
-                band_index[band_name].append(file.name)
-            file_set.add(file)
+    dst_dir = pathlib.Path(dataset_dir, sample.sample_name)
+    dst_dir.mkdir(exist_ok=True, parents=True)
 
-        if len(file_set) != len(self.bands):
-            raise ValueError("Duplicate band description in bands. Perhaps date is missing?")
+    file_set = set()
 
-        with open(Path(dst_dir, "band_index.json"), "w") as fd:
-            json.dump(tuple(band_index.items()), fd)
+    # the band index ensure to keep band order and loading by band name.
+    band_index = OrderedDict()  # TODO maybe replace this band_index with a structure similar to band array.
+    for i, band in enumerate(sample.bands):
+        file = band.write_to_geotiff(dst_dir)
+        band_name = band.band_info.name
+        if band_name not in band_index:
+            band_index[band_name] = [file.name]
+        else:
+            band_index[band_name].append(file.name)
+        file_set.add(file)
 
-        if self.label is not None:
-            if isinstance(self.label, Band):
-                if not isinstance(self.label.band_info, LabelType):
+    if len(file_set) != len(sample.bands):
+        raise ValueError("Duplicate band description in bands. Perhaps date is missing?")
+
+    with open(Path(dst_dir, "band_index.json"), "w") as fd:
+        json.dump(tuple(band_index.items()), fd)
+
+    if sample.label is not None:
+        if isinstance(sample.label, Band):
+            if not isinstance(sample.label.band_info, LabelType):
+                raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
+            sample.label.write_to_geotiff(dst_dir)
+        else:
+            with open(Path(dst_dir, "label.json"), "w") as fd:
+                json.dump(sample.label, fd)
+    return dst_dir
+
+
+def write_sample_hdf5(sample: Sample, dataset_dir):
+    sample_path = Path(dataset_dir) / f"{sample.sample_name}.hdf5"
+
+    with h5py.File(sample_path, "w") as fp:
+        bands = sample.bands
+
+        attr_dict = {}
+        bands_order = []
+
+        if sample.label is not None:
+            if isinstance(sample.label, Band):
+                if not isinstance(sample.label.band_info, LabelType):
                     raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
-                self.label.write_to_geotiff(dst_dir)
+                assert sample.label.band_info.name == "label"
+                bands.append(sample.label)
             else:
-                with open(Path(dst_dir, "label.json"), "w") as fd:
-                    json.dump(self.label, fd)
+                attr_dict["label"] = sample.label
+
+        for band in bands:
+            band_descriptor = band.get_descriptor()
+            fp.create_dataset(name=band_descriptor, data=band.data)
+            attrs = dict(
+                date=band.date,
+                date_id=band.date_id,
+                spatial_resolution=band.spatial_resolution,
+                band_info=band.band_info,
+                meta_info=band.meta_info,
+            )
+            bands_order.append(band_descriptor)
+            attr_dict[band_descriptor] = attrs
+
+            # h5_band.attrs["pickle"] = str(pickle.dumps(attrs))
+        attr_dict["bands_order"] = bands_order
+        fp.attrs["pickle"] = str(pickle.dumps(attr_dict))  # seems to be faster to do it in a single one pickle
+    return sample_path
 
 
-def load_sample(sample_dir, band_names=None):
+def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
+    with h5py.File(sample_path, "r") as fp:
+
+        attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
+        band_names = attr_dict.get("bands_order", fp.keys())
+        bands = []
+
+        # check if label is present in hdf5 file and retrieve it, or get it from attr_dict
+        if "label" in fp.keys():
+            label = fp["label"]
+            label = Band(data=np.array(label), **attr_dict["label"])
+        else:
+            label = attr_dict.get("label", None)
+
+        if label_only:
+            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        else:
+            for band_name in band_names:
+
+                h5_band = fp[band_name]
+
+                band = Band(data=np.array(h5_band), **attr_dict[band_name])
+
+                bands.append(band)
+
+            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+
+
+def write_sample_npz(sample: Sample, dataset_dir):
+    sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
+
+    bands = sample.bands
+    band_dict = {}
+    attr_dict = {}
+    bands_order = []
+
+    if sample.label is not None:
+        if isinstance(sample.label, Band):
+            if not isinstance(sample.label.band_info, LabelType):
+                raise ValueError("The label is of type Band, but its band_info is not instance of Label.")
+            assert sample.label.band_info.name == "label"
+            bands.append(sample.label)
+        else:
+            attr_dict["label"] = sample.label
+
+    for band in bands:
+        band_descriptor = band.get_descriptor()
+        band_dict[band_descriptor] = band.data
+        attrs = dict(
+            date=band.date,
+            date_id=band.date_id,
+            spatial_resolution=band.spatial_resolution,
+            band_info=band.band_info,
+            meta_info=band.meta_info,
+        )
+        bands_order.append(band_descriptor)
+        attr_dict[band_descriptor] = attrs
+
+        # h5_band.attrs["pickle"] = str(pickle.dumps(attrs))
+    attr_dict["bands_order"] = bands_order
+    band_dict["pickle"] = str(pickle.dumps(attr_dict))  # seems to be faster to do it in a single one pickle
+    # band_dict["attr"] = attr_dict
+    np.savez(sample_path, **band_dict)
+    return sample_path
+
+
+def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
+    band_dict = np.load(sample_path, allow_pickle=True)
+    attr_dict = pickle.loads(ast.literal_eval(str(band_dict["pickle"])))
+    # attr_dict = band_dict["attr"]
+
+    band_names = attr_dict["bands_order"]
+    bands = []
+    label = None
+    for band_name in band_names:
+
+        if label_only and band_name != "label":
+            continue
+
+        band = Band(data=band_dict[band_name], **attr_dict[band_name])
+        if band_name == "label":
+            label = band
+        else:
+            bands.append(band)
+
+    if label is None:
+        label = attr_dict.get("label", None)
+
+    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+
+
+def load_sample_tif(sample_dir, band_names=None):
     sample_dir = Path(sample_dir)
     band_list = []
     with open(Path(sample_dir, "band_index.json"), "r") as fd:
@@ -557,7 +695,7 @@ def load_sample(sample_dir, band_names=None):
 
     for band_name in band_names:
         for file_name in band_index[band_name]:
-            band_list.append(load_band(Path(sample_dir, file_name)))
+            band_list.append(load_band_tif(Path(sample_dir, file_name)))
 
     label_file = Path(sample_dir, "label.json")
     label_file_tif = Path(sample_dir, "label.tif")
@@ -565,8 +703,13 @@ def load_sample(sample_dir, band_names=None):
         with open(label_file, "r") as fd:
             label = json.load(fd)
     elif label_file_tif.exists():
-        label = load_band(label_file_tif)
+        label = load_band_tif(label_file_tif)
     return Sample(band_list, label, sample_name=sample_dir.name)
+
+
+def load_sample(sample_path: Path, band_names=None, format=None):
+    loader = dict(tif=load_sample_tif, hdf5=load_sample_hdf5)[format]
+    return loader(sample_path, band_names=band_names)
 
 
 def _largest_shape(band_array):
@@ -630,7 +773,17 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, split=None, partition_name="default", transform=None) -> None:
+    def __init__(
+        self,
+        dataset_dir,
+        band_names: Sequence[
+            str,
+        ],
+        split=None,
+        partition_name="default",
+        transform=None,
+        format="hdf5",
+    ) -> None:
         """
         Load CCB dataset.
         CCB datasets can have different split partitions (e.g. for few-shot learning).
@@ -639,14 +792,50 @@ class Dataset:
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
+            band_names: Sequence of band names to select
             split: Specify split to use or None for all
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
+            transform: dataset transforms
+            format: 'hdf5' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
+        self.format = format
         self.transform = transform
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
+        assert format in ["hdf5", "tif"], f"Invalid file format {format}"
+        # define alt names that map alt band names to full band names
+        self.alt_band_names = self.alt_to_full_names(band_names)
+        # cast user band names to full band names so no need to check for alt names
+        self.band_names = [self.alt_band_names[name] for name in band_names]
+
+    def alt_to_full_names(self, band_names) -> Dict[str, str]:
+        """Define a dictionary mapping from all alt band names to full band names and check validity.
+
+        Args:
+            band_names: band names for which to collect alt names
+
+        Returns:
+            dictionary mapping all possible band names to full band name
+        """
+        bands_info = self.task_specs.bands_info
+        alt_band_names = {}
+        for user_band_name in band_names:
+            matched_band_name = None
+            for band_info in bands_info:
+                possible_names = band_info.alt_names + (band_info.name,)
+                if user_band_name in possible_names:
+                    matched_band_name = band_info.name
+                    for name in possible_names:
+                        alt_band_names[name] = band_info.name
+
+            if matched_band_name is None:
+                raise ValueError(
+                    f"The band {user_band_name} you specified does not exist in dataset bands {bands_info}."
+                )
+
+        return alt_band_names
 
     #### Loading paths
     def _load_partitions(self, active_partition_name) -> None:
@@ -677,11 +866,7 @@ class Dataset:
     @cached_property
     def task_specs(self):
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
-            task_specs = pickle.load(fd)
-
-        # banchmark name should follow parent dir
-        task_specs.benchmark_name = self.dataset_dir.parent.name
-        return task_specs
+            return pickle.load(fd)
 
     #### Splits ####
 
@@ -759,64 +944,29 @@ class Dataset:
             band_stats[band_name] = Stats(**stats_dict)
         return band_stats
 
-    @cached_property
     def rgb_stats(self):
-        blue = self.band_stats["02 - Blue"]
-        green = self.band_stats["03 - Green"]
-        red = self.band_stats["04 - Red"]
+        try:
+            blue = self.band_stats["02 - Blue"]
+            green = self.band_stats["03 - Green"]
+            red = self.band_stats["04 - Red"]
+        except KeyError:
+            blue = self.band_stats["Blue"]
+            green = self.band_stats["Green"]
+            red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
-    # #### Statistics ####
-    # def _load_stats(self):
-    #     """
-    #     Load global and split-wise statistics. Fail with warning if not available.
+    def normalization_stats(
+        self,
+    ) -> Tuple[Tuple[float, ...]]:
+        """Retrieve band mean and std statistics for image normalization for dataset bands."""
+        means = []
+        stds = []
+        for band_name in self.band_names:
+            band_stat = self.band_stats[band_name]
+            means.append(band_stat.mean)
+            stds.append(band_stat.std)
 
-    #     Note: this function must be called after the partitions are loaded
-    #     """
-    #     self.stats = {}
-
-    #     # This will actually load all partition/split statistics at once to simplify the logic
-    #     # Otherwise we would need to change stats every time set_split or set_partition() is called
-    #     current_partition = self.active_partition_name  # push current
-
-    #     # Check if split-wise stats exist
-    #     for partition in self.list_partitions():
-    #         self.set_partition(partition)
-    #         for split in self.list_splits():
-    #             print(f"Attempting to load split-wise stats for {partition}:{split}")
-    #             try:
-    #                 with open(self.dataset_dir / f"{partition}_{split}_bandstats.json", "r", encoding="utf8") as fp:
-    #                     stats_dict = json.load(fp)
-    #                     self.stats.setdefault(partition, {})
-    #                     self.stats[partition][split] = {
-    #                         k: convert_dict_to_stats(v) for k, v in stats_dict.items()
-    #                     }  # from dict to Stats
-    #                     print("-> success")
-    #             except Exception as e:
-    #                 print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
-
-    #     # Load global stats if exists
-    #     try:
-    #         print("Attempting to load global stats (over all dataset)")
-    #         with open(self.dataset_dir / "all_bandstats.json", "r", encoding="utf8") as fp:
-    #             stats_dict = json.load(fp)
-    #             self.stats.setdefault("all", {})
-    #             self.stats["all"] = {k: convert_dict_to_stats(v) for k, v in stats_dict.items()}  # from dict to Stats
-    #             print("-> success")
-    #     except Exception as e:
-    #         print(f"-> Could not load stats {repr(e)}. Maybe (re)compute them with bandstats.py?")
-
-    #     # pop current partition
-    #     self.set_partition(current_partition)
-
-    # def get_stats(self, split_wise=False):
-    #     """
-    #     Return stats for active partition if split_wise is True, otherwise return global stats
-    #     """
-    #     if split_wise:
-    #         return self.stats[self.active_partition_name][self.split]
-    #     else:
-    #         return self.stats["all"]
+        return tuple(means), tuple(stds)
 
     #### Common accessors and iterators ####
 
@@ -828,8 +978,10 @@ class Dataset:
             sample_name_list = self._sample_name_list
         else:
             sample_name_list = self.active_partition.partition_dict[self.split]
-        sample_path = Path(self.dataset_dir, sample_name_list[idx])
-        sample = load_sample(sample_path)
+        sample_name = sample_name_list[idx]
+        if self.format == "hdf5":
+            sample_name += ".hdf5"
+        sample = load_sample(Path(self.dataset_dir, sample_name), band_names=self.band_names, format=self.format)
         if self.transform is not None:
             return self.transform(sample)
         else:
@@ -846,13 +998,16 @@ class Dataset:
         return len(sample_name_list)
 
     def _iter_dataset(self, max_count=None):
-        if self.split is None:
-            sample_name_list = self._sample_name_list
-        else:
-            sample_name_list = self.active_partition.partition_dict[self.split]
-        sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
-        for sample_name in sample_names:
-            yield load_sample(Path(self.dataset_dir, sample_name))
+        indexes = np.random.choice(len(self), size=max_count, replace=False)
+        for idx in indexes:
+            yield self[idx]
+        # if self.split is None:
+        #     sample_name_list = self._sample_name_list
+        # else:
+        #     sample_name_list = self.active_partition.partition_dict[self.split]
+        # sample_names = np.random.choice(sample_name_list, size=max_count, replace=False)
+        # for sample_name in sample_names:
+        #     yield load_sample(Path(self.dataset_dir, sample_name))
 
     def iter_dataset(self, max_count=None):
         n = len(self)

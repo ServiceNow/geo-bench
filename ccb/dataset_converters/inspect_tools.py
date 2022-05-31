@@ -76,14 +76,26 @@ def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True, pe
     return new_images
 
 
-def extract_images(samples, band_names=("red", "green", "blue"), percentile_max=99.9, resample=False, fill_value=None):
+def extract_images(
+    samples, band_names=("red", "green", "blue"), percentile_max=99.9, resample=False, fill_value=None, date_index=0
+):
     images = []
     labels = []
     for sample in samples:
-        img_data, _, _ = sample.pack_to_4d(sample.dates[:1], band_names, resample=resample, fill_value=fill_value)
+        img_data, _, _ = sample.pack_to_4d(
+            sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
+        )
         img_data = img_data[0].astype(np.float)
-        images.append(img_data)
-        labels.append(sample.label)
+        # TODO We should pass labelType from task specs and compare that instead of the class
+        # Once we change this function, we should update all inspection notebooks
+        if isinstance(sample.label, np.ndarray):
+            for i, label in enumerate(sample.label):
+                if label == 1:
+                    images.append(img_data)
+                    labels.append(i)
+        else:
+            images.append(img_data)
+            labels.append(sample.label)
 
     images = float_image_to_uint8(images, percentile_max)
     return images, labels
@@ -151,7 +163,7 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
         scale = np.array([1.0, 1.0])
-    if isinstance(label, (list, tuple)):
+    if isinstance(label, (list, tuple)):  # TODO hack tha needs to change
         im = Image.fromarray(image)
         ctxt = ImageDraw.Draw(im)
         for obj in label:
@@ -167,13 +179,13 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
         return image
 
 
-def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None):
+def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None, date_index=0):
     if band_groups is None:
         band_groups = [(band_name,) for band_name in samples[0].band_names]
     all_images = []
     labels = []
     for i, band_group in enumerate(band_groups):
-        images, _ = extract_images(samples, band_names=band_group)
+        images, _ = extract_images(samples, band_names=band_group, date_index=date_index)
         if draw_label:
             images = [overlay_label(image, sample.label, label_patch_size) for image, sample in zip(images, samples)]
 
