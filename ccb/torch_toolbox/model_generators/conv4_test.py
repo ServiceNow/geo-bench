@@ -1,5 +1,6 @@
 from ccb.experiment.experiment import hparams_to_string
 from ccb.torch_toolbox.model_generators import conv4
+from typing import Dict, Any
 
 
 class Conv4GeneratorTest(conv4.Conv4Generator):
@@ -17,4 +18,6 @@ class Conv4GeneratorTest(conv4.Conv4Generator):
         return hparams_to_string([hparams1, hparams2])
 
 
-model_generator = Conv4GeneratorTest()
+def model_generator(hparams: Dict[str, Any] = {}) -> Conv4GeneratorTest:
+    model_generator = Conv4GeneratorTest(hparams=hparams)
+    return model_generator

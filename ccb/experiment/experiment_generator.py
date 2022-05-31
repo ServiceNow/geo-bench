@@ -1,18 +1,16 @@
 """
 Generate experiment directory structure
-
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
-
 """
 import argparse
 
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 
 from ccb.experiment.experiment import Job
 from ccb.experiment.experiment import get_model_generator
 from ccb import io
+import json
 
 
 def experiment_generator(
@@ -22,11 +20,11 @@ def experiment_generator(
     max_num_configs: int = 10,
     benchmark_name: str = "default",
     experiment_name: str = None,
+    wandb_mode: str = "standard",
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
     According to model_generator.hp_search.
-
     Parameters:
     -----------
     model_generator: ModelGenerator
@@ -39,35 +37,97 @@ def experiment_generator(
         The name of the benchmark on which to conduct the experiment (default: "default").
     experiment_name: str
         The name of the current experiment. Will be used as a prefix to the results directory (default: None).
+    wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
 
     Returns:
         Name of the experiment.
     """
     experiment_dir = Path(experiment_dir)
-    experiment_prefix = f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    experiment_prefix = (
+        f"{experiment_name or 'experiment'}_{benchmark_name}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    )
     if experiment_name is not None:
         experiment_dir /= experiment_prefix
 
-    model_generator = get_model_generator(model_generator_module_name)
-
     print(f"Generating experiments for {model_generator_module_name} on {benchmark_name} benchmark.")
+
     for task_specs in io.task_iterator(benchmark_name=benchmark_name):
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
         print(task_specs.dataset_name)
-        for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
 
-            # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-            hparams['name'] = f'{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}'
+        if wandb_mode == "sweep":
+            model_generator = get_model_generator(model_generator_module_name)
 
-            # Create and fill experiment directory
-            job_dir = experiment_dir / task_specs.dataset_name / hparams_string
+            # use wandb sweep for hyperparameter search
+            model = model_generator.generate(task_specs, model_generator.base_hparams)
+            hparams = model.hyperparameters
+
+            hparams["dataset_name"] = task_specs.dataset_name
+            hparams["model_generator_name"] = model_generator_module_name
+
+            # create and fill experiment directory
+            job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
-            print("  ", hparams_string, " -> hparams['name']=", hparams['name'])
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
-            job.write_script(model_generator_module_name)
+
+            job.write_wandb_sweep_cl_script(
+                model_generator_module_name,
+                job_dir=job_dir,
+                base_sweep_config=hparams["sweep_config_yaml_path"],
+            )
+
+        elif wandb_mode == "seeded_runs":
+            NUM_SEEDS = 3
+
+            # not sure yet how to best handle this, does not make sense via model generator
+            best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
+
+
+            # use wandb sweep for hyperparameter search
+            with open(best_param_path, "r") as f:
+                best_params = json.load(f)
+
+            backbone_names = list(best_params[task_specs.dataset_name].keys())
+
+            for back_name in backbone_names:
+                backbone_config = best_params[task_specs.dataset_name][back_name]
+
+                benchmark_name = backbone_config["benchmark_name"]
+                model_generator_name = backbone_config["model_generator_name"]
+
+                model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
+
+                backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
+                for i in range(NUM_SEEDS):
+                    # set seed to be used in experiment
+                    backbone_config["seed"] = i
+                    # run name as displayed in wandb
+                    # wandb group
+
+                    job_dir = experiment_dir / task_specs.dataset_name / back_name / f"seed_{i}"
+                    job = Job(job_dir)
+                    job.save_hparams(backbone_config)
+                    job.save_task_specs(task_specs)
+                    job.write_script(model_generator_name, job_dir=job_dir, wandb_mode=wandb_mode)
+
+        else:
+            model_generator = get_model_generator(model_generator_module_name)
+
+            for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
+
+                # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
+                hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
+
+                # Create and fill experiment directory
+                job_dir = experiment_dir / task_specs.dataset_name / hparams_string
+                job = Job(job_dir)
+                print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
+                job.save_hparams(hparams)
+                job.save_task_specs(task_specs)
+                job.write_script(model_generator_module_name, job_dir, wandb_mode=wandb_mode)
 
     return experiment_dir
 
@@ -105,7 +165,6 @@ def start():
 
     args = parser.parse_args()
 
-    # Generate experiments
     experiment_generator(
         args.model_generator, args.experiment_dir, benchmark_name=args.benchmark, experiment_name=args.experiment_name
     )

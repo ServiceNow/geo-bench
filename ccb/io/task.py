@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import List
+from typing import List, Sequence
 import pickle
 from pathlib import Path
 from ccb.io.label import Classification
@@ -7,6 +7,7 @@ from ccb.io.label import Classification
 from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 from typing import Generator
 import json
+import numpy as np
 
 
 class TaskSpecifications:
@@ -54,7 +55,25 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default", transform=None):
+    def get_dataset(
+        self,
+        split: str,
+        partition: str = "default",
+        transform=None,
+        band_names: Sequence[
+            str,
+        ] = ("red", "green", "blue"),
+        format: str = "hdf5",
+    ):
+        """Retrieve dataset for a given split and partition with chosen transform, format and bands.
+
+        Args:
+            split: dataset split to choose
+            partition: name of partition
+            transform: dataset transforms
+            file_format: 'hdf5' or 'tif'
+            band_names: band names to select from dataset
+        """
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
             import torchvision
@@ -99,7 +118,14 @@ class TaskSpecifications:
             return dataset
 
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform)
+            return Dataset(
+                dataset_dir=self.get_dataset_dir(),
+                split=split,
+                partition_name=partition,
+                transform=transform,
+                format=format,
+                band_names=band_names,
+            )
 
     def get_dataset_dir(self):
         benchmark_name = self.benchmark_name or "default"
@@ -110,18 +136,8 @@ class TaskSpecifications:
     def benchmark_name(self):
         return "default"
 
-    @cached_property
-    def label_map(self):
-        label_map_path = self.get_dataset_dir() / "label_map.json"
-        if label_map_path.exists():
-            with open(label_map_path, "r") as fp:
-                label_map = json.load(fp)
-            return label_map
-        else:
-            return None
 
-
-def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecifications, None, None]:
+def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
 
     if benchmark_name == "test":
         yield mnist_task_specs
@@ -158,6 +174,11 @@ class Loss(object):
 class Accuracy(Loss):
     def __call__(self, prediction, label):
         return float(label != prediction)
+
+
+class MultilabelAccuracy(Loss):
+    def __call__(self, prediction, label):
+        return np.mean(label != prediction)
 
 
 class AccuracyTop30(Loss):

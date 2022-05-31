@@ -5,23 +5,27 @@ from ccb.io.bandstats import produce_band_stats
 import pytest
 
 
-def random_band(shape=(16, 16), band_name="test_band"):
-    data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(np.float)
+def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
+    data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(float)
     data *= 2.1
     if len(shape) == 3 and shape[2] > 1:
-        band_info = io.MultiBand(band_name, alt_names=("tb"), spatial_resolution=20, n_bands=shape[2])
+        band_info = io.MultiBand(band_name, alt_names=alt_band_names, spatial_resolution=20, n_bands=shape[2])
     else:
-        band_info = io.SpectralBand(band_name, alt_names=("tb"), spatial_resolution=20, wavelength=0.1)
+        band_info = io.SpectralBand(band_name, alt_names=alt_band_names, spatial_resolution=20, wavelength=0.1)
     return io.Band(data, band_info, 10)
 
 
 def random_sample(n_bands=3, name="test_sample"):
-    bands = [random_band(band_name=f"{i:2d}") for i in range(n_bands)]
+    bands = [random_band(band_name=f"{i:2d}", alt_band_names=(f"alt_{i:2d}")) for i in range(n_bands)]
     return io.Sample(bands, np.random.randint(2), name)
 
 
 def test_pack_4d_dense():
-    bands = [random_band((3, 4), "band_1"), random_band((3, 4), "band_2"), random_band((6, 8), "band_3")]
+    bands = [
+        random_band((3, 4), "band_1", ("alt_band_1",)),
+        random_band((3, 4), "band_2", ("alt_band_2",)),
+        random_band((6, 8), "band_3", ("alt_band_3",)),
+    ]
     sample = io.Sample(bands, np.random.randint(2), "test_sample")
     image, dates, band_names = sample.pack_to_4d(resample=True)
     image_, _ = sample.pack_to_3d(resample=True)
@@ -40,7 +44,11 @@ def test_pack_4d_dense():
 
 
 def test_pack_4d_multi_band():
-    bands = [random_band((3, 4, 5), "band_1"), random_band((3, 4), "band_2"), random_band((6, 8), "band_3")]
+    bands = [
+        random_band((3, 4, 5), "band_1", ("alt_band_1",)),
+        random_band((3, 4), "band_2", ("alt_band_2",)),
+        random_band((6, 8), "band_3", ("alt_band_3",)),
+    ]
     sample = io.Sample(bands, np.random.randint(2), "test_sample")
     image, dates, band_names = sample.pack_to_4d(resample=True)
 
@@ -53,10 +61,29 @@ def test_write_read():
     with tempfile.TemporaryDirectory() as dataset_dir:
         sample = random_sample()
         sample.write(dataset_dir)
+        band_names = [band.band_info.name for band in sample.bands]
+        # define task_spec for dataset
+
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample.bands
+        ]
+
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            patch_size=(16, 16),
+            bands_info=bands_info,
+        )
+        task_specs.save(dataset_dir, overwrite=True)
+
         partition = io.Partition()
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
-        ds = io.Dataset(dataset_dir)
+        ds = io.Dataset(dataset_dir, band_names=band_names)
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
@@ -83,6 +110,24 @@ def test_dataset_partition():
         sample3 = random_sample(name="sample3")
         sample3.write(dataset_dir)
 
+        band_names = [band.band_info.name for band in sample1.bands]
+
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample1.bands
+        ]
+
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            patch_size=(16, 16),
+            bands_info=bands_info,
+        )
+        task_specs.save(dataset_dir, overwrite=True)
+
         # Create default partition
         partition = io.Partition()
         partition.add("train", sample1.sample_name)
@@ -98,12 +143,13 @@ def test_dataset_partition():
         partition.save(directory=dataset_dir, partition_name="funky")
 
         # Test 1: load partition default, no split
-        ds = io.Dataset(dataset_dir)
+        ds = io.Dataset(dataset_dir, band_names=band_names)
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "default"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
         assert ds.split is None
         assert len(ds) == 3
+
         # Ordering is not guaranteed. Do we want to enforce that? The following can fail
         # assert_same_sample(ds[0], sample1)
         # assert_same_sample(ds[1], sample2)
@@ -131,7 +177,7 @@ def test_dataset_partition():
         with pytest.raises(IndexError):  # default:test is empty
             ds[0]
 
-        ds = io.Dataset(dataset_dir, partition_name="funky")
+        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="funky")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "funky"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -166,8 +212,10 @@ def test_dataset_withnopartition():
         sample3 = random_sample(name="sample3")
         sample3.write(dataset_dir)
 
+        band_names = [band.band_info.name for band in sample1.bands]
+
         with pytest.raises(ValueError):  # raise ValueError because not partition exists
-            _ = io.Dataset(dataset_dir)
+            _ = io.Dataset(dataset_dir, band_names=band_names)
 
 
 def custom_band(value, shape=(4, 4), band_name="test_band"):
@@ -196,6 +244,24 @@ def test_dataset_statistics():
         sample3 = custom_sample(base_value=3, name="sample_003")
         sample3.write(dataset_dir)
 
+        band_names = [band.band_info.name for band in sample1.bands]
+
+        bands_info = [
+            io.SpectralBand(
+                name=band.band_info.name,
+                alt_names=(band.band_info.alt_names,),
+                spatial_resolution=band.band_info.spatial_resolution,
+            )
+            for band in sample1.bands
+        ]
+
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            patch_size=(16, 16),
+            bands_info=bands_info,
+        )
+        task_specs.save(dataset_dir, overwrite=True)
+
         # Default partition, only train
         partition = io.Partition()
         partition.add("train", sample1.sample_name)
@@ -204,10 +270,12 @@ def test_dataset_statistics():
         partition.save(directory=dataset_dir, partition_name="default")
 
         # Compute statistics : this will create all_bandstats.json
-        produce_band_stats(dataset_dir, use_splits=False, values_per_image=None, samples=None)
+        produce_band_stats(
+            io.Dataset(dataset_dir, band_names=band_names), use_splits=False, values_per_image=None, samples=None
+        )
 
         # Reload dataset with statistics
-        ds2 = io.Dataset(dataset_dir)
+        ds2 = io.Dataset(dataset_dir, band_names=band_names)
 
         statistics = ds2.band_stats
 
@@ -235,9 +303,9 @@ def test_dataset_statistics():
 
 
 if __name__ == "__main__":
-    test_pack_4d_dense()
-    test_pack_4d_multi_band()
-    test_write_read()
-    test_dataset_partition()
-    test_dataset_withnopartition()
+    # test_pack_4d_dense()
+    # test_pack_4d_multi_band()
+    # test_write_read()
+    # test_dataset_partition()
+    # test_dataset_withnopartition()
     test_dataset_statistics()

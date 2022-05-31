@@ -25,24 +25,25 @@ SPATIAL_RESOLUTION = 1  # meters
 PATCH_SIZE = 256
 # Classification labels
 LABELS = (
-    'water',
-    'tree-canopy-forest',
-    'low-vegetation-field',
-    'barren-land',
-    'impervious-other',
-    'impervious-roads',
-    'no-data',
+    "water",
+    "tree-canopy-forest",
+    "low-vegetation-field",
+    "barren-land",
+    "impervious-other",
+    "impervious-roads",
+    "no-data",
 )
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=len(LABELS))
 
 BAND_INFO_LIST = io.make_rgb_bands(SPATIAL_RESOLUTION)
 BAND_INFO_LIST.append(io.SpectralBand("NearInfrared", ("nir",), SPATIAL_RESOLUTION, 0.876))
 
+
 def make_sample(image, label, sample_name, task_specs, crs):
     n_bands, _height, _width = image.shape
 
     if (_height, _width) != (PATCH_SIZE, PATCH_SIZE):
-        image = image[:,:PATCH_SIZE,:PATCH_SIZE]
+        image = image[:, :PATCH_SIZE, :PATCH_SIZE]
         n_bands, _height, _width = image.shape
 
     transform = None  # TODO can't find the GPS coordinates from torch geo.
@@ -64,11 +65,7 @@ def make_sample(image, label, sample_name, task_specs, crs):
         bands.append(band)
 
     label = io.Band(
-         data=label,
-         band_info=LABEL_BAND,
-         spatial_resolution=SPATIAL_RESOLUTION,
-         transform=transform,
-         crs=crs
+        data=label, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs=crs
     )
 
     return io.Sample(bands, label=label, sample_name=sample_name)
@@ -89,7 +86,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         eval_loss=io.SegmentationAccuracy,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
 
     states = ["de", "md", "va", "wv", "pa", "ny"]
 
@@ -97,12 +94,12 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         root_dir=SRC_DATASET_DIR,
         train_splits=[f"{state}-train" for state in states],
         val_splits=[f"{state}-val" for state in states],
-        test_splits =[f"{state}-test" for state in states],
+        test_splits=[f"{state}-test" for state in states],
         patches_per_tile=500,
         patch_size=PATCH_SIZE,
         batch_size=1,
         num_workers=0,
-        class_set=len(LABELS)
+        class_set=len(LABELS),
     )
 
     dm.prepare_data()
@@ -120,20 +117,26 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             label = np.array(dl_sample["mask"])[0]
             crs = dl_sample["crs"][0]
 
+            # if label.shape != (256, 256):
+            #     print(f"Cropping label to 256x256 from shape {label.shape}. ")
+            #     label = label[:256, :256]
+
             sample = make_sample(image, label, sample_name, task_specs, crs)
             sample.write(dataset_dir)
 
             if s_idx == 0:
-                partition.add('train', sample_name)
+                partition.add("train", sample_name)
             elif s_idx == 1:
-                partition.add('valid', sample_name)
+                partition.add("valid", sample_name)
             elif s_idx == 2:
-                partition.add('test', sample_name)
+                partition.add("test", sample_name)
 
             n_samples += 1
-
-            if (i+1) >= max_count:
+            if max_count is not None and n_samples >= max_count:
                 break
+
+        if max_count is not None and n_samples >= max_count:
+            break
     partition.save(dataset_dir, "original", as_default=True)
 
 
