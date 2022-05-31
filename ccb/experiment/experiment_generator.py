@@ -1,8 +1,6 @@
 """
 Generate experiment directory structure
-
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
-
 """
 import argparse
 
@@ -27,7 +25,6 @@ def experiment_generator(
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
     According to model_generator.hp_search.
-
     Parameters:
     -----------
     model_generator: ModelGenerator
@@ -88,6 +85,7 @@ def experiment_generator(
             # not sure yet how to best handle this, does not make sense via model generator
             best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
 
+
             # use wandb sweep for hyperparameter search
             with open(best_param_path, "r") as f:
                 best_params = json.load(f)
@@ -96,12 +94,11 @@ def experiment_generator(
 
             for back_name in backbone_names:
                 backbone_config = best_params[task_specs.dataset_name][back_name]
+
                 benchmark_name = backbone_config["benchmark_name"]
                 model_generator_name = backbone_config["model_generator_name"]
 
                 model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
-
-                hparams = model_generator.base_hparams
 
                 backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
                 for i in range(NUM_SEEDS):

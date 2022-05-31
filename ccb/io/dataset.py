@@ -18,6 +18,7 @@ from ccb.io.label import LabelType
 from collections import OrderedDict, defaultdict
 from tqdm import tqdm
 import h5py
+from typing import Sequence
 
 # Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -414,7 +415,7 @@ class Sample(object):
         self.band_name_map, self.band_info_list = _map_bands(band_info_set.keys())
         self.band_names = [band_info.name for band_info in self.band_info_list]
 
-        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=np.object)
+        self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=object)
 
         for band in bands:
             band_idx = self.band_name_map[band.band_info.name]
@@ -598,25 +599,26 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
         band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
-        label = None
-        for band_name in band_names:
 
-            if label_only and band_name != "label":
-                continue
-
-            h5_band = fp[band_name]
-            # attrs = pickle.loads(ast.literal_eval(data.attrs["pickle"]))
-
-            band = Band(data=np.array(h5_band), **attr_dict[band_name])
-            if band_name == "label":
-                label = band
-            else:
-                bands.append(band)
-
-        if label is None:
+        # check if label is present in hdf5 file and retrieve it, or get it from attr_dict
+        if "label" in fp.keys():
+            label = fp["label"]
+            label = Band(data=np.array(label), **attr_dict["label"])
+        else:
             label = attr_dict.get("label", None)
 
-    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        if label_only:
+            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        else:
+            for band_name in band_names:
+
+                h5_band = fp[band_name]
+
+                band = Band(data=np.array(h5_band), **attr_dict[band_name])
+
+                bands.append(band)
+
+            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
 def write_sample_npz(sample: Sample, dataset_dir):
@@ -771,7 +773,17 @@ class GeneratorWithLength(object):
 
 
 class Dataset:
-    def __init__(self, dataset_dir, split=None, partition_name="default", transform=None, format="hdf5") -> None:
+    def __init__(
+        self,
+        dataset_dir,
+        band_names: Sequence[
+            str,
+        ],
+        split=None,
+        partition_name="default",
+        transform=None,
+        format="hdf5",
+    ) -> None:
         """
         Load CCB dataset.
         CCB datasets can have different split partitions (e.g. for few-shot learning).
@@ -780,9 +792,11 @@ class Dataset:
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
+            band_names: Sequence of band names to select
             split: Specify split to use or None for all
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
-            format: 'hdfs' or 'tif'
+            transform: dataset transforms
+            format: 'hdf5' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
@@ -790,6 +804,38 @@ class Dataset:
         self.transform = transform
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
+        assert format in ["hdf5", "tif"], f"Invalid file format {format}"
+        # define alt names that map alt band names to full band names
+        self.alt_band_names = self.alt_to_full_names(band_names)
+        # cast user band names to full band names so no need to check for alt names
+        self.band_names = [self.alt_band_names[name] for name in band_names]
+
+    def alt_to_full_names(self, band_names) -> Dict[str, str]:
+        """Define a dictionary mapping from all alt band names to full band names and check validity.
+
+        Args:
+            band_names: band names for which to collect alt names
+
+        Returns:
+            dictionary mapping all possible band names to full band name
+        """
+        bands_info = self.task_specs.bands_info
+        alt_band_names = {}
+        for user_band_name in band_names:
+            matched_band_name = None
+            for band_info in bands_info:
+                possible_names = band_info.alt_names + (band_info.name,)
+                if user_band_name in possible_names:
+                    matched_band_name = band_info.name
+                    for name in possible_names:
+                        alt_band_names[name] = band_info.name
+
+            if matched_band_name is None:
+                raise ValueError(
+                    f"The band {user_band_name} you specified does not exist in dataset bands {bands_info}."
+                )
+
+        return alt_band_names
 
     #### Loading paths
     def _load_partitions(self, active_partition_name) -> None:
@@ -909,6 +955,19 @@ class Dataset:
             red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
+    def normalization_stats(
+        self,
+    ) -> Tuple[Tuple[float, ...]]:
+        """Retrieve band mean and std statistics for image normalization for dataset bands."""
+        means = []
+        stds = []
+        for band_name in self.band_names:
+            band_stat = self.band_stats[band_name]
+            means.append(band_stat.mean)
+            stds.append(band_stat.std)
+
+        return tuple(means), tuple(stds)
+
     #### Common accessors and iterators ####
 
     def __getitem__(self, idx):
@@ -922,7 +981,7 @@ class Dataset:
         sample_name = sample_name_list[idx]
         if self.format == "hdf5":
             sample_name += ".hdf5"
-        sample = load_sample(Path(self.dataset_dir, sample_name), format=self.format)
+        sample = load_sample(Path(self.dataset_dir, sample_name), band_names=self.band_names, format=self.format)
         if self.transform is not None:
             return self.transform(sample)
         else:
