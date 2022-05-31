@@ -19,6 +19,5 @@ class Conv4GeneratorTest(conv4.Conv4Generator):
 
 
 def model_generator(hparams: Dict[str, Any] = {}) -> Conv4GeneratorTest:
-    hparams.update({"max_epochs": 1})
     model_generator = Conv4GeneratorTest(hparams=hparams)
     return model_generator
