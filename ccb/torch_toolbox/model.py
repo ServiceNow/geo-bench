@@ -47,7 +47,7 @@ class Model(LightningModule):
         # update and log
         self.log("train_loss", outputs["loss"], logger=True)
         self.train_metrics(outputs["output"], outputs["target"])
-        self.log_dict(self.train_metrics)
+        self.log_dict({f"train_{k}": v for k, v in self.train_metrics.items()}, logger=True)
 
     def training_epoch_end(self, outputs):
         self.train_metrics.reset()
@@ -71,7 +71,6 @@ class Model(LightningModule):
         # update and log
         self.log(f"{prefix}_loss", outputs["loss"], logger=True)
         self.eval_metrics.update(outputs["output"], outputs["target"])
-        # self.log_dict({f"{prefix}_{k}": v for k, v in eval_metrics.items()}, logger=True)
 
     def validation_step_end(self, outputs):
         self.eval_step_end(outputs, "val")
@@ -280,7 +279,8 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
             torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1),
         ],
         io.MultiLabelClassification: [
-            torchmetrics.Accuracy(dist_sync_on_step=True),
+            # torchmetrics.Accuracy(dist_sync_on_step=True),
+            torchmetrics.F1Score(task_specs.label_type.n_classes)
         ],
         io.SegmentationClasses: [],
     }[task_specs.label_type.__class__]
