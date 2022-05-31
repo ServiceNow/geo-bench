@@ -317,7 +317,7 @@ def _balanced_binary_cross_entropy_with_logits(inputs, targets):
     inputs = inputs.view(-1, classes)
     targets = targets.view(-1, classes).float()
     loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
-    # to balance divide background class by the amount of labels with background class. Deactivated for the moment
+    loss = loss[targets == 0].mean() + loss[targets == 1].mean()
     return loss.mean()
 
 
