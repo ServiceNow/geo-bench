@@ -11,7 +11,7 @@ def converter_tester(converter):
     with tempfile.TemporaryDirectory() as datasets_dir:
         dataset_dir = Path(datasets_dir, converter.DATASET_NAME)
         converter.convert(max_count=5, dataset_dir=Path(dataset_dir))
-        dataset = io.Dataset(dataset_dir)
+        dataset = io.Dataset(dataset_dir, band_names=["red", "green", "blue"])
         assert len(dataset) == 5
         io.check_dataset_integrity(dataset)
 
@@ -136,13 +136,23 @@ def test_bigearthnet():
     converter_tester(bigearthnet)
 
 
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_south_africa_crop_type():
+    from ccb.dataset_converters import crop_type_south_africa
+
+    converter_tester(crop_type_south_africa)
+
+
 if __name__ == "__main__":
     # test_brick_kiln()
-    # # test_cv4a_kenya_cropy_type()
+    # test_cv4a_kenya_cropy_type()
     # test_eurosat()
     # test_neon_tree()
     # # test_smallholder_cashews()
     # test_so2sat()
     # test_nz_cattle_detection()
     # test_xview2()
-    test_bigearthnet()
+    # test_bigearthnet()
+    test_south_africa_crop_type()

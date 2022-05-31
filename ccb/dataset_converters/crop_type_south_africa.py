@@ -25,7 +25,7 @@ IMG_DIRECTORY_REGEX = r"""
     _(?P<month>[0-9]{2})
     _(?P<day>[0-9]{2})$"""
 PARTITION_CRS = SRC_CRS
-PARTITION_DIR = Path(io.CCB_DIR, "converted", DATASET_NAME)
+DATASET_DIR = Path(io.CCB_DIR, "converted", DATASET_NAME)
 
 PATCH_SIZE = 256
 HEIGHT = 256
@@ -80,9 +80,13 @@ max_band_value = {
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.append(
-    io.CloudProbability(alt_names=("CPL", "CLM")),
+BAND_INFO_LIST.extend(
+    [
+        io.CloudProbability(alt_names=("CPL", "CLM")),
+        io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels)),
+    ]
 )
+
 
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels))
 
@@ -99,6 +103,7 @@ def make_sample(images: np.array, mask: np.array, sample_name: str, dates: List[
         io Sample object
     """
     n_dates, n_bands, _height, _width = images.shape
+    assert n_bands == 13
 
     bands = []
     for date_idx in range(n_dates):
@@ -121,18 +126,25 @@ def make_sample(images: np.array, mask: np.array, sample_name: str, dates: List[
             )
             bands.append(band)
 
-    label = io.Band(data=mask, band_info=LABEL_BAND, spatial_resolution=10, transform=SRC_TRANSFORM, crs=PARTITION_CRS)
+    label = io.Band(
+        data=mask,
+        band_info=LABEL_BAND,
+        date=dates[0],
+        spatial_resolution=10,
+        transform=SRC_TRANSFORM,
+        crs=PARTITION_CRS,
+    )
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
+def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
     """Convert dataset to desired format.
 
     Args:
         max_count: max number of samples to save in the dataset partition
         dataset_dir: path directory to save partition in
     """
-    partition_dir.mkdir(exist_ok=True, parents=True)
+    dataset_dir.mkdir(exist_ok=True, parents=True)
 
     img_dir = os.path.join(SRC_DATASET_DIR, "ref_south_africa_crops_competition_v1_train_source_s2")
     label_dir = os.path.join(SRC_DATASET_DIR, "ref_south_africa_crops_competition_v1_train_labels")
@@ -147,7 +159,7 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
         eval_loss=io.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
         spatial_resolution=10,
     )
-    task_specs.save(partition_dir, overwrite=True)
+    task_specs.save(dataset_dir, overwrite=True)
 
     partition = io.Partition()
 
@@ -192,13 +204,15 @@ def convert(max_count=None, partition_dir=PARTITION_DIR) -> None:
 
         sample_name = dirpath
         sample = make_sample(imgs, mask, sample_name, dates)
-        sample.write(partition_dir)
+        sample.write(dataset_dir)
 
         partition.add("train", sample_name)  # by default everything goes in train
 
         j += 1
         if max_count is not None and j >= max_count:
             break
+
+    partition.save(dataset_dir, "original", as_default=True)
 
 
 if __name__ == "__main__":
