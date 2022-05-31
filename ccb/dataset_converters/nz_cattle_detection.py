@@ -7,8 +7,6 @@
 
 from ccb import io
 import numpy as np
-import csv
-from ccb.dataset_converters import util
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
@@ -79,10 +77,10 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         eval_loss=io.SegmentationAccuracy(),  # TODO decide on the loss
         spatial_resolution=0.1,
     )
-    task_specs.save(dataset_dir)
+    task_specs.save(dataset_dir, overwrite=True)
     partition = io.Partition()
 
-    path_list = Path(SRC_DATASET_DIR, "cow_images").iterdir()
+    path_list = list(Path(SRC_DATASET_DIR, "cow_images").iterdir())
 
     sample_count = 0
     partition = io.Partition()  # default partition: everything in train

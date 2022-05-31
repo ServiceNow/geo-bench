@@ -1,4 +1,6 @@
+from types import new_class
 from typing import List
+import numpy as np
 
 
 class LabelType(object):
@@ -39,6 +41,14 @@ class Classification(LabelType):
         return f"{self.n_classes}-classification ({names})"
 
 
+class SemanticSegmentation(Classification):
+    def assert_valid(self, value):
+        assert isinstance(value, np.ndarray)
+        assert len(value.shape) == 2
+        assert (value >= 0).all(), f"{value} is smaller than 0."
+        assert (value < self.n_classes).all(), f"{value} is >= to {self.n_classes}."
+
+
 class Regression(LabelType):
     def __init__(self, min_val=None, max_val=None) -> None:
         super().__init__()
@@ -73,3 +83,17 @@ class PointAnnotation(LabelType):
             assert isinstance(point, (list, tuple))
             assert len(point) == 2
             assert tuple(point) >= (0, 0)
+
+
+class MultiLabelClassification(LabelType):
+    def __init__(self, n_classes, class_names=None) -> None:
+        super().__init__()
+        self.n_classes = n_classes
+        if class_names is not None:
+            assert len(class_names) == n_classes, f"{len(class_names)} vs {n_classes}"
+        self.class_name = class_names
+
+    def assert_valid(self, value):
+        assert isinstance(value, np.ndarray)
+        assert len(value) == self.n_classes
+        assert all(np.unique(value) == [0, 1])
