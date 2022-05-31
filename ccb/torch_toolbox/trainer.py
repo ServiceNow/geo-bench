@@ -2,9 +2,7 @@
 """
 Trains the model using job information contained in the current directory.
 Expects to find files "hparams.json" and "task_specs.json".
-
 Usage: trainer.py --model-generator path/to/my/model/generator.py
-
 """
 import argparse
 
@@ -21,7 +19,7 @@ import json
 
 def train(model_gen, job_dir, wandb_mode) -> None:
     """Train a model from the model generator on datamodule.
-
+    
     Args:
         model_gen: model generator
         job_dir: job directory that contains task_specs and hparams.json
@@ -43,6 +41,8 @@ def train(model_gen, job_dir, wandb_mode) -> None:
         train_transform=model_gen.get_transform(job.task_specs, hparams, train=True),
         eval_transform=model_gen.get_transform(job.task_specs, hparams, train=False),
         collate_fn=model_gen.get_collate_fn(job.task_specs, hparams),
+        band_names=hparams.get("band_names", ("red", "green", "blue")),
+        format=hparams.get("format", "hdf5"),
     )
 
     logger_type = hparams.get("logger", None)

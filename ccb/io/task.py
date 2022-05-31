@@ -1,5 +1,5 @@
 from functools import cached_property
-from typing import List
+from typing import List, Sequence
 import pickle
 from pathlib import Path
 from ccb.io.label import Classification
@@ -55,9 +55,24 @@ class TaskSpecifications:
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
-    def get_dataset(self, split, partition="default", transform=None, format="hdf5"):
-        """
-        format: 'hdfs' or 'tif'
+    def get_dataset(
+        self,
+        split: str,
+        partition: str = "default",
+        transform=None,
+        band_names: Sequence[
+            str,
+        ] = ("red", "green", "blue"),
+        format: str = "hdf5",
+    ):
+        """Retrieve dataset for a given split and partition with chosen transform, format and bands.
+
+        Args:
+            split: dataset split to choose
+            partition: name of partition
+            transform: dataset transforms
+            file_format: 'hdf5' or 'tif'
+            band_names: band names to select from dataset
         """
         if self.benchmark_name == "test":
             import torchvision.transforms as tt
@@ -103,7 +118,14 @@ class TaskSpecifications:
             return dataset
 
         else:
-            return Dataset(self.get_dataset_dir(), split, partition_name=partition, transform=transform, format=format)
+            return Dataset(
+                dataset_dir=self.get_dataset_dir(),
+                split=split,
+                partition_name=partition,
+                transform=transform,
+                format=format,
+                band_names=band_names,
+            )
 
     def get_dataset_dir(self):
         benchmark_name = self.benchmark_name or "default"

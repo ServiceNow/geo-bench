@@ -301,7 +301,7 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
         ],
         io.SegmentationClasses: [
             torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
-            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2),
+            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
         ],
         io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]

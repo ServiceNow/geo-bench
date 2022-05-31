@@ -13,6 +13,7 @@ from ccb.torch_toolbox.model import (
     collate_rgb,
 )
 import torch
+from torchvision import transforms as tt
 import torch.nn.functional as F
 from torch.utils.data.dataloader import default_collate
 
@@ -22,22 +23,25 @@ class Conv4Generator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "lr_milestones": (10, 20),
+            "backbone": "conv4",
             "lr_gamma": 0.1,
             "lr_backbone": 4e-3,
             "lr_head": 4e-3,
             "head_type": "linear",
             "hidden_size": 128,
-            "train_iters": 50000,
             "loss_type": "crossentropy",
             "batch_size": 32,
             "num_workers": 4,
-            "max_epochs": 10,
-            "val_check_interval": 50,
-            "limit_val_batches": 50,
-            "limit_test_batches": 50,
+            "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
+            "num_seeds": 3,
+            "num_agents": 4,
+            "num_trials_per_agent": 5,
+            "band_names": ["red", "green", "blue"],
+            "image_size": 224,
+            "format": "hdf5",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -65,11 +69,46 @@ class Conv4Generator(ModelGenerator):
         return hparams_to_string([self.base_hparams, hparams2])
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+        return default_collate
 
-        if task_specs.dataset_name.lower() == "mnist":
-            return default_collate
+    def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
+        scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
+        ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
+        _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
+        if task_specs.dataset_name == "imagenet":
+            mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
+            t = []
+            t.append(tt.ToTensor())
+            t.append(tt.Normalize(mean=mean, std=std))
+            if train:
+                t.append(tt.RandomHorizontalFlip())
+                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+            transform = tt.Compose(t)
+        elif task_specs.dataset_name.lower() == "mnist":
+            t = []
+            t.append(tt.ToTensor())
+            transform = tt.Compose(t)
         else:
-            return collate_rgb
+            mean, std = task_specs.get_dataset(
+                split="train", format=hyperparams["format"], band_names=tuple(hyperparams["band_names"])
+            ).normalization_stats()
+            t = []
+            t.append(tt.ToTensor())
+            t.append(tt.Normalize(mean=mean, std=std))
+            if train:
+                t.append(tt.RandomHorizontalFlip())
+                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+
+            t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
+
+            t = tt.Compose(t)
+
+            def transform(sample: io.Sample):
+                x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
+                x = t(x)
+                return {"input": x, "label": sample.label}
+
+        return transform
 
 
 def model_generator(hparams: Dict[str, Any] = {}) -> Conv4Generator:
