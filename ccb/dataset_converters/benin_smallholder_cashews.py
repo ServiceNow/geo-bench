@@ -188,16 +188,17 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     # else:
     # for i, data in enumerate(tqdm(cashew)):
-    print('Saving timesteps as separate bands')
-    for i, data in tqdm(enumerate(cashew)):
-        if i >= max_count:
+    print("Saving timesteps as separate bands")
+    for i, data in enumerate(tqdm(cashew)):
+        if max_count is not None and i >= max_count:
             break
         sample_name = convert_sample(i, data, dataset_dir)
         partition.add("train", sample_name)
 
+    partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
     partition.save(dataset_dir, "nopartition", as_default=True)
-    print('Done')
+    print("Done")
 
 
 if __name__ == "__main__":
-    convert(10)
+    convert()
