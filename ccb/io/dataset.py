@@ -154,6 +154,10 @@ class SegmentationClasses(BandInfo, LabelType):
         assert np.all(value.data >= 0)
         assert np.all(value.data < self.n_classes)
 
+    def label_stats(self, band):
+        stats = np.bincount(band.data.flat, minlength=self.n_classes)
+        return stats / np.sum(stats)
+
     @property
     def class_names(self):
         if hasattr(self, "_class_names"):
@@ -599,26 +603,22 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
         band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
+        label = None
+        for band_name in band_names:
 
-        # check if label is present in hdf5 file and retrieve it, or get it from attr_dict
-        if "label" in fp.keys():
-            label = fp["label"]
-            label = Band(data=np.array(label), **attr_dict["label"])
-        else:
-            label = attr_dict.get("label", None)
+            if label_only and not band_name.startswith("label"):
+                continue
 
-        if label_only:
-            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
-        else:
-            for band_name in band_names:
+            h5_band = fp[band_name]
 
-                h5_band = fp[band_name]
-
-                band = Band(data=np.array(h5_band), **attr_dict[band_name])
-
+            band = Band(data=np.array(h5_band), **attr_dict[band_name])
+            if band_name.startswith("label"):
+                label = band
+            else:
                 bands.append(band)
-
-            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        if label is None:
+            label = attr_dict.get("label", None)
+    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
 def write_sample_npz(sample: Sample, dataset_dir):
@@ -776,9 +776,7 @@ class Dataset:
     def __init__(
         self,
         dataset_dir,
-        band_names: Sequence[
-            str,
-        ],
+        band_names: Sequence[str] = None,
         split=None,
         partition_name="default",
         transform=None,
@@ -805,6 +803,10 @@ class Dataset:
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         assert format in ["hdf5", "tif"], f"Invalid file format {format}"
+
+        if band_names is None:
+            band_names = [band_info.name for band_info in self.task_specs.bands_info]
+
         # define alt names that map alt band names to full band names
         self.alt_band_names = self.alt_to_full_names(band_names)
         # cast user band names to full band names so no need to check for alt names
