@@ -739,9 +739,10 @@ def split_iid(sample_set: List[str], ratios, rng=np.random):
         )
 
     if np.sum(ratios) > 1.001:
-        raise ValueError(f"Ratio sum to greater than 1: sum({str(ratios)}) = {np.sum(ratios)}.")
+        raise ValueError(f"Ratios sum to greater than 1: sum({str(ratios)}) = {np.sum(ratios)}.")
 
     sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
+    sizes[-1] += len(sample_set) - np.sum(sizes)
     sample_set = sample_set.copy()
     rng.shuffle(sample_set)
     subsets = []
