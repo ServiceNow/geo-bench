@@ -105,6 +105,7 @@ DATES = [datetime.datetime.strptime(date, "%Y-%m-%d").date() for date in DATES]
 SPATIAL_RESOLUTION = 0.5  # meters, to be confirmed
 N_TIMESTEPS = 70
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=len(LABELS))
+GROUP_BY_TIMESTEP = False
 
 # Paths
 DATASET_NAME = "smallholder_cashew"
@@ -112,48 +113,8 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
-def make_sample(images, mask, sample_name):
-    n_timesteps, n_bands, _height, _width = images.shape
-
-    transform = None  # TODO can't find the GPS coordinates from torch geo.
-    crs = None
-
-    bands = []
-    for date_idx in range(n_timesteps):
-
-        for band_idx in range(n_bands):
-            band_data = images[date_idx, band_idx, :, :]
-
-            band_info = io.sentinel2_13_bands[band_idx]
-
-            band = io.Band(
-                data=band_data,
-                band_info=band_info,
-                date=DATES[date_idx],
-                spatial_resolution=SPATIAL_RESOLUTION,
-                transform=transform,
-                crs=crs,
-                convert_to_int16=False,
-            )
-            bands.append(band)
-
-    label = io.Band(
-        data=mask, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs=crs
-    )
-    return io.Sample(bands, label=label, sample_name=sample_name)
-
-
-def convert_sample(i, tg_sample, dataset_dir):
-
-    sample_name = f"sample_{i:08d}"
-
-    images = tg_sample["image"].numpy()
-    mask = tg_sample["mask"].numpy()
-
-    sample = make_sample(images, mask, sample_name)
-    sample.write(dataset_dir)
-    # print(f'Wrote {sample_name}')
-    return sample_name
+def get_sample_name(total_samples):
+    return f'sample_{total_samples}'
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
@@ -178,26 +139,54 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     task_specs.save(dataset_dir, overwrite=True)
 
-    # multiprocess = False
-    # if multiprocess:
-    #     with Pool(os.cpu_count()) as p:
-    #         print(f"Spinning up pool of {os.cpu_count()} workers")
-    #         iterator = p.imap(convert_sample, ((i, cashew_i, dataset_dir) for i, cashew_i in enumerate(cashew)))
-    #         for i in tqdm(iterator, total=len(cashew)):
-    #             pass
-
-    # else:
-    # for i, data in enumerate(tqdm(cashew)):
     print('Saving timesteps as separate bands')
-    for i, data in tqdm(enumerate(cashew)):
-        if i >= max_count:
+    total_samples = 0
+    for i, tg_sample in enumerate(tqdm(cashew)):
+        if max_count is not None and i >= max_count:
             break
-        sample_name = convert_sample(i, data, dataset_dir)
-        partition.add("train", sample_name)
+        images = tg_sample["image"].numpy()
+        mask = tg_sample["mask"].numpy()
+        n_timesteps, n_bands, _height, _width = images.shape
+
+        label = io.Band(
+            data=mask, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=None, crs=None
+        )
+
+        grouped_bands = []
+        for date_idx in range(n_timesteps):
+            current_bands = []
+            for band_idx in range(n_bands):
+                band_data = images[date_idx, band_idx, :, :]
+
+                band_info = io.sentinel2_13_bands[band_idx]
+
+                band = io.Band(
+                    data=band_data,
+                    band_info=band_info,
+                    date=DATES[date_idx],
+                    spatial_resolution=SPATIAL_RESOLUTION,
+                    transform=None,   # TODO can't find the GPS coordinates from torch geo.
+                    crs=None,
+                    convert_to_int16=False,
+                )
+                current_bands.append(band)
+                grouped_bands.append(band)
+
+            if not GROUP_BY_TIMESTEP:
+                sample = io.Sample(current_bands, label=label, sample_name=get_sample_name(total_samples))
+                sample.write(dataset_dir)
+                partition.add('train', get_sample_name(total_samples))
+                total_samples += 1
+
+        if GROUP_BY_TIMESTEP:
+            sample = io.Sample(grouped_bands, label=label, sample_name=get_sample_name(total_samples))
+            sample.write(dataset_dir)
+            partition.add('train', get_sample_name(total_samples))
+            total_samples += 1
 
     partition.save(dataset_dir, "nopartition", as_default=True)
-    print('Done')
+    print(f'Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}')
 
 
 if __name__ == "__main__":
-    convert(10)
+    convert()
