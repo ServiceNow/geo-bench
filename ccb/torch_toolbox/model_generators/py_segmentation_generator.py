@@ -141,6 +141,8 @@ class SegmentationGenerator(ModelGenerator):
                     x = TF.crop(x, *self.crop_params)
                     if self.flip:
                         x = TF.hflip(x)
+                else:
+                    x = TF.resize(x, (h, w))
                 return x
 
         def transform(sample: io.Sample):
