@@ -55,13 +55,13 @@ def test_neon_tree():
     converter_tester(neon_tree)
 
 
-# @pytest.mark.converter
-# @pytest.mark.slow
-# @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
-# def test_smallholder_cashews():
-#     from ccb.dataset_converters import benin_smallholder_cashews
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_smallholder_cashews():
+    from ccb.dataset_converters import benin_smallholder_cashews
 
-#     converter_tester(benin_smallholder_cashews)
+    converter_tester(benin_smallholder_cashews)
 
 
 @pytest.mark.converter
