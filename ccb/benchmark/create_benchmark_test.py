@@ -4,7 +4,7 @@ from typing import Dict, List
 from ccb import io
 import numpy as np
 
-from ccb.benchmark.create_benchmark import resample
+from ccb.benchmark.create_benchmark import resample, resample_from_stats
 
 
 def make_rand_partition(n=1000):
@@ -15,13 +15,18 @@ def make_rand_partition(n=1000):
     partition_dict = defaultdict(list)
     label_map = defaultdict(list)
     reverse_label_map = {}
+
+    eye = np.eye(len(class_probs))
+
+    label_stats = {}
     for split, sample_name, label in zip(splits, sample_names, labels):
         partition_dict[split].append(sample_name)
         label_map[label].append(sample_name)
         reverse_label_map[sample_name] = label
+        label_stats[sample_name] = eye[label]  # converts to one hot
 
     assert_no_verlap(partition_dict)
-    return io.Partition(partition_dict=partition_dict), label_map, reverse_label_map
+    return io.Partition(partition_dict=partition_dict), label_map, reverse_label_map, label_stats
 
 
 def assert_no_verlap(partition_dict: Dict[str, List[str]]):
@@ -36,7 +41,7 @@ def assert_no_verlap(partition_dict: Dict[str, List[str]]):
 
 
 def test_resample():
-    partition, label_map, reverse_label_map = make_rand_partition(n=1000)
+    partition, label_map, reverse_label_map, _ = make_rand_partition(n=1000)
     max_sizes = {"train": 100, "valid": 20, "test": 25}
     min_class_sizes = {"train": 10, "valid": 1, "test": 2}
     partition = resample(
@@ -45,7 +50,10 @@ def test_resample():
         max_sizes=max_sizes,
         min_class_sizes=min_class_sizes,
     )
+    verify_partition(partition, max_sizes, min_class_sizes, reverse_label_map)
 
+
+def verify_partition(partition, max_sizes, min_class_sizes=None, reverse_label_map=None):
     partition_dict = partition.partition_dict
     assert_no_verlap(partition_dict)
     split_label_map = {}
@@ -63,6 +71,24 @@ def test_resample():
         for label, sample_names in split_label_map[split].items():
             assert len(sample_names) >= min_class_size
 
+    for split, label_map in split_label_map.items():
+        print(split)
+        for label, sample_names in label_map.items():
+            print(f"  class {label:2d}: {len(sample_names)}.")
+
+
+def test_resample_from_stats():
+    partition, _, reverse_label_map, label_stats = make_rand_partition(n=10000)
+    max_sizes = {"train": 100, "valid": 20, "test": 25}
+    min_class_sizes = {"train": 10, "valid": 1, "test": 1}
+
+    new_partition, prob_dict = resample_from_stats(
+        partition, label_stats=label_stats, max_sizes=max_sizes, return_prob=True
+    )
+
+    verify_partition(new_partition, max_sizes, min_class_sizes, reverse_label_map)
+
 
 if __name__ == "__main__":
-    test_resample()
+    # test_resample()
+    test_resample_from_stats()
