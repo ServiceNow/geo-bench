@@ -1,14 +1,11 @@
 import ast
-from multiprocessing.sharedctypes import Value
 import pathlib
-from attr import attr
 import numpy as np
-from numpy.lib.function_base import percentile
 import rasterio
 import json
 from pathlib import Path
 import datetime
-from typing import List, Union, Set, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Sequence
 import os
 import errno
 from scipy.ndimage import zoom
@@ -19,7 +16,6 @@ from ccb.io.label import LabelType
 from collections import OrderedDict, defaultdict
 from tqdm import tqdm
 import h5py
-from typing import Sequence
 
 # Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -734,7 +730,28 @@ def force_symlink(file1, file2):
             os.remove(file2)
             os.symlink(file1, file2)
 
-            
+
+def split_iid(sample_set: List[str], ratios, rng=np.random):
+
+    if len(sample_set) != len(set(sample_set)):
+        warn(
+            f"There is redundancy in the sample_set. len(sample_set) != len(set(sample_set)) i.e., {len(sample_set)} != {len(set(sample_set))}."
+        )
+
+    if np.sum(ratios) > 1.001:
+        raise ValueError(f"Ratio sum to greater than 1: sum({str(ratios)}) = {np.sum(ratios)}.")
+
+    sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
+    sample_set = sample_set.copy()
+    rng.shuffle(sample_set)
+    subsets = []
+    index = 0
+    for size in sizes:
+        subsets.append(sample_set[index : (index + size)])
+        index += size
+    return subsets
+
+
 class Partition:
     """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
 
@@ -756,6 +773,17 @@ class Partition:
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
+    def resplit_iid(self, split_names=("valid", "test"), ratios=(0.5, 0.5)):
+        assert len(split_names) == len(ratios)
+        union = []
+        for split_name in split_names:
+            union.extend(self.partition_dict[split_name])
+
+        subsets = split_iid(union, ratios=ratios)
+
+        for split_name, subset in zip(split_names, subsets):
+            self.partition_dict[split_name] = subset
+
     def save(self, directory, partition_name, as_default=False):
         """
         If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
@@ -764,7 +792,7 @@ class Partition:
         file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
-        if as_default:                      
+        if as_default:
             force_symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
 
 
