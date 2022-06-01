@@ -142,6 +142,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     print('Saving timesteps as separate bands')
     total_samples = 0
     for i, tg_sample in enumerate(tqdm(cashew)):
+
         if max_count is not None and i >= max_count:
             break
         images = tg_sample["image"].numpy()
@@ -184,8 +185,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             partition.add('train', get_sample_name(total_samples))
             total_samples += 1
 
+    partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
     partition.save(dataset_dir, "nopartition", as_default=True)
+<<<<<<< HEAD
     print(f'Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}')
+=======
+    print("Done")
+>>>>>>> 885045183e8ffbd5a3ff47ef0f6095ff0c475342
 
 
 if __name__ == "__main__":

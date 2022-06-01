@@ -122,7 +122,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
-    partition.save(dataset_dir, "nopartition", as_default=True)
+
+    partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
+    partition.save(dataset_dir, "iid", as_default=True)
 
 
 if __name__ == "__main__":
