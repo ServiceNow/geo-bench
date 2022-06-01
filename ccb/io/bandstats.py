@@ -43,7 +43,7 @@ def produce_band_stats(dataset: io.Dataset, use_splits=False, values_per_image=1
         stats_fname = os.path.join(dataset.dataset_dir, "band_stats.json")
         with open(stats_fname, "w", encoding="utf8") as fp:
             json.dump({k: v.to_dict() for k, v in band_stats.items()}, fp, indent=4, sort_keys=True)
-        print("Statistics written to {stats_fname}.")
+        print(f"Statistics written to {stats_fname}.")
 
 
 def produce_all_band_stats(benchmark_name):
