@@ -169,6 +169,7 @@ def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count)
             if max_count is not None and sample_count >= max_count:
                 break
 
+    partition.resplit_iid(split_names=("valid", "test"), ratios=(0.5, 0.5))
     partition.save(dataset_dir, "original", as_default=True)
 
     to_csv(info_list, dataset_dir)
