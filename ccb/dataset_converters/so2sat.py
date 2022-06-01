@@ -55,8 +55,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     n_samples = 0
     for split_name in ["train", "validation", "test"]:
         so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
-        for i, tg_sample in enumerate(tqdm(so2sat_dataset)):
-            sample_name = f"id_{i:04d}"
+        for tg_sample in tqdm(so2sat_dataset):
+            sample_name = f"id_{n_samples:04d}"
 
             images = np.array(tg_sample["image"])
             label = tg_sample["label"]
