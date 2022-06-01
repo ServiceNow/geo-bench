@@ -21,12 +21,27 @@ import xmltodict
 from warnings import warn
 import csv
 
-DATASET_NAME = "NeonTree"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+from ccb.benchmark.rasterize_detection import rasterize_box
+
+
+SEGMENTATION = True
+
+if SEGMENTATION:
+    DATASET_NAME = "NeonTree_segmentation"
+else:
+    DATASET_NAME = "NeonTree_detection"
+
+SRC_DATASET_DIR = io.CCB_DIR / "source" / "NeonTree"
 # ZENODO_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME + "_zenodo")
 ZENODO_DATASET_DIR = SRC_DATASET_DIR / "_zenodo"
 
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+
+
+if SEGMENTATION:
+    label_type = io.SegmentationClasses("label", spatial_resolution=0.1, n_classes=2, class_names=["no tree", "tree"])
+else:
+    label_type = io.Detection()
 
 
 def read_xml(xml_path):
@@ -259,7 +274,18 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, sli
             io.Band(hs_data, band_info=BAND_INFO_LIST[4], spatial_resolution=1, transform=hs_transform, crs=crs)
         )
 
-        sample_list.append(io.Sample(bands, label=new_boxes, sample_name=name + suffix))
+        if SEGMENTATION:
+            label_data = rasterize_box(boxes=new_boxes, img_shape=rgb_data.shape[:2], scale=0.6)
+            label = io.Band(
+                data=label_data,
+                band_info=label_type,
+                spatial_resolution=0.1,
+                transform=rgb_transform,
+                crs=crs,
+            )
+        else:
+            label = new_boxes
+        sample_list.append(io.Sample(bands, label=label, sample_name=name + suffix))
     return sample_list
 
 
@@ -273,7 +299,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         n_time_steps=1,
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Detection(),
+        label_type=label_type,
         eval_loss=io.Accuracy(),  # TODO what loss will we use?
         spatial_resolution=0.1,
     )
