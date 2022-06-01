@@ -40,6 +40,11 @@ class Classification(LabelType):
             names = "missing class names"
         return f"{self.n_classes}-classification ({names})"
 
+    def label_stats(self, value):
+        one_hot = np.zeros((self.n_classes,))
+        one_hot[value] = 1
+        return one_hot
+
 
 class SemanticSegmentation(Classification):
     def assert_valid(self, value):
@@ -97,3 +102,6 @@ class MultiLabelClassification(LabelType):
         assert isinstance(value, np.ndarray)
         assert len(value) == self.n_classes
         assert all(np.unique(value) == [0, 1])
+
+    def label_stats(self, value):
+        return value
