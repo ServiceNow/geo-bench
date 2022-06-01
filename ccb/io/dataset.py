@@ -10,6 +10,7 @@ from pathlib import Path
 import datetime
 from typing import List, Union, Set, Dict, Tuple
 import os
+import errno
 from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
@@ -725,6 +726,15 @@ def _largest_shape(band_array):
     return tuple(shape)
 
 
+def force_symlink(file1, file2):
+    try:
+        os.symlink(file1, file2)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            os.remove(file2)
+            os.symlink(file1, file2)
+
+            
 class Partition:
     """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
 
@@ -754,8 +764,8 @@ class Partition:
         file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
-        if as_default:
-            os.symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
+        if as_default:                      
+            force_symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
 
 
 class GeneratorWithLength(object):
