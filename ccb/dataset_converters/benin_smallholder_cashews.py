@@ -187,11 +187,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
     partition.save(dataset_dir, "nopartition", as_default=True)
-<<<<<<< HEAD
     print(f'Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}')
-=======
-    print("Done")
->>>>>>> 885045183e8ffbd5a3ff47ef0f6095ff0c475342
+
 
 
 if __name__ == "__main__":
