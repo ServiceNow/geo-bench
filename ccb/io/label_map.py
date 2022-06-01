@@ -6,11 +6,14 @@ For the future, implement partitions and splits
 import json
 from pathlib import Path
 from collections import defaultdict
+import pickle
+from typing import Dict, List
 from warnings import warn
 from ccb import io
 from tqdm import tqdm
 import numpy as np
 from ccb.io import bandstats
+from ccb.io.task import TaskSpecifications
 
 
 def load_label(sample_path):
@@ -40,22 +43,24 @@ def clean_partition(partition: io.Partition):
     return partition, all_samples, squeezed_out, original_count - len(all_samples)
 
 
-def get_samples_and_verify_partition(dataset_dir, partition_name="default"):
+def get_samples_and_verify_partition(dataset_dir, partition_name="default", max_count=None):
     dataset = io.Dataset(dataset_dir)
     partition = dataset.load_partition(partition_name)
 
     partition, all_samples, squeezed_out, size_difference = clean_partition(partition)
     if size_difference != 0:
         answer = input(
-            f"The partition of {dataset_dir} had {size_difference} redundent elements.{', '.join(squeezed_out)}\n Would you like to overwrite it? y/n."
+            f"The partition of {dataset_dir} had {size_difference} redundent elements.\n Would you like to overwrite it? y/n."
         )
         if answer.lower() == "y":
             partition.save(dataset_dir, partition_name)
 
     sample_names = []
-    for file_name in tqdm(
-        list(dataset_dir.glob("*")), desc=f"Collecting list of subdirectories in {dataset_dir.name}."
-    ):
+    paths = list(dataset_dir.glob("*"))
+    if max_count is not None:
+        paths = np.random.choice(paths, max_count, replace=False)
+
+    for file_name in tqdm(paths, desc=f"Collecting list of subdirectories in {dataset_dir.name}."):
         if file_name.is_dir() or file_name.suffix == ".hdf5":
             sample_names.append(file_name)
 
@@ -68,12 +73,9 @@ def get_samples_and_verify_partition(dataset_dir, partition_name="default"):
 
 def load_label_map(dataset_dir, max_count=None):
 
-    sample_paths = get_samples_and_verify_partition(dataset_dir)
+    sample_paths = get_samples_and_verify_partition(dataset_dir, max_count=max_count)
 
     label_map = defaultdict(list)
-
-    if max_count is not None and len(sample_paths) > max_count:
-        sample_paths = np.random.choice(sample_paths, max_count)
 
     for sample_path in tqdm(sample_paths, desc="Loading labels."):
         label = load_label(sample_path)
@@ -81,24 +83,61 @@ def load_label_map(dataset_dir, max_count=None):
     return label_map
 
 
-def write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True):
+def load_label_stats(task: TaskSpecifications, max_count=None):
+    dataset_dir = task.get_dataset_dir()
+    sample_paths = get_samples_and_verify_partition(dataset_dir, max_count=max_count)
+
+    # label_stats = np.zeros((len(sample_paths), task.label_type.n_classes))
+    # sample_names = []
+    label_stats = {}
+
+    for sample_path in tqdm(sample_paths, desc="Loading labels."):
+        label = load_label(sample_path)
+
+        label_stats[sample_path.stem] = list(task.label_type.label_stats(label))
+
+    return label_stats
+
+
+def write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True, task_filter=None):
     for task in io.task_iterator(benchmark_name=benchmark_name):
 
-        if compute_band_stats:
-            bandstats.produce_band_stats(task.get_dataset())
+        if task_filter is not None and task_filter(task):
 
-        if task.label_type.__class__.__name__ != "Classification":
-            print(f"Skipping {task.dataset_name}.")
-            continue
+            dataset_dir = task.get_dataset_dir()
 
-        dataset_dir = task.get_dataset_dir()
-        print(f"Producing Label Map for {dataset_dir}.")
-        label_map = load_label_map(dataset_dir, max_count=max_count)
+            print(f"Working with {dataset_dir}.")
+            if compute_band_stats:
+                try:
+                    print(f"Producing Band Stats for {task.dataset_name}.")
+                    bandstats.produce_band_stats(task.get_dataset(split=None))
+                except Exception as e:
+                    print(e)
 
-        print_label_map(label_map)
+            if task.label_type.__class__.__name__ == "Classification":
 
-        with open(dataset_dir / "label_map.json", "w") as fp:
-            json.dump(label_map, fp, indent=4, sort_keys=True)
+                print(f"Producing Label Map for {task.dataset_name}.")
+                label_map = load_label_map(dataset_dir, max_count=max_count)
+
+                print_label_map(label_map)
+                with open(dataset_dir / "label_map.json", "w") as fp:
+                    json.dump(label_map, fp, indent=4, sort_keys=True)
+
+            else:
+                label_stats = load_label_stats(task, max_count=max_count)
+                print_label_stats(label_stats)
+                with open(dataset_dir / "label_stats.json", "w") as fp:
+                    json.dump(label_stats, fp, indent=4, sort_keys=True)
+
+        else:
+            print(f"Skipping task {task.dataset_name}.")
+
+
+def print_label_stats(label_stats: Dict[str, List]):
+    label_stats_array = np.array(list(label_stats.values()))
+    cum_per_label = np.sum(label_stats_array, axis=0)
+    for i, count in enumerate(cum_per_label):
+        print(f"class {i:2d}: {count}")
 
 
 def print_label_map(label_map, prefix="  ", max_count=200):
@@ -121,6 +160,10 @@ def view_label_map_count(benchmark_name="converted"):
         print()
 
 
+def task_filter(task: TaskSpecifications):
+    return isinstance(task.label_type, io.SegmentationClasses)
+
+
 if __name__ == "__main__":
-    write_all_label_map(max_count=None)
+    write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=False, task_filter=task_filter)
     # view_label_map_count()
