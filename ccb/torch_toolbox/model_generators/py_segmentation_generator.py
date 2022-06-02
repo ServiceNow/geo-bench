@@ -136,9 +136,11 @@ class SegmentationGenerator(ModelGenerator):
                 """
                 if train:
                     if resample:
-                        self.crop_params = tt.RandomResizedCrop.get_params(x, (h, w), ratio=(0.75, 1.3333333333333333))
+                        self.crop_params = tt.RandomResizedCrop.get_params(
+                            x, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)
+                        )
                         self.flip = bool(torch.randint(0, 2, size=(1,)))
-                    x = TF.crop(x, *self.crop_params)
+                    x = TF.resized_crop(x, *self.crop_params, size=(h, w))
                     if self.flip:
                         x = TF.hflip(x)
                 else:
