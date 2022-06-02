@@ -599,26 +599,22 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
         band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
+        label = None
+        for band_name in band_names:
 
-        # check if label is present in hdf5 file and retrieve it, or get it from attr_dict
-        if "label" in fp.keys():
-            label = fp["label"]
-            label = Band(data=np.array(label), **attr_dict["label"])
-        else:
-            label = attr_dict.get("label", None)
+            if label_only and not band_name.startswith("label"):
+                continue
 
-        if label_only:
-            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
-        else:
-            for band_name in band_names:
+            h5_band = fp[band_name]
 
-                h5_band = fp[band_name]
-
-                band = Band(data=np.array(h5_band), **attr_dict[band_name])
-
+            band = Band(data=np.array(h5_band), **attr_dict[band_name])
+            if band_name.startswith("label"):
+                label = band
+            else:
                 bands.append(band)
-
-            return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        if label is None:
+            label = attr_dict.get("label", None)
+    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
 def write_sample_npz(sample: Sample, dataset_dir):
@@ -982,6 +978,7 @@ class Dataset:
         if self.format == "hdf5":
             sample_name += ".hdf5"
         sample = load_sample(Path(self.dataset_dir, sample_name), band_names=self.band_names, format=self.format)
+
         if self.transform is not None:
             return self.transform(sample)
         else:

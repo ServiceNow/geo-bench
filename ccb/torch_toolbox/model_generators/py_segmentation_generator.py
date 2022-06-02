@@ -1,23 +1,17 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
-    BackBone,
     ModelGenerator,
     Model,
     train_loss_generator,
     train_metrics_generator,
     eval_metrics_generator,
-    head_generator,
-    collate_rgb,
 )
 from torch.utils.data.dataloader import default_collate
 import torch
-import torch.nn.functional as F
-import timm
 from torchvision import transforms as tt
-import logging
 import segmentation_models_pytorch as smp
 import torchvision.transforms.functional as TF
 
@@ -33,7 +27,7 @@ class SegmentationGenerator(ModelGenerator):
         super().__init__()
         # These params are for unit tests, please set proper ones for real optimization
         self.base_hparams = {
-            "input_size": (3, 64, 64),  # FIXME
+            "input_size": (3, 256, 256),  # FIXME # desired input size
             "pretrained": True,
             "lr_backbone": 1e-5,
             "lr_head": 1e-4,
@@ -41,17 +35,23 @@ class SegmentationGenerator(ModelGenerator):
             "head_type": "linear",
             "loss_type": "crossentropy",
             "batch_size": 4,
-            "num_workers": 1,
-            "max_epochs": 10,
+            "num_workers": 4,
+            "max_epochs": 500,
             "n_gpus": 1,
-            "logger": "csv",  # Set to wandb for wandb tracking
+            "logger": "wandb",  # Set to wandb for wandb tracking
             "encoder_type": "resnet18",
             "decoder_type": "Unet",
             "decoder_weights": "imagenet",
             "enable_progress_bar": False,
             "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
-            "fast_dev_run": True,  # runs 1 train, 1 validation, and 1 test batch.
-            "format": "tif",
+            "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
+            "band_names": ["red", "green", "blue"],
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/segmentation_hparams.yaml",
+            "accumulate_grad_batches": 4,
+            "format": "hdf5",
+            "num_seeds": 3,
+            "num_agents": 4,
+            "num_trials_per_agent": 5,
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -136,11 +136,15 @@ class SegmentationGenerator(ModelGenerator):
                 """
                 if train:
                     if resample:
-                        self.crop_params = tt.RandomResizedCrop.get_params(x, (h, w), ratio=(0.75, 1.3333333333333333))
+                        self.crop_params = tt.RandomResizedCrop.get_params(
+                            x, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)
+                        )
                         self.flip = bool(torch.randint(0, 2, size=(1,)))
-                    x = TF.crop(x, *self.crop_params)
+                    x = TF.resized_crop(x, *self.crop_params, size=(h, w))
                     if self.flip:
                         x = TF.hflip(x)
+                else:
+                    x = TF.resize(x, (h, w))
                 return x
 
         def transform(sample: io.Sample):
