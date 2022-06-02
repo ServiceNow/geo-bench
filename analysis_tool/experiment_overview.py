@@ -57,7 +57,7 @@ def create_overview(args):
         # if sweep on wandb was deleted
         try:
             sweep = api.sweep(sweep_id)
-        except ValueError:
+        except wandb.errors.CommError:
             continue
 
         best_run = sweep.best_run()
@@ -77,9 +77,11 @@ def create_overview(args):
         metric_name = str(task_specs.eval_loss).split(".")[-1].split("'")[0].lower()
         sweep_summary = {}
         for key, value in wandb_summary.items():
+            if key in ["Accuracy", "F1Score"]:
+                key = "train_" + key
             if key.startswith(("train_", "val_", "test_")):
-                if metric_name in key:
-                    new_key = key.replace(metric_name, "metric")
+                if metric_name in key.lower():
+                    new_key = key.lower().replace(metric_name, "metric")
                 else:
                     new_key = key
                 sweep_summary[new_key] = value
@@ -165,6 +167,7 @@ def create_overview(args):
                 hparams[name] = val
 
             hparams["batch_size"] = int(batch_size)
+            hparams["hidden_size"] = int(hparams["hidden_size"])
             hparams["dataset_name"] = dataset
             hparams["benchmark_name"] = benchmark
             hparams["model_generator_name"] = model_generator_name

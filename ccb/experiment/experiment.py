@@ -24,7 +24,7 @@ def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> Model
         The module_name of the model generator module.
     hparams:
         hparameter dict to overwrite the default base values
-        
+
     Returns:
     --------
     model_generator: a model_generator function loaded from the module.
@@ -161,8 +161,12 @@ class Job:
         ]
 
         # sweep name that will be seen on wandb
-        backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
-        base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
+        if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
+            backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
+            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
+        else:
+            encoder = get_model_generator(model_generator_module_name).base_hparams["encoder_type"]
+            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
