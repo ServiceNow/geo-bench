@@ -16,6 +16,7 @@ from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
 import os
 from multiprocessing import Pool
+import numpy as np
 
 # Classification labels
 LABELS = (
@@ -150,7 +151,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         label = io.Band(
             data=mask, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=None, crs=None
         )
-
+        split = np.random.choice(("train", "valid", "test"), p=(0.8, 0.1, 0.1))
         grouped_bands = []
         for date_idx in range(n_timesteps):
             current_bands = []
@@ -174,7 +175,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             if not GROUP_BY_TIMESTEP:
                 sample = io.Sample(current_bands, label=label, sample_name=get_sample_name(total_samples))
                 sample.write(dataset_dir)
-                partition.add("train", get_sample_name(total_samples))
+                partition.add(split, get_sample_name(total_samples))
                 total_samples += 1
 
             if max_count is not None and total_samples >= max_count:
@@ -183,14 +184,14 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if GROUP_BY_TIMESTEP:
             sample = io.Sample(grouped_bands, label=label, sample_name=get_sample_name(total_samples))
             sample.write(dataset_dir)
-            partition.add("train", get_sample_name(total_samples))
+            partition.add(split, get_sample_name(total_samples))
             total_samples += 1
 
         if max_count is not None and total_samples >= max_count:
             break
 
-    partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
-    partition.save(dataset_dir, "nopartition", as_default=True)
+    # partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
+    partition.save(dataset_dir, "default")
     print(f"Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}")
 
 
