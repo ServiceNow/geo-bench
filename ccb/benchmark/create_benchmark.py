@@ -231,15 +231,17 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
 
 
 def make_classification_benchmark():
-    max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
+    # max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
+    max_sizes = {"train": 10, "valid": 100, "test": 100}
+
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
         "eurosat": (default_resampler, None),
-        "brick_kiln_v1.0": (default_resampler, None),
+        # "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
         # "pv4ger_classification": (default_resampler, None),
-        "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
-        # "bigearthnet": (make_subsampler(max_sizes), None),
+        # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
+        # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
     }
     _make_benchmark("classification_v0.4", specs)
 
@@ -260,5 +262,5 @@ def make_segmentation_benchmark():
 
 
 if __name__ == "__main__":
-    # make_classification_benchmark()
-    make_segmentation_benchmark()
+    make_classification_benchmark()
+    # make_segmentation_benchmark()
