@@ -114,7 +114,7 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
 def get_sample_name(total_samples):
-    return f'sample_{total_samples}'
+    return f"sample_{total_samples}"
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
@@ -139,12 +139,10 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
 
     task_specs.save(dataset_dir, overwrite=True)
 
-    print('Saving timesteps as separate bands')
+    print("Saving timesteps as separate bands")
     total_samples = 0
-    for i, tg_sample in enumerate(tqdm(cashew)):
+    for tg_sample in tqdm(cashew):
 
-        if max_count is not None and i >= max_count:
-            break
         images = tg_sample["image"].numpy()
         mask = tg_sample["mask"].numpy()
         n_timesteps, n_bands, _height, _width = images.shape
@@ -166,7 +164,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
                     band_info=band_info,
                     date=DATES[date_idx],
                     spatial_resolution=SPATIAL_RESOLUTION,
-                    transform=None,   # TODO can't find the GPS coordinates from torch geo.
+                    transform=None,  # TODO can't find the GPS coordinates from torch geo.
                     crs=None,
                     convert_to_int16=False,
                 )
@@ -176,19 +174,24 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             if not GROUP_BY_TIMESTEP:
                 sample = io.Sample(current_bands, label=label, sample_name=get_sample_name(total_samples))
                 sample.write(dataset_dir)
-                partition.add('train', get_sample_name(total_samples))
+                partition.add("train", get_sample_name(total_samples))
                 total_samples += 1
+
+            if max_count is not None and total_samples >= max_count:
+                break
 
         if GROUP_BY_TIMESTEP:
             sample = io.Sample(grouped_bands, label=label, sample_name=get_sample_name(total_samples))
             sample.write(dataset_dir)
-            partition.add('train', get_sample_name(total_samples))
+            partition.add("train", get_sample_name(total_samples))
             total_samples += 1
+
+        if max_count is not None and total_samples >= max_count:
+            break
 
     partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
     partition.save(dataset_dir, "nopartition", as_default=True)
-    print(f'Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}')
-
+    print(f"Done. GROUP_BY_TIMESTEP={GROUP_BY_TIMESTEP}, total_samples={total_samples}")
 
 
 if __name__ == "__main__":
