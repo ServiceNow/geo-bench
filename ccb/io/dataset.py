@@ -1,15 +1,13 @@
 import ast
-from multiprocessing.sharedctypes import Value
 import pathlib
-from attr import attr
 import numpy as np
-from numpy.lib.function_base import percentile
 import rasterio
 import json
 from pathlib import Path
 import datetime
-from typing import List, Union, Set, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Sequence
 import os
+import errno
 from scipy.ndimage import zoom
 import pickle
 from functools import cached_property, lru_cache
@@ -18,7 +16,6 @@ from ccb.io.label import LabelType
 from collections import OrderedDict, defaultdict
 from tqdm import tqdm
 import h5py
-from typing import Sequence
 
 # Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -153,6 +150,10 @@ class SegmentationClasses(BandInfo, LabelType):
         assert value.band_info == self
         assert np.all(value.data >= 0)
         assert np.all(value.data < self.n_classes)
+
+    def label_stats(self, band):
+        stats = np.bincount(band.data.flat, minlength=self.n_classes)
+        return stats / np.sum(stats)
 
     @property
     def class_names(self):
@@ -721,6 +722,37 @@ def _largest_shape(band_array):
     return tuple(shape)
 
 
+def force_symlink(file1, file2):
+    try:
+        os.symlink(file1, file2)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            os.remove(file2)
+            os.symlink(file1, file2)
+
+
+def split_iid(sample_set: List[str], ratios, rng=np.random):
+
+    if len(sample_set) != len(set(sample_set)):
+        warn(
+            f"There is redundancy in the sample_set. len(sample_set) != len(set(sample_set)) i.e., {len(sample_set)} != {len(set(sample_set))}."
+        )
+
+    if np.sum(ratios) > 1.001:
+        raise ValueError(f"Ratios sum to greater than 1: sum({str(ratios)}) = {np.sum(ratios)}.")
+
+    sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
+    sizes[-1] += len(sample_set) - np.sum(sizes)
+    sample_set = sample_set.copy()
+    rng.shuffle(sample_set)
+    subsets = []
+    index = 0
+    for size in sizes:
+        subsets.append(sample_set[index : (index + size)])
+        index += size
+    return subsets
+
+
 class Partition:
     """Contains a dict mapping 'train', 'valid' 'test' to lists of `sample_name`s."""
 
@@ -742,6 +774,17 @@ class Partition:
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
+    def resplit_iid(self, split_names=("valid", "test"), ratios=(0.5, 0.5)):
+        assert len(split_names) == len(ratios)
+        union = []
+        for split_name in split_names:
+            union.extend(self.partition_dict[split_name])
+
+        subsets = split_iid(union, ratios=ratios)
+
+        for split_name, subset in zip(split_names, subsets):
+            self.partition_dict[split_name] = subset
+
     def save(self, directory, partition_name, as_default=False):
         """
         If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
@@ -751,7 +794,7 @@ class Partition:
         with open(file_path, "w") as fd:
             json.dump(self.partition_dict, fd, indent=2)
         if as_default:
-            os.symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
+            force_symlink(f"{directory}/{partition_name}_partition.json", f"{directory}/default_partition.json")
 
 
 class GeneratorWithLength(object):
@@ -772,9 +815,7 @@ class Dataset:
     def __init__(
         self,
         dataset_dir,
-        band_names: Sequence[
-            str,
-        ],
+        band_names: Sequence[str] = None,
         split=None,
         partition_name="default",
         transform=None,
@@ -801,6 +842,10 @@ class Dataset:
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         assert format in ["hdf5", "tif"], f"Invalid file format {format}"
+
+        if band_names is None:
+            band_names = [band_info.name for band_info in self.task_specs.bands_info]
+
         # define alt names that map alt band names to full band names
         self.alt_band_names = self.alt_to_full_names(band_names)
         # cast user band names to full band names so no need to check for alt names

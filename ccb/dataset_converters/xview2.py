@@ -136,7 +136,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     Returns:
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)  # Creates path to converted data
-    partition = io.dataset.Partition()  # Creates dictionary to store train, val, test filenames
+    partition = io.Partition()  # Creates dictionary to store train, val, test filenames
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
@@ -199,6 +199,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         if max_count is not None and offset >= max_count:
             break
 
+    partition.resplit_iid(split_names=("valid", "test"), ratios=(0.5, 0.5))
     partition.save(dataset_dir, "original", as_default=True)
 
 

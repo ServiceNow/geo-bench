@@ -1,6 +1,6 @@
 from math import ceil, floor
 import random
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from ccb import io
 import numpy as np
 import shutil
@@ -10,14 +10,14 @@ from collections import defaultdict
 
 
 def make_subsampler(max_sizes):
-    def _subsample(partition, label_map, rng=np.random):
+    def _subsample(partition, task_specs, rng=np.random):
         return subsample(partition=partition, max_sizes=max_sizes, rng=rng)
 
     return _subsample
 
 
 def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random) -> io.Partition:
-
+    """Randomly subsample `partition` to satisfy `max_sizes`."""
     new_partition = io.Partition()
 
     for split_name, sample_names in partition.partition_dict.items():
@@ -45,6 +45,7 @@ def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict
 
 
 def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
+    """Makes sure each class has statisfies `min_class_sizes`."""
     new_split_label_maps = defaultdict(dict)
     for label in split_label_maps["train"].keys():
 
@@ -60,6 +61,7 @@ def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
 
 
 def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]):
+    """Asser that label map is a partition and that no sample are common across splits."""
     sample_set = set()
     total_count = 0
     for label_map in split_label_maps.values():
@@ -71,7 +73,10 @@ def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]):
 
 
 def make_resampler(max_sizes, min_class_sizes={"train": 10, "valid": 1, "test": 1}):
-    def _resample(partition, label_map, rng=np.random):
+    """Matrialize a resampler with the required interface."""
+
+    def _resample(partition, task_specs, rng=np.random):
+        label_map = task_specs.label_map
         return resample(
             partition=partition, label_map=label_map, max_sizes=max_sizes, min_class_sizes=min_class_sizes, rng=rng
         )
@@ -88,6 +93,7 @@ def resample(
     rng=np.random,
 ) -> io.Partition:
 
+    """Reduce class imbalance in `partition` based on information in `label_map`."""
     split_label_maps = _make_split_label_maps(label_map, partition_dict=partition.partition_dict)
     assert_no_overlap(split_label_maps)
     new_split_label_maps = _filter_for_min_size(split_label_maps, min_class_sizes)
@@ -116,6 +122,52 @@ def resample(
     return io.Partition(partition_dict=partition_dict)
 
 
+def make_resampler_from_stats(max_sizes):
+    """Matrialize a resampler with the required interface."""
+
+    def _resample(partition, task_specs, rng=np.random):
+        label_stats = task_specs.label_stats
+        return resample_from_stats(partition=partition, label_stats=label_stats, max_sizes=max_sizes, rng=rng)
+
+    return _resample
+
+
+def resample_from_stats(
+    partition: io.Partition,
+    label_stats: Dict[str, List[float]],
+    max_sizes: Dict[str, int],
+    verbose=True,
+    rng=np.random,
+    return_prob=False,
+) -> io.Partition:
+
+    partition_dict = defaultdict(list)
+    prob_dict = {}
+    for split, sample_names in partition.partition_dict.items():
+
+        if len(sample_names) > max_sizes[split]:
+
+            stats = np.array([label_stats[sample_name] for sample_name in sample_names])
+            cum_stats = np.sum(stats, axis=0, keepdims=True)
+            weight_factors = 1 / (cum_stats + 1)
+            prob = np.sum(stats * weight_factors, axis=1)
+            prob /= prob.sum()
+
+            partition_dict[split] = list(rng.choice(sample_names, size=max_sizes[split], replace=False, p=prob))
+            prob_dict[split] = prob
+
+        else:
+            print(f"Split {split} unchanged since {len(sample_names)} <= {max_sizes[split]}.")
+            partition_dict[split] = sample_names
+
+    new_partition = io.Partition(partition_dict=partition_dict)
+
+    if return_prob:
+        return new_partition, prob_dict
+    else:
+        return new_partition
+
+
 def transform_dataset(
     dataset_dir: Path,
     new_benchmark_dir: Path,
@@ -128,8 +180,7 @@ def transform_dataset(
 
     dataset = io.Dataset(dataset_dir, partition_name=partition_name)
     task_specs = dataset.task_specs
-    label_map = task_specs.label_map
-    task_specs.benchmark_name = new_benchmark_dir.name
+    task_specs.benchmark_name = dataset_dir.parent.name
     new_dataset_dir = new_benchmark_dir / dataset_dir.name
 
     if new_dataset_dir.exists() and delete_existing:
@@ -141,11 +192,12 @@ def transform_dataset(
     if resampler is not None:
         new_partition = resampler(
             partition=dataset.load_partition(partition_name),
-            label_map=label_map,
+            task_specs=task_specs,
         )
     else:
         new_partition = dataset.load_partition(partition_name)
 
+    task_specs.benchmark_name = new_benchmark_dir.name
     task_specs.save(new_dataset_dir, overwrite=True)
 
     for split_name, sample_names in new_partition.partition_dict.items():
@@ -179,29 +231,34 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
 
 
 def make_classification_benchmark():
-
-    default_resampler = make_resampler(max_sizes={"train": 5000, "valid": 1000, "test": 1000})
+    max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
+    default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
         "eurosat": (default_resampler, None),
         "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
-        "pv4ger_classification": (default_resampler, None),
-        # "geolifeclef-2021": ({"train": 10000, "valid": 5000, "test": 5000}, None),
+        # "pv4ger_classification": (default_resampler, None),
+        "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
+        # "bigearthnet": (make_subsampler(max_sizes), None),
     }
-    _make_benchmark("classification_v0.3", specs)
+    _make_benchmark("classification_v0.4", specs)
 
 
 def make_segmentation_benchmark():
-
-    default_resampler = make_subsampler(max_sizes={"train": 5000, "valid": 1000, "test": 1000})
+    max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
+    # default_resampler = make_subsampler(max_sizes=max_sizes)
+    resampler_from_stats = make_resampler_from_stats(max_sizes=max_sizes)
     specs = {
-        # "pv4ger_segmentation": (default_resampler, None),
-        # "forestnet_v1.0": (default_resampler, None),
-        "cvpr_chesapeake_landcover": (default_resampler, None),
+        # "pv4ger_segmentation": (resampler_from_stats, None),
+        # "xview2": (resampler_from_stats, None),
+        # # "forestnet_v1.0": (resampler_from_stats, None),
+        "cvpr_chesapeake_landcover": (resampler_from_stats, None),
+        # "nz_cattle_segmentation": (resampler_from_stats, None),
+        # "NeonTree_segmentation": (resampler_from_stats, None),
     }
-    _make_benchmark("segmentation_v0.1", specs)
+    _make_benchmark("segmentation_v0.2", specs)
 
 
 if __name__ == "__main__":
-    make_classification_benchmark()
-    # make_segmentation_benchmark()
+    # make_classification_benchmark()
+    make_segmentation_benchmark()
