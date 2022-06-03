@@ -83,7 +83,6 @@ assert dropped_band.name == "10 - SWIR - Cirrus"
 BAND_INFO_LIST.extend(
     [
         io.CloudProbability(alt_names=("CPL", "CLM")),
-        io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels)),
     ]
 )
 
@@ -200,7 +199,7 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
         # dataset is said to have all images 256,256 but found 270,270
         if imgs.shape[-2:] != (PATCH_SIZE, PATCH_SIZE) or mask.shape[-2:] != (PATCH_SIZE, PATCH_SIZE):
             imgs = imgs[:, :, 0:PATCH_SIZE, 0:PATCH_SIZE]
-            mask = mask[:, 0:PATCH_SIZE, 0:PATCH_SIZE]
+            mask = mask[0:PATCH_SIZE, 0:PATCH_SIZE]
 
         sample_name = dirpath
         sample = make_sample(imgs, mask, sample_name, dates)
@@ -216,4 +215,4 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
 
 if __name__ == "__main__":
-    convert()
+    convert(100)
