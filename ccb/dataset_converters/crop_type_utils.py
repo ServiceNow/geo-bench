@@ -13,6 +13,7 @@ from rasterio.vrt import WarpedVRT
 from collections import defaultdict
 import geopandas
 
+
 def percentile_normalization(
     img: np.array,
     lower: float = 2,
@@ -31,10 +32,9 @@ def percentile_normalization(
     assert lower < upper
     lower_percentile = np.percentile(img, lower)
     upper_percentile = np.percentile(img, upper)
-    img_normalized = np.clip(
-        (img - lower_percentile) / (upper_percentile - lower_percentile), 0, 1
-    )
+    img_normalized = np.clip((img - lower_percentile) / (upper_percentile - lower_percentile), 0, 1)
     return img_normalized
+
 
 def create_patches(
     imgs: np.array,
@@ -43,7 +43,7 @@ def create_patches(
         int,
     ],
     label_threshold: float,
-) -> List[Tuple[np.array,]]:
+) -> List[Tuple[np.array, ...]]:
     """From loaded images create patches of desired size.
 
     Args:
@@ -207,23 +207,20 @@ def load_geojson_mask(
     gdf = geopandas.GeoDataFrame.from_file(geojson_filepath)
 
     mask_list = []
-    unique_crops = gdf[crop_type_key].unique()  
+    unique_crops = gdf[crop_type_key].unique()
     for crop_name in unique_crops:
-        crop_gdf = gdf[gdf[crop_type_key]==crop_name]
+        crop_gdf = gdf[gdf[crop_type_key] == crop_name]
         raster_mask = rasterio.features.rasterize(
-            shapes=[g for g in crop_gdf.geometry],
-            out_shape=img_src.shape,
-            transform=img_src.transform
+            shapes=[g for g in crop_gdf.geometry], out_shape=img_src.shape, transform=img_src.transform
         )
         # assign correct segmentation label
         raster_mask *= class2idx[crop_name]
         mask_list.append(raster_mask)
-    
 
     mask_stack = np.stack(mask_list, axis=0)
     # assumes non-overlapping labels
     mask = np.max(mask_stack, axis=0)
-    
+
     return mask
 
 
@@ -244,6 +241,6 @@ def load_tif_mask(
     label_filename = os.path.join(filepath, "labels.tif")
 
     src = load_warp_file(label_filename, dest_crs=dest_crs)
-    label = src.read().astype(np.int16)
+    label = src.read().astype(np.int16).squeeze(0)
 
     return label
