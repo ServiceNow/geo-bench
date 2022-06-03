@@ -12,13 +12,27 @@ from tqdm import tqdm
 from PIL import Image
 import rasterio
 import datetime
+from ccb.benchmark.rasterize_detection import point_to_boxes, rasterize_box
 
-DATASET_NAME = "nz_cattle"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
+SEGMENTATION = True
+
+if SEGMENTATION:
+    DATASET_NAME = "nz_cattle_segmentation"
+else:
+    DATASET_NAME = "nz_cattle_detection"
+
+SRC_DATASET_DIR = Path(io.src_datasets_dir, "nz_cattle")
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
 BAND_INFO_LIST = io.make_rgb_bands(0.1)
+
+if SEGMENTATION:
+    label_type = io.SegmentationClasses(
+        "label", spatial_resolution=0.1, n_classes=2, class_names=["no cattle", "cattle"]
+    )
+else:
+    label_type = io.PointAnnotation()
 
 
 def parse_file_name(name):
@@ -61,7 +75,21 @@ def load_sample(img_path: Path):
         )
         bands.append(band_data)
 
-    return io.Sample(bands, label=coords, sample_name=img_path.stem)
+    if SEGMENTATION:
+        label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=4), img_shape=data.shape[:2])
+        label = io.Band(
+            data=label_data,
+            band_info=label_type,
+            spatial_resolution=0.1,
+            transform=transform,
+            crs=crs,
+            date=date,
+            meta_info={"location": location},
+        )
+    else:
+        label = coords
+
+    return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR):
@@ -73,7 +101,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         n_time_steps=1,
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.PointAnnotation(),
+        label_type=label_type,
         eval_loss=io.SegmentationAccuracy(),  # TODO decide on the loss
         spatial_resolution=0.1,
     )
@@ -94,7 +122,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
             sample_count += 1
             if max_count is not None and sample_count >= max_count:
                 break
-    partition.save(dataset_dir, "nopartition", as_default=True)
+
+    partition.resplit_iid(split_names=("train", "valid", "test"), ratios=(0.8, 0.1, 0.1))
+    partition.save(dataset_dir, "iid", as_default=True)
 
 
 if __name__ == "__main__":
