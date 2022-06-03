@@ -45,6 +45,11 @@ class Classification(LabelType):
         one_hot[value] = 1
         return one_hot
 
+    def value_to_str(self, value):
+        if self.class_names is None:
+            return str(value)
+        return self.class_names[value]
+
 
 class SemanticSegmentation(Classification):
     def assert_valid(self, value):
@@ -105,3 +110,12 @@ class MultiLabelClassification(LabelType):
 
     def label_stats(self, value):
         return value
+
+    def value_to_str(self, value):
+        if self.class_name is None:
+            return str(value)
+        names = []
+        for i, active in enumerate(value):
+            if active == 1:
+                names.append(self.class_name[i])
+        return "\n".join(names)
