@@ -115,7 +115,7 @@ def compute_area_with_labels(mask: np.array) -> float:
         percentage
     """
     num_px_with_label = np.count_nonzero(mask)
-    num_px_total = reduce(lambda x, y: x * y, list(mask.shape))
+    num_px_total = mask.shape[0] * mask.shape[1]
     return num_px_with_label / num_px_total
 
 
@@ -221,7 +221,7 @@ def load_geojson_mask(
     # assumes non-overlapping labels
     mask = np.max(mask_stack, axis=0)
 
-    return mask
+    return mask.astype(np.int16)
 
 
 def load_tif_mask(
