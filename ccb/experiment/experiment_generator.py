@@ -83,7 +83,7 @@ def experiment_generator(
             NUM_SEEDS = 3
 
             # not sure yet how to best handle this, does not make sense via model generator
-            best_param_path = "/mnt/data/experiments/nils/best_hparams_found_05-22_v04_partition_all_bands.json"
+            best_param_path = "/mnt/data/experiments/nils/best_hparams_found_05-22_v04_partition.json"
 
             # use wandb sweep for hyperparameter search
             with open(best_param_path, "r") as f:
