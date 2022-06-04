@@ -73,7 +73,6 @@ def train(model_gen, job_dir, wandb_mode) -> None:
                 name=hparams.get("name", None),
                 save_dir=str(job.dir),
                 resume=resume_flag,
-                mode="offline",
             )
         )
     elif logger_type.lower() == "csv":
