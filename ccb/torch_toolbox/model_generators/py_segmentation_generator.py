@@ -51,7 +51,7 @@ class SegmentationGenerator(ModelGenerator):
             "enable_progress_bar": False,
             "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
             "fast_dev_run": True,  # runs 1 train, 1 validation, and 1 test batch.
-            "format": "tif",
+            "format": "hdf5",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
