@@ -23,7 +23,7 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+            "backbone": "resnet50",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
             "pretrained": True,
             "lr_backbone": 1e-6,
             "lr_head": 1e-4,
@@ -36,7 +36,7 @@ class TIMMGenerator(ModelGenerator):
             "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet18.yaml",
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
             "num_agents": 4,
             "num_trials_per_agent": 5,
             "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
