@@ -37,6 +37,7 @@ class SegmentationGenerator(ModelGenerator):
             "batch_size": 4,
             "num_workers": 4,
             "max_epochs": 500,
+            "num_workers": 4,
             "n_gpus": 1,
             "logger": "wandb",  # Set to wandb for wandb tracking
             "encoder_type": "resnet18",
