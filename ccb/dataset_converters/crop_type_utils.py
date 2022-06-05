@@ -2,7 +2,7 @@ import json
 import os
 import re
 from functools import reduce
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Sequence, Tuple, Optional
 
 import numpy as np
 import rasterio
@@ -141,11 +141,62 @@ def collect_dates(filepaths: List[str], regex: re) -> List[str]:
     return dates
 
 
+def find_nearest(array, value):
+    """Return value in array that is nearest to value.
+
+    Args:
+        array: array of floats
+        value: float value to find nearest value to
+
+    Returns:
+        index of nearest value
+    """
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+
+def load_image(
+    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1)
+) -> np.array:
+    """Load the desired input image.
+
+    Args:
+        filepaths: paths to files to load
+        bandnames: band names with file extension as they can be found in data directory
+        dest_crs: CRS of data in partition that is being created
+        cloud_p: cloud probability interval to accept samples
+
+    Returns:
+        image of shape C x H x W
+    """
+    accepted_imgs = []
+    for path in filepaths:
+        img = load_image_bands(filepath=path, bandnames=band_names, dest_crs=dest_crs)
+        pct_area_cloud = compute_area_with_labels(img[-1, :, :])
+        if pct_area_cloud >= cloud_p[0] and pct_area_cloud <= cloud_p[1]:
+            accepted_imgs.append(img)
+        else:
+            continue
+
+    if len(accepted_imgs) == 0:
+        # no images with that criteria found
+        print("no images match cloud probability criteria")
+    elif len(accepted_imgs) == 1:
+        return accepted_imgs[0]
+    elif len(accepted_imgs) > 1:
+        # among the candidates select the 'best' image
+        # criteria lowest mean rgb value because if clouds completely cover image is white
+        rgb_means = np.array([img[[1, 2, 3], :, :].mean() for img in accepted_imgs])
+        best_idx = find_nearest(rgb_means, np.median(rgb_means))
+        return accepted_imgs[best_idx]
+
+
 def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.array:
     """Load seperate band images.
 
     Args:
-        filepaths: one por more files to load and merge
+        filepath: filepath that contains bands
         bandnames: band names with file extension as they can be found in data directory
         dest_crs: CRS of data in partition that is being created
 
