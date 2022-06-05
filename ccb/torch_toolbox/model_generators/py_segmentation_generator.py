@@ -37,7 +37,7 @@ class SegmentationGenerator(ModelGenerator):
             "pretrained": True,
             "lr_backbone": 1e-5,
             "lr_head": 1e-4,
-            "optimizer": "sgd",
+            "optimizer": "adamw",
             "head_type": "linear",
             "loss_type": "crossentropy",
             "batch_size": 4,
