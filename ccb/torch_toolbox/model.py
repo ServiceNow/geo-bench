@@ -283,7 +283,9 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
             # torchmetrics.Accuracy(dist_sync_on_step=True),
             torchmetrics.F1Score(task_specs.label_type.n_classes)
         ],
-        io.SegmentationClasses: [],
+        io.SegmentationClasses: [
+            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+        ],
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("train_metrics", ()):
