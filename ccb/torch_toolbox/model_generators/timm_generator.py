@@ -213,15 +213,6 @@ class TIMMGenerator(ModelGenerator):
 
                 new_layer.weight = torch.nn.Parameter(new_layer.weight)
 
-        elif method == "new_channels_zero":
-            # idea is to put weights of new weight channels to 0, so that the model output remains
-            # same as before
-            for channel in non_rgb_indices:
-                with torch.no_grad():
-                    new_layer.weight[: channel : channel + 1, :, :] = 0
-
-                new_layer.weight = torch.nn.Parameter(new_layer.weight)
-
         return new_layer
 
     def hp_search(self, task_specs, max_num_configs=10):
