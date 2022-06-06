@@ -17,13 +17,12 @@ import random
 import json
 
 
-def train(model_gen, job_dir, wandb_mode) -> None:
+def train(model_gen, job_dir) -> None:
     """Train a model from the model generator on datamodule.
 
     Args:
         model_gen: model generator
         job_dir: job directory that contains task_specs and hparams.json
-        wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
 
     """
     job = Job(job_dir)
@@ -50,19 +49,10 @@ def train(model_gen, job_dir, wandb_mode) -> None:
     if logger_type is None:
         logger_type = ""
     if logger_type.lower() == "wandb":
-        # if id is present in hparam, continue run. does not work with wandb sweeps
-        if "wandb_run_id" in hparams and wandb_mode != "sweep":
-            run_id = hparams["wandb_run_id"]
-            resume_flag = "allow"
-        elif wandb_mode == "sweep":
-            resume_flag = True
-            run_id = None
-        else:
-            run_id = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8))
-            hparams["wandb_run_id"] = run_id
-            with open(os.path.join(job_dir, "hparams.json"), "w") as f:
-                json.dump(hparams, f)
-            resume_flag = "allow"
+        run_id = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8))
+        hparams["wandb_run_id"] = run_id
+        with open(os.path.join(job_dir, "hparams.json"), "w") as f:
+            json.dump(hparams, f)
 
         loggers.append(
             pl.loggers.WandbLogger(
@@ -72,9 +62,10 @@ def train(model_gen, job_dir, wandb_mode) -> None:
                 group=hparams.get("wandb_group", None),
                 name=hparams.get("name", None),
                 save_dir=str(job.dir),
-                resume=resume_flag,
+                resume="allow",
             )
         )
+
     elif logger_type.lower() == "csv":
         pass  # csv in in loggers by default
     else:
@@ -134,17 +125,11 @@ def start():
         required=True,
     )
 
-    parser.add_argument(
-        "--wandb-mode",
-        help="Running sweeps, seeded runs or standard.",
-        required=True,
-        choices=["sweep", "seeded_runs", "standard"],
-    )
     args = parser.parse_args()
 
     # Load the user-specified model generator
     model_gen = get_model_generator(args.model_generator)
-    train(model_gen, args.job_dir, args.wandb_mode)
+    train(model_gen, args.job_dir)
 
 
 if __name__ == "__main__":
