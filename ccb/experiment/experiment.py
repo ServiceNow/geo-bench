@@ -122,20 +122,18 @@ class Job:
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module_name: str, job_dir: str, wandb_mode: str):
+    def write_script(self, model_generator_module_name: str, job_dir: str):
         """Write bash scrip that can be executed to run job.
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
-            wandb_mode: wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
-
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} --wandb-mode {wandb_mode} >log.out 2>err.out'
+                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out'
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
@@ -156,8 +154,6 @@ class Job:
             model_generator_module_name,
             "--job-dir",
             str(job_dir),
-            "--wandb-mode",
-            "sweep",
         ]
 
         # sweep name that will be seen on wandb
@@ -166,7 +162,8 @@ class Job:
             base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
         else:
             encoder = get_model_generator(model_generator_module_name).base_hparams["encoder_type"]
-            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder
+            decoder = get_model_generator(model_generator_module_name).base_hparams["decoder_type"]
+            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder + "_" + decoder
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
