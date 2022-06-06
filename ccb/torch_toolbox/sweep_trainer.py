@@ -31,7 +31,7 @@ def train(model_gen, job_dir) -> None:
     if seed is not None:
         pl.seed_everything(seed, workers=True)
 
-    with wandb.init(config=hparams, group=hparams["wandb_group"], allow_val_change=True) as run:
+    with wandb.init(dir=job_dir, config=hparams, group=hparams["wandb_group"], allow_val_change=True) as run:
 
         wandb_config = run.config
         # set up W&B logger
