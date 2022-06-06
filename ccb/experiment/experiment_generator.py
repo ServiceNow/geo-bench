@@ -20,7 +20,7 @@ def experiment_generator(
     max_num_configs: int = 10,
     benchmark_name: str = "default",
     experiment_name: str = None,
-    wandb_mode: str = "standard",
+    experiment_type: str = "standard",
 ):
     """
     Generates the directory structure for every tasks and every hyperparameter configuration.
@@ -37,7 +37,7 @@ def experiment_generator(
         The name of the benchmark on which to conduct the experiment (default: "default").
     experiment_name: str
         The name of the current experiment. Will be used as a prefix to the results directory (default: None).
-    wandb_mode: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+    experiment_type: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
 
     Returns:
         Name of the experiment.
@@ -55,13 +55,17 @@ def experiment_generator(
         if task_filter is not None:
             if not task_filter(task_specs):
                 continue
+
         print(task_specs.dataset_name)
 
-        if wandb_mode == "sweep":
+        if experiment_type == "sweep":
             model_generator = get_model_generator(model_generator_module_name)
 
+            base_hparams = model_generator.base_hparams
+            base_hparams["sweep"] = True
+
             # use wandb sweep for hyperparameter search
-            model = model_generator.generate(task_specs, model_generator.base_hparams)
+            model = model_generator.generate(task_specs, base_hparams)
             hparams = model.hyperparameters
 
             hparams["dataset_name"] = task_specs.dataset_name
@@ -79,11 +83,11 @@ def experiment_generator(
                 base_sweep_config=hparams["sweep_config_yaml_path"],
             )
 
-        elif wandb_mode == "seeded_runs":
+        elif experiment_type == "seeded_runs":
             NUM_SEEDS = 3
 
             # not sure yet how to best handle this, does not make sense via model generator
-            best_param_path = "/mnt/data/experiments/nils/best_hparams_found_05-22_v04_partition.json"
+            best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
 
             # use wandb sweep for hyperparameter search
             with open(best_param_path, "r") as f:
@@ -100,6 +104,7 @@ def experiment_generator(
                 model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
 
                 backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
+                backbone_config["sweep"] = False
                 for i in range(NUM_SEEDS):
                     # set seed to be used in experiment
                     backbone_config["seed"] = i
@@ -110,7 +115,7 @@ def experiment_generator(
                     job = Job(job_dir)
                     job.save_hparams(backbone_config)
                     job.save_task_specs(task_specs)
-                    job.write_script(model_generator_name, job_dir=job_dir, wandb_mode=wandb_mode)
+                    job.write_script(model_generator_name, job_dir=job_dir)
 
         else:
             model_generator = get_model_generator(model_generator_module_name)
@@ -119,6 +124,7 @@ def experiment_generator(
 
                 # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
                 hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
+                hparams["sweep"] = False
 
                 # Create and fill experiment directory
                 job_dir = experiment_dir / task_specs.dataset_name / hparams_string
@@ -126,7 +132,7 @@ def experiment_generator(
                 print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
                 job.save_hparams(hparams)
                 job.save_task_specs(task_specs)
-                job.write_script(model_generator_module_name, job_dir, wandb_mode=wandb_mode)
+                job.write_script(model_generator_module_name, job_dir)
 
     return experiment_dir
 

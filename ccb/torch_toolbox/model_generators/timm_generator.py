@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
@@ -23,13 +23,11 @@ class TIMMGenerator(ModelGenerator):
         super().__init__()
 
         self.base_hparams = {
-            "backbone": "resnet18",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
-            "pretrained": False,
-            "lr_backbone": 0.01,
-            "lr_head": 0.1,
+            "backbone": "resnet50",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+            "pretrained": True,
+            "lr_backbone": 1e-6,
+            "lr_head": 1e-4,
             "optimizer": "sgd",
-            "momentum": 0.9,
-            "weight_decay": 0.000001,
             "head_type": "linear",
             "hidden_size": 512,
             "loss_type": "crossentropy",
@@ -38,11 +36,10 @@ class TIMMGenerator(ModelGenerator):
             "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
-            "num_seeds": 3,
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
             "num_agents": 4,
             "num_trials_per_agent": 5,
-            "band_names": ["red", "green", "blue"],  # "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
+            "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
             "image_size": 224,
             "format": "hdf5",
             "new_channel_init_method": "clone_random_rgb_channel",  # random, clone_random_rgb_channel
