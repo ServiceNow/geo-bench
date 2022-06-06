@@ -1,17 +1,23 @@
-from typing import Dict, Any
+from typing import List, Dict, Any
 from ccb import io
 from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
+    BackBone,
     ModelGenerator,
     Model,
     train_loss_generator,
     train_metrics_generator,
     eval_metrics_generator,
+    head_generator,
+    collate_rgb,
 )
 from torch.utils.data.dataloader import default_collate
 import torch
+import torch.nn.functional as F
+import timm
 from torchvision import transforms as tt
+import logging
 import segmentation_models_pytorch as smp
 import torchvision.transforms.functional as TF
 
@@ -59,7 +65,6 @@ class SegmentationGenerator(ModelGenerator):
     def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
         """Returns a ccb.torch_toolbox.model.Model instance from task specs
            and hyperparameters
-
         Args:
             task_specs (TaskSpecifications): object with task specs
             hyperparameters (dict): dictionary containing hyperparameters
@@ -124,13 +129,11 @@ class SegmentationGenerator(ModelGenerator):
 
             def __call__(self, x, resample=True, train=True):
                 """Applies data augmentation to input and segmentation mask
-
                 Args:
                     x (torch.Tensor): input image or segmentation mask
                     resample (bool, optional): whether to resample (True) or reuse (False) previous transforms.
                                                Defaults to True.
                     train (bool, optional): whether in training mode. No aug during validation. Defaults to True.
-
                 Returns:
                     _type_: _description_
                 """

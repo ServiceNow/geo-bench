@@ -31,7 +31,7 @@ class TIMMGenerator(ModelGenerator):
             "head_type": "linear",
             "hidden_size": 512,
             "loss_type": "crossentropy",
-            "batch_size": 10,
+            "batch_size": 64,
             "num_workers": 4,
             "max_epochs": 500,
             "n_gpus": 1,
@@ -42,7 +42,7 @@ class TIMMGenerator(ModelGenerator):
             "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
             "image_size": 224,
             "format": "hdf5",
-            "new_channel_init_method": "clone_random_rgb_channel",  # random, clone_random_rgb_channel
+            "new_channel_init_method": "random",  # random, clone_random_rgb_channel
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -66,9 +66,6 @@ class TIMMGenerator(ModelGenerator):
         # hyperparameters.update({"std": backbone.default_cfg["std"]})
 
         new_in_channels = len(hyperparameters["band_names"])
-        # method = self.base_hparams.get("new_channel_init_method", "clone_random_rgb_channel")
-        method = "clone_random_rgb_channel"
-        hyperparameters.update({"new_channel_init_method": "clone_random_rgb_channel"})
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if hyperparameters["backbone"] in ["resnet18", "resnet50"]:
             current_layer = backbone.conv1
@@ -84,11 +81,7 @@ class TIMMGenerator(ModelGenerator):
             )
 
             backbone.conv1 = self._initialize_additional_in_channels(
-                current_layer=current_layer,
-                new_layer=new_layer,
-                task_specs=task_specs,
-                hyperparams=hyperparameters,
-                method=method,
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
             )
 
         elif hyperparameters["backbone"] in ["convnext_base"]:
@@ -107,11 +100,7 @@ class TIMMGenerator(ModelGenerator):
 
             # add new layer back to backbone
             backbone.stem[0] = self._initialize_additional_in_channels(
-                current_layer=current_layer,
-                new_layer=new_layer,
-                task_specs=task_specs,
-                hyperparams=hyperparameters,
-                method=method,
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
             )
 
         elif hyperparameters["backbone"] in [
@@ -133,11 +122,7 @@ class TIMMGenerator(ModelGenerator):
             new_layer.bias.data = current_layer.bias
 
             backbone.patch_embed.proj = self._initialize_additional_in_channels(
-                current_layer=current_layer,
-                new_layer=new_layer,
-                task_specs=task_specs,
-                hyperparams=hyperparameters,
-                method=method,
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
             )
 
         hyperparameters.update(
@@ -171,22 +156,18 @@ class TIMMGenerator(ModelGenerator):
         new_layer: torch.nn.Conv2d,
         task_specs: TaskSpecifications,
         hyperparams: Dict[str, Any],
-        method: str,
     ) -> torch.nn.Conv2d:
         """Initialize new additional input channels.
-
         By default RGB channels are copied and new input channels randomly initialized
-
         Args:
             current_layer: current Conv2d backbone layer
             new_layer: newly initialized layer to which to copy weights
             task_specs: task specs to retrieve dataset
             hyperparams: hyperparameters for band selection and ds format
-            method: method of initializing new channels
-
         Returns:
             newly initialized input Conv2d layer
         """
+        method = self.base_hparams.get("new_channel_init_method", "random")
 
         dataset = task_specs.get_dataset(
             split="train", band_names=hyperparams["band_names"], format=hyperparams["format"]
@@ -226,6 +207,15 @@ class TIMMGenerator(ModelGenerator):
                     new_layer.weight[:, channel : channel + 1, :, :] = current_layer.weight[
                         :, current_rgb_idx : current_rgb_idx + 1, ::
                     ].clone() + random.gauss(0, 1 / new_layer.in_channels)
+
+                new_layer.weight = torch.nn.Parameter(new_layer.weight)
+
+        elif method == "new_channels_zero":
+            # idea is to put weights of new weight channels to 0, so that the model output remains
+            # same as before
+            for channel in non_rgb_indices:
+                with torch.no_grad():
+                    new_layer.weight[: channel : channel + 1, :, :] = 0
 
                 new_layer.weight = torch.nn.Parameter(new_layer.weight)
 
