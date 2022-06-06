@@ -93,7 +93,6 @@ def train(model_gen, job_dir) -> None:
         log_every_n_steps=hparams.get("log_every_n_steps", 10),
         enable_progress_bar=hparams.get("enable_progress_bar", False),
         fast_dev_run=hparams.get("fast_dev_run", False),
-        accumulate_grad_batches=hparams.get("accumulate_grad_batches", 1),
         callbacks=[
             EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 30), min_delta=1e-5),
             checkpoint_callback,
