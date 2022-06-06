@@ -1029,7 +1029,6 @@ class Dataset:
         else:
             sample_name_ = sample_name
         sample = load_sample(Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format)
-
         if self.transform is not None:
             return self.transform(sample)
         else:
