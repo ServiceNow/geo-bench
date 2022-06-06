@@ -65,6 +65,7 @@ class SegmentationGenerator(ModelGenerator):
     def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
         """Returns a ccb.torch_toolbox.model.Model instance from task specs
            and hyperparameters
+
         Args:
             task_specs (TaskSpecifications): object with task specs
             hyperparameters (dict): dictionary containing hyperparameters
@@ -129,11 +130,13 @@ class SegmentationGenerator(ModelGenerator):
 
             def __call__(self, x, resample=True, train=True):
                 """Applies data augmentation to input and segmentation mask
+
                 Args:
                     x (torch.Tensor): input image or segmentation mask
                     resample (bool, optional): whether to resample (True) or reuse (False) previous transforms.
                                                Defaults to True.
                     train (bool, optional): whether in training mode. No aug during validation. Defaults to True.
+
                 Returns:
                     _type_: _description_
                 """
