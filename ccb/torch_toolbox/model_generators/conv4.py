@@ -35,7 +35,7 @@ class Conv4Generator(ModelGenerator):
             "max_epochs": 500,
             "n_gpus": 1,
             "logger": "wandb",
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams.yaml",
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml",
             "num_seeds": 3,
             "num_agents": 4,
             "num_trials_per_agent": 5,
