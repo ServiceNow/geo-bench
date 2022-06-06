@@ -156,8 +156,8 @@ def find_nearest(array, value):
     return idx
 
 
-def load_image(
-    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1)
+def load_images(
+    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1), num_imgs: int = 5
 ) -> np.array:
     """Load the desired input image.
 
@@ -166,6 +166,7 @@ def load_image(
         bandnames: band names with file extension as they can be found in data directory
         dest_crs: CRS of data in partition that is being created
         cloud_p: cloud probability interval to accept samples
+        num_imgs: num images to return per label
 
     Returns:
         image of shape C x H x W
@@ -183,13 +184,19 @@ def load_image(
         # no images with that criteria found
         print("no images match cloud probability criteria")
     elif len(accepted_imgs) == 1:
-        return accepted_imgs[0]
+        return accepted_imgs
     elif len(accepted_imgs) > 1:
         # among the candidates select the 'best' image
         # criteria lowest mean rgb value because if clouds completely cover image is white
+        imgs = []
         rgb_means = np.array([img[[1, 2, 3], :, :].mean() for img in accepted_imgs])
-        best_idx = find_nearest(rgb_means, np.median(rgb_means))
-        return accepted_imgs[best_idx]
+        median = np.median(rgb_means)
+        for i in range(num_imgs):
+            best_idx = find_nearest(rgb_means, median)
+            img = accepted_imgs.pop(best_idx)
+            imgs.append(img)
+            rgb_means = np.delete(rgb_means, best_idx)
+        return imgs
 
 
 def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.array:
