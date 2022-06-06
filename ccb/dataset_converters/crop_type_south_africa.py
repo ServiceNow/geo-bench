@@ -181,7 +181,7 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
         matched_image_dirs = [os.path.join(img_dir, dir) for dir in img_dir_paths if id in dir]
 
-        label = crop_type_utils.load_tif_mask(
+        mask = crop_type_utils.load_tif_mask(
             filepath=path,
             dest_crs=PARTITION_CRS,
         )
@@ -193,21 +193,24 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
         # dates = crop_type_utils.collect_dates(matched_image_dirs, img_dir_regex)
         # dates = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in dates]
 
-        img = crop_type_utils.load_image(
+        imgs = crop_type_utils.load_images(
             filepaths=matched_image_dirs, band_names=BANDNAMES, dest_crs=PARTITION_CRS, cloud_p=CLOUD_P
         )
-        mask = np.stack(label, axis=0)
+        imgs = np.stack(imgs, axis=0)
 
         # dataset is said to have all images 256,256 but found 270,270
-        if img.shape[-2:] != (PATCH_SIZE, PATCH_SIZE) or mask.shape[-2:] != (PATCH_SIZE, PATCH_SIZE):
-            img = img[:, 0:PATCH_SIZE, 0:PATCH_SIZE]
+        if imgs.shape[-2:] != (PATCH_SIZE, PATCH_SIZE) or mask.shape[-2:] != (PATCH_SIZE, PATCH_SIZE):
+            imgs = imgs[:, :, 0:PATCH_SIZE, 0:PATCH_SIZE]
             mask = mask[0:PATCH_SIZE, 0:PATCH_SIZE]
 
-        sample_name = dirpath
-        sample = make_sample(img, mask, sample_name)
-        sample.write(dataset_dir)
+        split = np.random.choice(("train", "valid", "test"), p=(0.8, 0.1, 0.1))
 
-        partition.add("train", sample_name)  # by default everything goes in train
+        for i in range(imgs.shape[0]):
+            img = imgs[i, :, :, :]
+            sample_name = dirpath + f"_{i}"
+            sample = make_sample(img, mask, sample_name)
+            sample.write(dataset_dir)
+            partition.add(split, sample_name)  # by default everything goes in train
 
         j += 1
         if max_count is not None and j >= max_count:
