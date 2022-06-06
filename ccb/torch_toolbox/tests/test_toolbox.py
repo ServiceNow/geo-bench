@@ -44,6 +44,7 @@ def test_toolbox_mnist():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
@@ -60,6 +61,7 @@ def test_toolbox_seeds():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
@@ -85,6 +87,7 @@ def test_toolbox_wandb():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
@@ -107,6 +110,7 @@ def test_toolbox_brick_kiln():
         "backbone": "resnet18",
         "pretrained": True,
         "lr_backbone": 1e-6,
+        "logger": "csv",
         "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
@@ -127,6 +131,7 @@ def test_toolbox_segmentation():
         "pretrained": True,
         "lr_backbone": 1e-5,
         "lr_head": 1e-4,
+        "logger": "csv",
         "optimizer": "sgd",
         "head_type": "linear",
         "loss_type": "crossentropy",
@@ -151,6 +156,7 @@ def test_toolbox_timm():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
@@ -169,6 +175,7 @@ def test_toolbox_bigearthnet():
     hparams = {
         "backbone": "resnet18",
         "pretrained": False,
+        "logger": "csv",
         "lr_backbone": 1e-1,
         "lr_head": 1e-1,
         "nesterov": True,
