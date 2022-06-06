@@ -16,6 +16,8 @@ from ccb.dataset_converters import crop_type_utils
 
 DATASET_NAME = "southAfricaCropType"
 SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)
+IMG_DIR = "ref_south_africa_crops_competition_v1_train_source_s2"
+LABEL_DIR = "ref_south_africa_crops_competition_v1_train_labels"
 SRC_TRANSFORM = Affine(10.0, 0.0, 331040.0, 0.0, -10.0, -3714560.0)
 SRC_CRS = CRS.from_epsg(32634)
 LABEL_DIRECTORY_REGEX = r"""_(?P<id>[0-9]{4})$"""
@@ -145,8 +147,8 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
-    img_dir = os.path.join(SRC_DATASET_DIR, "ref_south_africa_crops_competition_v1_train_source_s2")
-    label_dir = os.path.join(SRC_DATASET_DIR, "ref_south_africa_crops_competition_v1_train_labels")
+    img_dir = os.path.join(SRC_DATASET_DIR, IMG_DIR)
+    label_dir = os.path.join(SRC_DATASET_DIR, LABEL_DIR)
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
