@@ -1,18 +1,16 @@
-import datetime
-import gc
-import json
 import os
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
+import rasterio
 from ccb import io
 from rasterio.crs import CRS
+from rasterio.io import DatasetReader
 from rasterio.transform import Affine
+from rasterio.vrt import WarpedVRT
 from tqdm import tqdm
-
-from ccb.dataset_converters import crop_type_utils
 
 DATASET_NAME = "southAfricaCropType"
 SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)
@@ -94,6 +92,119 @@ BAND_INFO_LIST.extend(
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels))
 
 
+def compute_area_with_labels(mask: np.array) -> float:
+    """Compute percentage of mask that contain labels.
+
+    Args:
+        mask: mask to compute labels on
+
+    Return:
+        percentage
+    """
+    num_px_with_label = np.count_nonzero(mask)
+    num_px_total = mask.shape[0] * mask.shape[1]
+    return num_px_with_label / num_px_total
+
+
+def load_images(
+    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1), num_imgs: int = 5
+) -> np.array:
+    """Load the desired input image.
+
+    Args:
+        filepaths: paths to files to load
+        bandnames: band names with file extension as they can be found in data directory
+        dest_crs: CRS of data in partition that is being created
+        cloud_p: cloud probability interval to accept samples
+        num_imgs: num images to return per label
+
+    Returns:
+        image of shape num_imgs x C x H x W
+    """
+    accepted_imgs = []
+    accepted_pct = []
+    for path in filepaths:
+        img = load_image_bands(filepath=path, bandnames=band_names, dest_crs=dest_crs)
+        pct_area_cloud = compute_area_with_labels(img[-1, :, :])
+        if pct_area_cloud >= cloud_p[0] and pct_area_cloud <= cloud_p[1]:
+            accepted_imgs.append(img)
+            accepted_pct.append(pct_area_cloud)
+        else:
+            continue
+
+    sorted_pct = np.argsort(np.array(accepted_pct))[:num_imgs]
+    imgs = np.stack(accepted_imgs, axis=0)
+    imgs = imgs[sorted_pct, :, :, :]
+    return imgs
+
+
+def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.array:
+    """Load seperate band images.
+
+    Args:
+        filepath: filepath that contains bands
+        bandnames: band names with file extension as they can be found in data directory
+        dest_crs: CRS of data in partition that is being created
+
+    Returns:
+        images at this filepath of shape C x H x W
+    """
+    # load imagery
+    band_list = []
+    for bandname in bandnames:
+        band_filename = os.path.join(filepath, bandname)
+        src = load_warp_file(band_filename, dest_crs)
+        band = src.read()
+        band_list.append(band)
+
+    # stack along band channel dimension
+    data = np.concatenate(band_list, axis=0, dtype=np.int16)
+    return data
+
+
+def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
+    """Load and warp a file to the correct CRS and resolution.
+
+    Args:
+        filepath: file to load and warp
+        dest_crs: CRS of data in partition that is being created
+
+    Returns:
+        file handle of warped VRT
+    """
+    src = rasterio.open(filepath)
+
+    # Only warp if necessary
+    if src.crs != dest_crs:
+        vrt = WarpedVRT(src, crs=dest_crs)
+        src.close()
+        return vrt
+    else:
+        return src
+
+
+def load_tif_mask(
+    filepath: str,
+    dest_crs: CRS,
+) -> np.array:
+    """Load the mask.
+
+    Args:
+        filepaths: one or more files to load and merge
+        query: (minx, maxx, miny, maxy, mint, maxt) coordinates to index
+
+    Returns:
+        labels at this query index
+    """
+    # load label
+    label_filename = os.path.join(filepath, "labels.tif")
+
+    src = load_warp_file(label_filename, dest_crs=dest_crs)
+    label = src.read().astype(np.int16).squeeze(0)
+
+    return label
+
+
 def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample:
     """Make a single sample from the dataset.
 
@@ -153,7 +264,7 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
-        n_time_steps=76,  # this is not the same for all images but the max
+        # n_time_steps=76,  # this is not the same for all images but the max
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
@@ -164,12 +275,8 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
     partition = io.Partition()
 
-    # iterate over dataset based on criteria and add to partition
-    # go per label and find corresponding imagery
-
     label_dir_regex = re.compile(LABEL_DIRECTORY_REGEX, re.VERBOSE)
     label_dir_paths = sorted(os.listdir(label_dir))[2:]  # skip aux files
-    # img_dir_regex = re.compile(IMG_DIRECTORY_REGEX, re.VERBOSE)
     img_dir_paths = sorted(os.listdir(img_dir))[1:]  # skip aux files
 
     j = 0
@@ -181,22 +288,12 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
         matched_image_dirs = [os.path.join(img_dir, dir) for dir in img_dir_paths if id in dir]
 
-        mask = crop_type_utils.load_tif_mask(
+        mask = load_tif_mask(
             filepath=path,
             dest_crs=PARTITION_CRS,
         )
 
-        # img_list = [
-        #     crop_type_utils.load_image_bands(filepath, BANDNAMES, PARTITION_CRS) for filepath in matched_image_dirs
-        # ]
-
-        # dates = crop_type_utils.collect_dates(matched_image_dirs, img_dir_regex)
-        # dates = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in dates]
-
-        imgs = crop_type_utils.load_images(
-            filepaths=matched_image_dirs, band_names=BANDNAMES, dest_crs=PARTITION_CRS, cloud_p=CLOUD_P
-        )
-        imgs = np.stack(imgs, axis=0)
+        imgs = load_images(filepaths=matched_image_dirs, band_names=BANDNAMES, dest_crs=PARTITION_CRS, cloud_p=CLOUD_P)
 
         # dataset is said to have all images 256,256 but found 270,270
         if imgs.shape[-2:] != (PATCH_SIZE, PATCH_SIZE) or mask.shape[-2:] != (PATCH_SIZE, PATCH_SIZE):
@@ -210,9 +307,9 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
             sample_name = dirpath + f"_{i}"
             sample = make_sample(img, mask, sample_name)
             sample.write(dataset_dir)
-            partition.add(split, sample_name)  # by default everything goes in train
+            partition.add(split, sample_name)
+            j += 1
 
-        j += 1
         if max_count is not None and j >= max_count:
             break
 
