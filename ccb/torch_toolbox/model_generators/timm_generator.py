@@ -158,12 +158,15 @@ class TIMMGenerator(ModelGenerator):
         hyperparams: Dict[str, Any],
     ) -> torch.nn.Conv2d:
         """Initialize new additional input channels.
+
         By default RGB channels are copied and new input channels randomly initialized
+
         Args:
             current_layer: current Conv2d backbone layer
             new_layer: newly initialized layer to which to copy weights
             task_specs: task specs to retrieve dataset
             hyperparams: hyperparameters for band selection and ds format
+
         Returns:
             newly initialized input Conv2d layer
         """
