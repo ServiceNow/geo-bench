@@ -99,7 +99,6 @@ def train(model_gen, job_dir) -> None:
             checkpoint_callback,
         ],
         logger=loggers,
-        precision=16,
     )
 
     ckpt_path = hparams.get("ckpt_path", None)
