@@ -119,7 +119,7 @@ def test_toolbox_brick_kiln():
 
 
 def test_toolbox_segmentation():
-    with open(Path(io.CCB_DIR) / "segmentation_v0.2/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
+    with open(Path(io.CCB_DIR) / "segmentation_v0.2/cvpr_chesapeake_landcover/task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
 
     hparams = {
@@ -168,15 +168,17 @@ def test_toolbox_timm():
 def test_toolbox_bigearthnet():
     hparams = {
         "backbone": "resnet18",
-        "pretrained": True,
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
+        "pretrained": False,
+        "lr_backbone": 1e-1,
+        "lr_head": 1e-1,
+        "nesterov": True,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
         "fast_dev_run": True,
         "logger": "csv",
+        "format": "hdf5",
         "band_names": ["red", "green", "blue"],
         "format": "hdf5",
         "sweep": False,
@@ -208,6 +210,6 @@ if __name__ == "__main__":
     # test_toolbox_mnist()
     # test_toolbox_getitem()
     # test_toolbox_seeds()
-    test_toolbox_segmentation()
+    # test_toolbox_segmentation()
     # test_toolbox_bigearthnet()
     pass
