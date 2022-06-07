@@ -64,21 +64,6 @@ BANDNAMES = [
     "CLM.tif",
 ]
 
-max_band_value = {
-    "06 - Vegetation Red Edge": 1.4976,
-    "02 - Blue": 1.7024,
-    "03 - Green": 1.6,
-    "12 - SWIR": 1.2458,
-    "05 - Vegetation Red Edge": 1.5987,
-    "04 - Red": 1.5144,
-    "01 - Coastal aerosol": 1.7096,
-    "07 - Vegetation Red Edge": 1.4803,
-    "11 - SWIR": 1.0489,
-    "09 - Water vapour": 1.6481,
-    "08A - Vegetation Red Edge": 1.4244,
-    "08 - NIR": 1.4592,
-}
-
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
@@ -225,9 +210,6 @@ def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample
         band_data = images[band_idx, :, :]
 
         band_info = BAND_INFO_LIST[band_idx]
-
-        if band_info.name in max_band_value:
-            band_data = band_data / max_band_value[band_info.name] * 10000
 
         band = io.Band(
             data=band_data,
