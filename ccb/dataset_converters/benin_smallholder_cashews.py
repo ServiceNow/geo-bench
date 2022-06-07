@@ -16,6 +16,7 @@ from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
 import os
 from multiprocessing import Pool
+from ccb.io.dataset import Sentinel2, CloudProbability
 
 # Classification labels
 LABELS = (
@@ -101,11 +102,53 @@ DATES = (
 )
 DATES = [datetime.datetime.strptime(date, "%Y-%m-%d").date() for date in DATES]
 
+noclouds_25 = [2,
+ 3,
+ 4,
+ 5,
+ 6,
+ 7,
+ 8,
+ 9,
+ 10,
+ 12,
+ 13,
+ 15,
+ 16,
+ 17,
+ 19,
+ 20,
+ 22,
+ 23,
+ 27,
+ 28,
+ 30,
+ 33,
+ 37,
+ 38,
+ 69]  # 25 dates with the least clouds
+
+ALL_BANDS = (
+    Sentinel2("01 - Coastal aerosol", ("1", "01"), 60, 0.443),
+    Sentinel2("02 - Blue", ("2", "02", "blue"), 10, 0.49),
+    Sentinel2("03 - Green", ("3", "03", "green"), 10, 0.56),
+    Sentinel2("04 - Red", ("4", "04", "red"), 10, 0.665),
+    Sentinel2("05 - Vegetation Red Edge", ("5", "05"), 20, 0.705),
+    Sentinel2("06 - Vegetation Red Edge", ("6", "06"), 20, 0.74),
+    Sentinel2("07 - Vegetation Red Edge", ("7", "07"), 20, 0.783),
+    Sentinel2("08 - NIR", ("8", "08", "NIR"), 20, 0.842),
+    Sentinel2("08A - Vegetation Red Edge", ("8A", "08A"), 20, 0.865),
+    Sentinel2("09 - Water vapour", ("9", "09"), 60, 0.945),
+    Sentinel2("11 - SWIR", ("11",), 20, 1.61),
+    Sentinel2("12 - SWIR", ("12",), 20, 2.19),
+    CloudProbability(alt_names=("cloud coverage", "cloud mask"), spatial_resolution=10)
+)
 
 SPATIAL_RESOLUTION = 0.5  # meters, to be confirmed
 N_TIMESTEPS = 70
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=len(LABELS))
 GROUP_BY_TIMESTEP = False
+NOCLOUDS = True
 
 # Paths
 DATASET_NAME = "smallholder_cashew"
@@ -126,8 +169,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
-        n_time_steps=N_TIMESTEPS,
-        bands_info=io.sentinel2_13_bands,
+        n_time_steps=len(noclouds_25) if NOCLOUDS else N_TIMESTEPS,
+        bands_info=ALL_BANDS,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
         eval_loss=io.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
@@ -156,10 +199,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         grouped_bands = []
         for date_idx in range(n_timesteps):
             current_bands = []
+            if NOCLOUDS and date_idx not in noclouds_25:
+                continue
+
             for band_idx in range(n_bands):
                 band_data = images[date_idx, band_idx, :, :]
 
-                band_info = io.sentinel2_13_bands[band_idx]
+                band_info = ALL_BANDS[band_idx]
 
                 band = io.Band(
                     data=band_data,
