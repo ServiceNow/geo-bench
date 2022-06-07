@@ -88,14 +88,14 @@ def extract_images(
         img_data = img_data[0].astype(np.float)
         # TODO We should pass labelType from task specs and compare that instead of the class
         # Once we change this function, we should update all inspection notebooks
-        if isinstance(sample.label, np.ndarray):
-            for i, label in enumerate(sample.label):
-                if label == 1:
-                    images.append(img_data)
-                    labels.append(i)
-        else:
-            images.append(img_data)
-            labels.append(sample.label)
+        # if isinstance(sample.label, np.ndarray):
+        #     for i, label in enumerate(sample.label):
+        #         if label == 1:
+        #             images.append(img_data)
+        #             labels.append(i)
+        # else:
+        images.append(img_data)
+        labels.append(sample.label)
 
     images = float_image_to_uint8(images, percentile_max)
     return images, labels

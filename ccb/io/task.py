@@ -1,4 +1,6 @@
+from asyncio import Task
 from functools import cached_property
+from os import rename
 from typing import List, Sequence
 import pickle
 from pathlib import Path
@@ -136,8 +138,7 @@ class TaskSpecifications:
     def benchmark_name(self):
         return "default"
 
-    @cached_property
-    def label_map(self):
+    def get_label_map(self):
         label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
@@ -151,8 +152,8 @@ class TaskSpecifications:
         label_stats_path = self.get_dataset_dir() / "label_stats.json"
         if label_stats_path.exists():
             with open(label_stats_path, "r") as fp:
-                label_map = json.load(fp)
-            return label_map
+                label_stats = json.load(fp)
+            return label_stats
         else:
             return None
 
@@ -172,11 +173,17 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
-        with open(dataset_dir / "task_specs.pkl", "rb") as fd:
-            task_specs = pickle.load(fd)
+        yield load_task_specs(dataset_dir)
 
-        task_specs.benchmark_name = benchmark_name
-        yield task_specs
+
+def load_task_specs(dataset_dir: Path, rename_benchmark=True) -> TaskSpecifications:
+    dataset_dir = Path(dataset_dir)
+    with open(dataset_dir / "task_specs.pkl", "rb") as fd:
+        task_specs = pickle.load(fd)
+
+    if rename_benchmark:
+        task_specs.benchmark_name = dataset_dir.parent.name
+    return task_specs
 
 
 class Loss(object):
