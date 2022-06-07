@@ -33,25 +33,31 @@ class SegmentationGenerator(ModelGenerator):
         super().__init__()
         # These params are for unit tests, please set proper ones for real optimization
         self.base_hparams = {
-            "input_size": (3, 64, 64),  # FIXME
+            "input_size": (3, 256, 256),  # FIXME
             "pretrained": True,
             "lr_backbone": 1e-5,
             "lr_head": 1e-4,
-            "optimizer": "sgd",
+            "optimizer": "adamw",
             "head_type": "linear",
             "loss_type": "crossentropy",
             "batch_size": 4,
-            "num_workers": 1,
-            "max_epochs": 10,
+            "num_workers": 4,
+            "max_epochs": 500,
             "n_gpus": 1,
-            "logger": "csv",  # Set to wandb for wandb tracking
-            "encoder_type": "resnet18",
-            "decoder_type": "Unet",
+            "logger": "wandb",  # Set to wandb for wandb tracking
+            "encoder_type": "resnet101",
+            "accumulate_grad_batches": 2,
+            "decoder_type": "DeepLabV3",
             "decoder_weights": "imagenet",
             "enable_progress_bar": False,
             "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
-            "fast_dev_run": True,  # runs 1 train, 1 validation, and 1 test batch.
-            "format": "tif",
+            "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
+            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml",
+            "num_agents": 4,
+            "num_trials_per_agent": 5,
+            "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
+            "image_size": 224,
+            "format": "hdf5",
         }
         if hparams is not None:
             self.base_hparams.update(hparams)
@@ -136,11 +142,15 @@ class SegmentationGenerator(ModelGenerator):
                 """
                 if train:
                     if resample:
-                        self.crop_params = tt.RandomResizedCrop.get_params(x, (h, w), ratio=(0.75, 1.3333333333333333))
+                        self.crop_params = tt.RandomResizedCrop.get_params(
+                            x, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)
+                        )
                         self.flip = bool(torch.randint(0, 2, size=(1,)))
-                    x = TF.crop(x, *self.crop_params)
+                    x = TF.resized_crop(x, *self.crop_params, size=(h, w))
                     if self.flip:
                         x = TF.hflip(x)
+                else:
+                    x = TF.resize(x, (h, w))
                 return x
 
         def transform(sample: io.Sample):

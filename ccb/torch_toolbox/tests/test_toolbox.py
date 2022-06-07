@@ -23,7 +23,7 @@ def train_job_on_task(
         hparams.update(kwargs)
         job.save_hparams(hparams)
 
-        trainer.train(model_gen=model_generator, job_dir=job_dir, wandb_mode="standard")
+        trainer.train(model_gen=model_generator, job_dir=job_dir)
         hparams = job.hparams
 
         if check_logs:
@@ -44,12 +44,14 @@ def test_toolbox_mnist():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
+        "sweep": False,
     }
     train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05)
 
@@ -59,12 +61,14 @@ def test_toolbox_seeds():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
+        "sweep": False,
     }
     metrics1 = train_job_on_task(
         conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True, seed=1
@@ -83,12 +87,14 @@ def test_toolbox_wandb():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
+        "sweep": False,
     }
     train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05, logger="wandb")
 
@@ -104,25 +110,44 @@ def test_toolbox_brick_kiln():
         "backbone": "resnet18",
         "pretrained": True,
         "lr_backbone": 1e-6,
+        "logger": "csv",
         "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
         "band_names": ["red", "green", "blue"],
+        "sweep": False,
     }
     train_job_on_task(conv4_test.model_generator(hparams), task_specs, 0.40)
 
 
 def test_toolbox_segmentation():
-    with open(Path(io.CCB_DIR) / "segmentation_v0.2/pv4ger_segmentation/task_specs.pkl", "rb") as fd:
+    with open(Path(io.CCB_DIR) / "segmentation_v0.2/cvpr_chesapeake_landcover/task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
-    train_job_on_task(py_segmentation_generator.model_generator(), task_specs, 0.70, check_logs=False)
+
+    hparams = {
+        "input_size": (3, 64, 64),  # FIXME
+        "pretrained": True,
+        "lr_backbone": 1e-5,
+        "lr_head": 1e-4,
+        "logger": "csv",
+        "optimizer": "sgd",
+        "head_type": "linear",
+        "loss_type": "crossentropy",
+        "batch_size": 8,
+        "max_epochs": 1,
+        "encoder_type": "resnet18",
+        "decoder_type": "Unet",
+        "decoder_weights": "imagenet",
+        "format": "hdf5",
+        "sweep": False,
+    }
+
+    train_job_on_task(py_segmentation_generator.model_generator(hparams), task_specs, 0.50, check_logs=False)
 
 
 # this test is too slow
-
-
 @pytest.mark.slow
 @pytest.mark.skipif(
     not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
@@ -131,6 +156,7 @@ def test_toolbox_timm():
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
+        "logger": "csv",
         "lr_backbone": 1e-6,
         "lr_head": 1e-4,
         "optimizer": "sgd",
@@ -138,6 +164,7 @@ def test_toolbox_timm():
         "batch_size": 32,
         "max_epochs": 1,
         "band_names": ["red", "green", "blue"],
+        "sweep": False,
     }
     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
@@ -147,16 +174,21 @@ def test_toolbox_timm():
 def test_toolbox_bigearthnet():
     hparams = {
         "backbone": "resnet18",
-        "pretrained": True,
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
+        "pretrained": False,
+        "logger": "csv",
+        "lr_backbone": 1e-1,
+        "lr_head": 1e-1,
+        "nesterov": True,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
         "fast_dev_run": True,
         "logger": "csv",
+        "format": "hdf5",
         "band_names": ["red", "green", "blue"],
+        "format": "hdf5",
+        "sweep": False,
     }
     with open(Path(io.CCB_DIR) / "classification_v0.4" / "bigearthnet" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
@@ -185,6 +217,6 @@ if __name__ == "__main__":
     # test_toolbox_mnist()
     # test_toolbox_getitem()
     # test_toolbox_seeds()
-    test_toolbox_segmentation()
+    # test_toolbox_segmentation()
     # test_toolbox_bigearthnet()
     pass

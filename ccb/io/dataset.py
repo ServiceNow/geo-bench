@@ -907,7 +907,9 @@ class Dataset:
     @cached_property
     def task_specs(self):
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
-            return pickle.load(fd)
+            task = pickle.load(fd)
+        task.benchmark_name = self.dataset_dir.parent.name
+        return task
 
     #### Splits ####
 
@@ -1019,10 +1021,14 @@ class Dataset:
             sample_name_list = self._sample_name_list
         else:
             sample_name_list = self.active_partition.partition_dict[self.split]
-        sample_name = sample_name_list[idx]
+        return self.get_sample(sample_name_list[idx])
+
+    def get_sample(self, sample_name):
         if self.format == "hdf5":
-            sample_name += ".hdf5"
-        sample = load_sample(Path(self.dataset_dir, sample_name), band_names=self.band_names, format=self.format)
+            sample_name_ = sample_name + ".hdf5"
+        else:
+            sample_name_ = sample_name
+        sample = load_sample(Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format)
         if self.transform is not None:
             return self.transform(sample)
         else:

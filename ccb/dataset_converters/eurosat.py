@@ -47,7 +47,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         n_time_steps=1,
         bands_info=io.sentinel2_13_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(10),
+        label_type=io.Classification(10, class_names=EuroSAT.classes),
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )

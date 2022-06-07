@@ -24,7 +24,8 @@ class Model(LightningModule):
         self.train_metrics = train_metrics
         self.eval_metrics = eval_metrics
         self.hyperparameters = hyperparameters
-        self.save_hyperparameters("hyperparameters")
+        if not hyperparameters["sweep"]:
+            self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
         if self.hyperparameters["lr_backbone"] == 0:
@@ -46,10 +47,10 @@ class Model(LightningModule):
     def training_step_end(self, outputs):
         # update and log
         self.log("train_loss", outputs["loss"], logger=True)
-        self.train_metrics(outputs["output"], outputs["target"])
-        self.log_dict({f"train_{k}": v for k, v in self.train_metrics.items()}, logger=True)
+        self.train_metrics.update(outputs["output"], outputs["target"])
 
     def training_epoch_end(self, outputs):
+        self.log_dict({f"train_{k}": v for k, v in self.train_metrics.compute().items()}, logger=True)
         self.train_metrics.reset()
 
     def eval_step(self, batch, batch_idx, prefix):
@@ -105,9 +106,9 @@ class Model(LightningModule):
 
     def configure_optimizers(self):
         backbone_parameters = self.backbone.parameters()
-        backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
+        # backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
         head_parameters = self.head.parameters()
-        head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
+        # head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
         lr_backbone = self.hyperparameters["lr_backbone"]
         lr_head = self.hyperparameters["lr_head"]
         momentum = self.hyperparameters.get("momentum", 0.9)
@@ -282,7 +283,9 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
             # torchmetrics.Accuracy(dist_sync_on_step=True),
             torchmetrics.F1Score(task_specs.label_type.n_classes)
         ],
-        io.SegmentationClasses: [],
+        io.SegmentationClasses: [
+            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+        ],
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("train_metrics", ()):
@@ -318,7 +321,7 @@ def _balanced_binary_cross_entropy_with_logits(inputs, targets):
     targets = targets.view(-1, classes).float()
     loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
     loss = loss[targets == 0].mean() + loss[targets == 1].mean()
-    return loss.mean()
+    return loss
 
 
 def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
