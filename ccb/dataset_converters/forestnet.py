@@ -48,6 +48,28 @@ def get_band_data(img, channel_index, band_idx, date,
     return band_data
 
 
+def draw_img_roi(draw, shape, label: int):
+    shape_type = shape.geom_type
+    if shape_type == "Polygon":
+        coords = np.array(shape.exterior.coords)
+        draw.polygon([tuple(coord) for coord in coords], outline=label, fill=label)
+    else:
+        for poly in shape.geoms:
+            coords = np.array(poly.exterior.coords)
+            draw.polygon([tuple(coord) for coord in coords], outline=label, fill=label)
+
+
+def overlay_mask(img, mask):
+    faded_img = img.copy()
+    faded_img.putalpha(192)
+    overlaid_img = Image.new("RGB", img.size, (255, 255, 255))
+    overlaid_img.paste(faded_img, mask = faded_img.split()[3])
+    img = np.array(img)
+    overlaid_img = np.array(overlaid_img)
+    overlaid_img[np.where(mask)] = img[np.where(mask)]
+    return overlaid_img
+
+
 def load_sample(example_dir: Path, label: str, year: int):
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, example_dir.name.split("_"))
@@ -60,6 +82,10 @@ def load_sample(example_dir: Path, label: str, year: int):
     forest_loss_region = example_dir / "forest_loss_region.pkl"
     with forest_loss_region.open("rb") as f:
         forest_loss_polygon = pickle.load(f)
+
+    mask = Image.new("L", (PATCH_SIZE, PATCH_SIZE), 0)
+    draw_img_roi(ImageDraw.Draw(mask), forest_loss_polygon, 1)
+    mask = np.tile(np.array(mask), (3,1,1)).transpose((1,2,0))
 
     # Load the visible + infrared images and add them as bands
     images_dir = example_dir / "images"
@@ -82,8 +108,11 @@ def load_sample(example_dir: Path, label: str, year: int):
                 continue
             seen_years.add(img_year)
         
-        visible_img = np.array(Image.open(visible_image_path).convert("RGB"))
-        infrared_img = np.load(infrared_path)
+        visible_img = Image.open(visible_image_path).convert("RGB")
+        infrared_img = Image.fromarray(np.load(infrared_path).astype(np.uint8))
+        # Overlay loss region
+        visible_img = overlay_mask(visible_img, mask)
+        infrared_img = overlay_mask(infrared_img, mask)
 
         if is_composite:
             composite_visible_img = visible_img
