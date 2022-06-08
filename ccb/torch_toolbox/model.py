@@ -24,8 +24,6 @@ class Model(LightningModule):
         self.train_metrics = train_metrics
         self.eval_metrics = eval_metrics
         self.hyperparameters = hyperparameters
-        if not hyperparameters["sweep"]:
-            self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
         if self.hyperparameters["lr_backbone"] == 0:
