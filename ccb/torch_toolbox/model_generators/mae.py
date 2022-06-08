@@ -35,32 +35,6 @@ class MaeGenerator(model.ModelGenerator):
         else:
             return model.collate_rgb
 
-    def hp_search(self, task_specs, max_num_configs=10):
-        hparams = {
-            "lr_milestones": (10, 20),
-            "lr_gamma": 0.1,
-            "lr_backbone": 1e-3,  # adjust for MAE
-            "lr_head": 2e-3,
-            "head_type": "linear",
-            "train_iters": 50000,
-            "features_shape": (768,),  # output dim of backbone, used by head_generator
-            "loss_type": "crossentropy",
-            "batch_size": 32,
-            "num_workers": 4,
-            #"logger": "csv",
-            "logger": "wandb",
-            "max_epochs": 1,
-            "val_check_interval": 50,
-            "limit_val_batches": 50,
-            "limit_test_batches": 50,
-            # Vit specific
-            "model_name": "vit_base_patch16",
-            "num_classes": 1000,  # doesn't matter, we only want the backbone
-            "drop_path_rate": 0.1,
-            "global_pool": True,
-        }
-        return hparams_to_string([hparams])
-
     def get_transform(self, task_specs, hyperparams):
         # These transforms are only valid for MNIST
         transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])  # Resize to 224x224
