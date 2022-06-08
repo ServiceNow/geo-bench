@@ -61,7 +61,6 @@ def experiment_generator(
             model_generator = get_model_generator(model_generator_module_name)
 
             base_hparams = model_generator.base_hparams
-            base_hparams["sweep"] = True
 
             # use wandb sweep for hyperparameter search
             model = model_generator.generate(task_specs, base_hparams)
@@ -87,20 +86,23 @@ def experiment_generator(
             NUM_SEEDS = 3
 
             # use wandb sweep for hyperparameter search
-            with open("mnt/home/climate-change-benchmark/analysis_tool/seeded_runs_best_hparams.json", "r") as f:
+            with open(
+                "/mnt/home/climate-change-benchmark/analysis_tool/results/seeded_runs_best_hparams.json", "r"
+            ) as f:
                 best_params = json.load(f)
 
-            backbone_names = list(best_params[task_specs.dataset_name].keys())
+            backbone_names = list(best_params[benchmark_name][task_specs.dataset_name].keys())
 
             for back_name in backbone_names:
-                backbone_config = best_params[task_specs.dataset_name][back_name]
+                backbone_config = best_params[benchmark_name][task_specs.dataset_name][back_name]
 
-                benchmark_name = backbone_config["benchmark_name"]
+                model_generator_name = backbone_config["model_generator_name"]
 
-                model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
+                model_generator = get_model_generator(model_generator_name, hparams=backbone_config)
 
                 backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
-                backbone_config["sweep"] = False
+                backbone_config["benchmark_name"] = benchmark_name
+
                 for i in range(NUM_SEEDS):
                     # set seed to be used in experiment
                     backbone_config["seed"] = i
@@ -109,14 +111,13 @@ def experiment_generator(
                     job = Job(job_dir)
                     job.save_hparams(backbone_config)
                     job.save_task_specs(task_specs)
-                    job.write_script(model_generator_module_name, job_dir=job_dir)
+                    job.write_script(model_generator_name, job_dir=job_dir)
 
         else:
             # single run of a model
             model_generator = get_model_generator(model_generator_module_name)
 
             base_hparams = model_generator.base_hparams
-            base_hparams["sweep"] = True
 
             # use wandb sweep for hyperparameter search
             model = model_generator.generate(task_specs, base_hparams)
