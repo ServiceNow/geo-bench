@@ -59,12 +59,6 @@ class TIMMGenerator(ModelGenerator):
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
 
-        logging.warning("FIXME: Using ImageNet default input size!")
-        # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
-        hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
-        # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
-        # hyperparameters.update({"std": backbone.default_cfg["std"]})
-
         new_in_channels = len(hyperparameters["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if hyperparameters["backbone"] in ["resnet18", "resnet50"]:
