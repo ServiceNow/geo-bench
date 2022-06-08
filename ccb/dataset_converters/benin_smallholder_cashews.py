@@ -15,8 +15,9 @@ from tqdm import tqdm
 from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
 import os
-from multiprocessing import Pool
 import numpy as np
+from multiprocessing import Pool
+from ccb.io.dataset import Sentinel2, CloudProbability
 
 # Classification labels
 LABELS = (
@@ -102,11 +103,45 @@ DATES = (
 )
 DATES = [datetime.datetime.strptime(date, "%Y-%m-%d").date() for date in DATES]
 
+noclouds_25 = [2,
+ 3,
+ 4,
+ 5,
+ 6,
+ 7,
+ 8,
+ 9,
+ 10,
+ 12,
+ 13,
+ 15,
+ 16,
+ 17,
+ 19,
+ 20,
+ 22,
+ 23,
+ 27,
+ 28,
+ 30,
+ 33,
+ 37,
+ 38,
+ 69]  # 25 dates with the least clouds
+
+BAND_INFO_LIST = io.sentinel2_13_bands[:]
+dropped_band = BAND_INFO_LIST.pop(10)
+assert dropped_band.name == "10 - SWIR - Cirrus"
+BAND_INFO_LIST.append(
+    io.CloudProbability(alt_names=("CPL", "CLD"), spatial_resolution=10),
+)
+
 
 SPATIAL_RESOLUTION = 0.5  # meters, to be confirmed
 N_TIMESTEPS = 70
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=len(LABELS))
 GROUP_BY_TIMESTEP = False
+NOCLOUDS = True
 
 # Paths
 DATASET_NAME = "smallholder_cashew"
@@ -127,8 +162,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
-        n_time_steps=N_TIMESTEPS,
-        bands_info=io.sentinel2_13_bands,
+        n_time_steps=len(noclouds_25) if NOCLOUDS else N_TIMESTEPS,
+        bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
         eval_loss=io.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
@@ -155,10 +190,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
         grouped_bands = []
         for date_idx in range(n_timesteps):
             current_bands = []
+            if NOCLOUDS and date_idx not in noclouds_25:
+                continue
+
             for band_idx in range(n_bands):
                 band_data = images[date_idx, band_idx, :, :]
 
-                band_info = io.sentinel2_13_bands[band_idx]
+                band_info = BAND_INFO_LIST[band_idx]
 
                 band = io.Band(
                     data=band_data,
