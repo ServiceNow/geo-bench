@@ -62,13 +62,13 @@ def experiment_generator(
             model_generator = get_model_generator(model_generator_module_name)
 
             base_hparams = model_generator.base_hparams
-            base_hparams["sweep"] = True
 
             # use wandb sweep for hyperparameter search
             model = model_generator.generate(task_specs, base_hparams)
             hparams = model.hyperparameters
 
             hparams["dataset_name"] = task_specs.dataset_name
+            hparams["benchmark_name"] = benchmark_name
             hparams["model_generator_name"] = model_generator_module_name
 
             # create and fill experiment directory
@@ -101,15 +101,13 @@ def experiment_generator(
                 benchmark_name = backbone_config["benchmark_name"]
                 model_generator_name = backbone_config["model_generator_name"]
 
-                model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
+                model_generator = get_model_generator(model_generator_name, hparams=backbone_config)
 
                 backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
-                backbone_config["sweep"] = False
+                backbone_config["benchmark_name"] = benchmark_name
                 for i in range(NUM_SEEDS):
                     # set seed to be used in experiment
                     backbone_config["seed"] = i
-                    # run name as displayed in wandb
-                    # wandb group
 
                     job_dir = experiment_dir / task_specs.dataset_name / back_name / f"seed_{i}"
                     job = Job(job_dir)
@@ -124,7 +122,7 @@ def experiment_generator(
 
                 # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
                 hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
-                hparams["sweep"] = False
+                hparams["benchmark_name"] = benchmark_name
 
                 # Create and fill experiment directory
                 job_dir = experiment_dir / task_specs.dataset_name / hparams_string
