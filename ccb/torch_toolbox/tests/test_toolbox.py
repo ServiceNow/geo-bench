@@ -13,21 +13,23 @@ from pathlib import Path
 def train_job_on_task(
     model_generator, task_specs, threshold, check_logs=True, logger=None, metric_name="Accuracy", **kwargs
 ):
+    """Based on a job train model_generator on task.
+
+    Args:
+        model_generator: model_generator that has been instantiated and called with desired hparams
+        task_specs: task specifications which to train model on
+
+    """
     with tempfile.TemporaryDirectory(prefix="ccb_mnist_test") as job_dir:
         job = Job(job_dir)
         task_specs.save(job.dir)
 
-        hparams = model_generator.hp_search(task_specs)[0][0]
-        if logger is not None:
-            hparams["logger"] = logger
-        hparams.update(kwargs)
+        hparams = model_generator.base_hparams
         job.save_hparams(hparams)
 
         trainer.train(model_gen=model_generator, job_dir=job_dir)
-        hparams = job.hparams
 
         if check_logs:
-            hparams = job.hparams
 
             metrics = job.get_metrics()
             print(metrics)
@@ -51,7 +53,7 @@ def test_toolbox_mnist():
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
-        "sweep": False,
+        "num_workers": 1,
     }
     train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05)
 
@@ -68,7 +70,7 @@ def test_toolbox_seeds():
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
-        "sweep": False,
+        "num_workers": 1,
     }
     metrics1 = train_job_on_task(
         conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True, seed=1
@@ -94,7 +96,7 @@ def test_toolbox_wandb():
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
-        "sweep": False,
+        "num_workers": 1,
     }
     train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05, logger="wandb")
 
@@ -117,7 +119,8 @@ def test_toolbox_brick_kiln():
         "batch_size": 32,
         "max_epochs": 1,
         "band_names": ["red", "green", "blue"],
-        "sweep": False,
+        "format": "hdf5",
+        "num_workers": 1,
     }
     train_job_on_task(conv4_test.model_generator(hparams), task_specs, 0.40)
 
@@ -141,7 +144,7 @@ def test_toolbox_segmentation():
         "decoder_type": "Unet",
         "decoder_weights": "imagenet",
         "format": "hdf5",
-        "sweep": False,
+        "num_workers": 1,
     }
 
     train_job_on_task(py_segmentation_generator.model_generator(hparams), task_specs, 0.50, check_logs=False)
@@ -164,7 +167,7 @@ def test_toolbox_timm():
         "batch_size": 32,
         "max_epochs": 1,
         "band_names": ["red", "green", "blue"],
-        "sweep": False,
+        "num_workers": 1,
     }
     with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
@@ -188,7 +191,7 @@ def test_toolbox_bigearthnet():
         "format": "hdf5",
         "band_names": ["red", "green", "blue"],
         "format": "hdf5",
-        "sweep": False,
+        "num_workers": 1,
     }
     with open(Path(io.CCB_DIR) / "classification_v0.4" / "bigearthnet" / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)

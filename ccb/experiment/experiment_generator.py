@@ -17,7 +17,6 @@ def experiment_generator(
     model_generator_module_name: str,
     experiment_dir: str,
     task_filter: callable = None,
-    max_num_configs: int = 10,
     benchmark_name: str = "default",
     experiment_name: str = None,
     experiment_type: str = "standard",
@@ -69,6 +68,7 @@ def experiment_generator(
             hparams = model.hyperparameters
 
             hparams["dataset_name"] = task_specs.dataset_name
+            hparams["benchmark_name"] = benchmark_name
             hparams["model_generator_name"] = model_generator_module_name
 
             # create and fill experiment directory
@@ -86,11 +86,8 @@ def experiment_generator(
         elif experiment_type == "seeded_runs":
             NUM_SEEDS = 3
 
-            # not sure yet how to best handle this, does not make sense via model generator
-            best_param_path = "/mnt/data/experiments/nils/best_hparams_found.json"
-
             # use wandb sweep for hyperparameter search
-            with open(best_param_path, "r") as f:
+            with open("mnt/home/climate-change-benchmark/analysis_tool/seeded_runs_best_hparams.json", "r") as f:
                 best_params = json.load(f)
 
             backbone_names = list(best_params[task_specs.dataset_name].keys())
@@ -99,7 +96,6 @@ def experiment_generator(
                 backbone_config = best_params[task_specs.dataset_name][back_name]
 
                 benchmark_name = backbone_config["benchmark_name"]
-                model_generator_name = backbone_config["model_generator_name"]
 
                 model_generator = get_model_generator(model_generator_module_name, hparams=backbone_config)
 
@@ -108,31 +104,36 @@ def experiment_generator(
                 for i in range(NUM_SEEDS):
                     # set seed to be used in experiment
                     backbone_config["seed"] = i
-                    # run name as displayed in wandb
-                    # wandb group
 
                     job_dir = experiment_dir / task_specs.dataset_name / back_name / f"seed_{i}"
                     job = Job(job_dir)
                     job.save_hparams(backbone_config)
                     job.save_task_specs(task_specs)
-                    job.write_script(model_generator_name, job_dir=job_dir)
+                    job.write_script(model_generator_module_name, job_dir=job_dir)
 
         else:
+            # single run of a model
             model_generator = get_model_generator(model_generator_module_name)
 
-            for hparams, hparams_string in model_generator.hp_search(task_specs, max_num_configs):
+            base_hparams = model_generator.base_hparams
+            base_hparams["sweep"] = True
 
-                # Override hparams["name"] parameter in hparams - forwarded to wandb in trainer.py
-                hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams_string}"
-                hparams["sweep"] = False
+            # use wandb sweep for hyperparameter search
+            model = model_generator.generate(task_specs, base_hparams)
+            hparams = model.hyperparameters
 
-                # Create and fill experiment directory
-                job_dir = experiment_dir / task_specs.dataset_name / hparams_string
-                job = Job(job_dir)
-                print("  ", hparams_string, " -> hparams['name']=", hparams["name"])
-                job.save_hparams(hparams)
-                job.save_task_specs(task_specs)
-                job.write_script(model_generator_module_name, job_dir)
+            hparams["dataset_name"] = task_specs.dataset_name
+            hparams["benchmark_name"] = benchmark_name
+            hparams["model_generator_name"] = model_generator_module_name
+            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
+
+            # create and fill experiment directory
+            job_dir = experiment_dir / task_specs.dataset_name
+            job = Job(job_dir)
+            job.save_hparams(hparams)
+            job.save_task_specs(task_specs)
+
+            job.write_script(model_generator_module_name, job_dir=job_dir)
 
     return experiment_dir
 

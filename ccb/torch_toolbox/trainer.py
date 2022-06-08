@@ -63,6 +63,7 @@ def train(model_gen, job_dir) -> None:
                 name=hparams.get("name", None),
                 save_dir=str(job.dir),
                 resume="allow",
+                config=hparams,
             )
         )
 
