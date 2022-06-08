@@ -24,8 +24,8 @@ class Model(LightningModule):
         self.train_metrics = train_metrics
         self.eval_metrics = eval_metrics
         self.hyperparameters = hyperparameters
-        if not hyperparameters["sweep"]:
-            self.save_hyperparameters("hyperparameters")
+        # if not hyperparameters["sweep"]:
+        #     self.save_hyperparameters("hyperparameters")
 
     def forward(self, x):
         if self.hyperparameters["lr_backbone"] == 0:
@@ -149,12 +149,6 @@ class ModelGenerator:
     def __init__(self, model_path=None) -> None:
         """This should not load the model at this point"""
         self.model_path = model_path
-
-    def hp_search(self, task_specs, max_num_configs=10):
-        """The user can provide a set of `max_num_configs` hyperparameters configuration to search for, based on task_specs"""
-        # hp_configs = [dict(lr=0.4, width=100), dict(lr=0.1, width=100), dict(lr=0.1, width=200)]
-        # return hparams_to_string(hp_configs)
-        raise NotImplementedError()
 
     def generate(self, task_specs, hyperparams):
         """Generate a Model to train

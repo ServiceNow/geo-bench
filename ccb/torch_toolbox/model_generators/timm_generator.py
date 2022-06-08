@@ -215,13 +215,6 @@ class TIMMGenerator(ModelGenerator):
 
         return new_layer
 
-    def hp_search(self, task_specs, max_num_configs=10):
-
-        hparams2 = self.base_hparams.copy()
-        hparams2["lr_head"] = 4e-3
-
-        return hparams_to_string([self.base_hparams, hparams2])
-
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate
 
