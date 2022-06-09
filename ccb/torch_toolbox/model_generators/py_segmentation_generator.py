@@ -1,6 +1,5 @@
 from typing import List, Dict, Any
 from ccb import io
-from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     BackBone,
@@ -105,13 +104,6 @@ class SegmentationGenerator(ModelGenerator):
         train_metrics = train_metrics_generator(task_specs, hyperparameters)
         eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
         return Model(backbone, head, loss, hyperparameters, train_metrics, eval_metrics)
-
-    def hp_search(self, task_specs, max_num_configs=10):
-
-        hparams2 = self.base_hparams.copy()
-        hparams2["lr_head"] = 4e-3
-
-        return hparams_to_string([self.base_hparams, hparams2])
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate
