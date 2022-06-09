@@ -1,6 +1,5 @@
 from typing import Dict, Any
 from ccb import io
-from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     BackBone,
@@ -31,8 +30,8 @@ class Conv4Generator(ModelGenerator):
             "hidden_size": 128,
             "loss_type": "crossentropy",
             "batch_size": 32,
-            "num_workers": 4,
-            "max_epochs": 500,
+            "num_workers": 0,
+            "max_epochs": 1,
             "n_gpus": 1,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml",
@@ -60,13 +59,6 @@ class Conv4Generator(ModelGenerator):
         train_metrics = train_metrics_generator(task_specs, hyperparameters)
         eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
         return Model(backbone, head, loss, hyperparameters, train_metrics, eval_metrics)
-
-    def hp_search(self, task_specs, max_num_configs=10):
-
-        hparams2 = self.base_hparams.copy()
-        hparams2["lr_head"] = 4e-3
-
-        return hparams_to_string([self.base_hparams, hparams2])
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate

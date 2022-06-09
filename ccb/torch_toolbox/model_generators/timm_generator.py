@@ -1,6 +1,5 @@
 from typing import Dict, Any
 from ccb import io
-from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     ModelGenerator,
@@ -58,12 +57,6 @@ class TIMMGenerator(ModelGenerator):
             hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-
-        logging.warning("FIXME: Using ImageNet default input size!")
-        # self.base_hparams["n_backbone_features"] = backbone.default_cfg["input_size"]
-        hyperparameters.update({"input_size": backbone.default_cfg["input_size"]})
-        # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
-        # hyperparameters.update({"std": backbone.default_cfg["std"]})
 
         new_in_channels = len(hyperparameters["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
@@ -214,13 +207,6 @@ class TIMMGenerator(ModelGenerator):
                 new_layer.weight = torch.nn.Parameter(new_layer.weight)
 
         return new_layer
-
-    def hp_search(self, task_specs, max_num_configs=10):
-
-        hparams2 = self.base_hparams.copy()
-        hparams2["lr_head"] = 4e-3
-
-        return hparams_to_string([self.base_hparams, hparams2])
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         return default_collate

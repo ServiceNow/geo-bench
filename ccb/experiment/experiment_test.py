@@ -5,49 +5,9 @@ import tempfile
 from ccb import io
 
 import pytest
-from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
+from ccb.experiment.experiment import Job, get_model_generator
 from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
-
-
-def test_trial_numbering():
-    """
-    Test that all hyperparameter combinations are numbered.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 2, "key2": 2}])))[1]
-    assert all([x.startswith(f"trial_{i}") for i, x in enumerate(hp_str)])
-
-
-def test_introspection():
-    """
-    Test if we correctly identify which hyperparameters are fixed vs. varying.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 2, "key2": 2}])))[1]
-    assert all(["key1" in x for x in hp_str])
-    assert all(["key2" not in x for x in hp_str])
-
-
-def test_duplicate_combos():
-    """
-    Test if we correctly return two trials if we receive duplicate HP combinations.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}])))[1]
-    assert len(hp_str) == 3
-    assert len([x for x in hp_str if "key1=1" in x and "key2=2" in x]) == 2
-
-
-def test_single_combo():
-    """
-    Test if we correctly handle the case where a single hyperparameter combination is received.
-    Expected behavior is to have only the trial ID in the string.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}])))[1]
-    assert len(hp_str) == 1
-    assert hp_str[0] == "trial_0"
 
 
 def test_load_module():
@@ -57,7 +17,7 @@ def test_load_module():
     """
 
     model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4_test")
-    assert hasattr(model_generator, "hp_search")
+    assert hasattr(model_generator, "generate")
 
 
 def test_unexisting_path():
@@ -80,11 +40,10 @@ def test_experiment_generator_on_mnist():
 
         sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
-        for job_dir in (Path(exp_dir) / "MNIST").iterdir():
-            job = Job(job_dir)
-            print(job_dir)
-            metrics = job.get_metrics()
-            assert float(metrics["test_Accuracy"]) > 0.05
+        job = Job(Path(exp_dir) / "MNIST")
+        print(Path(exp_dir) / "MNIST")
+        metrics = job.get_metrics()
+        assert float(metrics["test_Accuracy"]) > 0.05
 
 
 @pytest.mark.slow
@@ -103,17 +62,17 @@ def test_experiment_generator_on_benchmark():
         "--experiment-dir",
         str(experiment_dir),
         "--benchmark",
-        "ccb-test",
+        "ccb-test-small",
     ]
+
     subprocess.check_call(cmd)
 
     sequential_dispatcher(exp_dir=experiment_dir, prompt=False)
     for ds_dir in Path(experiment_dir).iterdir():
-        for job_dir in ds_dir.iterdir():
-            job = Job(job_dir)
-            print(job_dir)
-            metrics = job.get_metrics()
-            print(metrics)
+        job = Job(ds_dir)
+        print(ds_dir)
+        metrics = job.get_metrics()
+        print(metrics)
 
 
 if __name__ == "__main__":

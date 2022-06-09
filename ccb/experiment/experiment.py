@@ -33,45 +33,6 @@ def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> Model
     return import_module(module_name).model_generator(hparams)
 
 
-def hparams_to_string(hp_configs):
-    """
-    Generate a string respresentation of the meaningful hyperparameters. This string will be used for file names and
-    job names, to be able to distinguish them easily.
-    Parameters:
-    -----------
-    hp_configs: list of dicts
-        A list of dictionnaries that each contain one hyperparameter configuration
-    Returns:
-    --------
-    A list of pairs of hyperparameter combinations (dicts from the input, string representation)
-    """
-    # Find which hyperparameters vary between hyperparameter combinations
-    keys = set(chain.from_iterable(combo.keys() for combo in hp_configs))
-
-    # TODO find a solution for unhashable hparams such as list, or print a more
-    # useful error message.
-    # active_keys = [k for k in keys if len(set(combo[k] for combo in hp_configs)) > 1]
-    active_keys = []
-    # assuming that all the dicts in hp_configs have the same keys
-    hp_config_keys = [[key for key in combo] for combo in hp_configs]
-
-    for keys in zip(*hp_config_keys):
-        first_val = hp_configs[0][keys[0]]
-        for idx, key in enumerate(keys):
-            val = hp_configs[idx][keys[idx]]
-            if first_val != val:
-                active_keys.append(key)
-
-    # Pretty print a HP combination
-    def _format_combo(trial_id, hps):
-        # XXX: we include a trial_id prefix to deal with duplicate combinations or the case where active_keys is empty
-        return f"trial_{trial_id}" + (
-            "__" + "_".join(f"{k}={hps[k]}" for k in active_keys) if len(active_keys) > 0 else ""
-        )
-
-    return [(hps, _format_combo(i, hps)) for i, hps in enumerate(hp_configs)]
-
-
 class Job:
     def __init__(self, dir) -> None:
         self.dir = Path(dir)
