@@ -71,16 +71,12 @@ def test_toolbox_seeds():
         "batch_size": 32,
         "max_epochs": 1,
         "num_workers": 1,
+        "seed": 1,
     }
-    metrics1 = train_job_on_task(
-        conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True, seed=1
-    )
-    metrics2 = train_job_on_task(
-        conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True, seed=1
-    )
-    metrics3 = train_job_on_task(
-        conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True, seed=2
-    )
+    metrics1 = train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
+    metrics2 = train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
+    hparams.update({"seed": 2})
+    metrics3 = train_job_on_task(conv4_test.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
     assert metrics1["test_Accuracy"] == metrics2["test_Accuracy"] != metrics3["test_Accuracy"]
 
 

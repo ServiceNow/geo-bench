@@ -15,7 +15,6 @@ from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox import model
 from ccb.torch_toolbox.tests.test_toolbox import train_job_on_task
 from ccb.io.task import mnist_task_specs, imagenet_task_specs
-from ccb.experiment.experiment import hparams_to_string
 
 
 class MaeGenerator(model.ModelGenerator):
