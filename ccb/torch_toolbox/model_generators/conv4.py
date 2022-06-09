@@ -1,6 +1,5 @@
 from typing import Dict, Any
 from ccb import io
-from ccb.experiment.experiment import hparams_to_string
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     BackBone,
