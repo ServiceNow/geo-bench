@@ -5,49 +5,9 @@ import tempfile
 from ccb import io
 
 import pytest
-from ccb.experiment.experiment import Job, get_model_generator, hparams_to_string
+from ccb.experiment.experiment import Job, get_model_generator
 from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
-
-
-def test_trial_numbering():
-    """
-    Test that all hyperparameter combinations are numbered.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 2, "key2": 2}])))[1]
-    assert all([x.startswith(f"trial_{i}") for i, x in enumerate(hp_str)])
-
-
-def test_introspection():
-    """
-    Test if we correctly identify which hyperparameters are fixed vs. varying.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 2, "key2": 2}])))[1]
-    assert all(["key1" in x for x in hp_str])
-    assert all(["key2" not in x for x in hp_str])
-
-
-def test_duplicate_combos():
-    """
-    Test if we correctly return two trials if we receive duplicate HP combinations.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}, {"key1": 1, "key2": 2}, {"key1": 2, "key2": 3}])))[1]
-    assert len(hp_str) == 3
-    assert len([x for x in hp_str if "key1=1" in x and "key2=2" in x]) == 2
-
-
-def test_single_combo():
-    """
-    Test if we correctly handle the case where a single hyperparameter combination is received.
-    Expected behavior is to have only the trial ID in the string.
-
-    """
-    hp_str = list(zip(*hparams_to_string([{"key1": 1, "key2": 2}])))[1]
-    assert len(hp_str) == 1
-    assert hp_str[0] == "trial_0"
 
 
 def test_load_module():
