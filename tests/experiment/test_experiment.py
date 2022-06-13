@@ -3,6 +3,7 @@ import subprocess
 import sys
 import tempfile
 from ccb import io
+import ccb
 
 import pytest
 from ccb.experiment.experiment import Job, get_model_generator
@@ -16,7 +17,7 @@ def test_load_module():
 
     """
 
-    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4_test")
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
     assert hasattr(model_generator, "generate")
 
 
@@ -36,7 +37,7 @@ def test_experiment_generator_on_mnist():
 
     with tempfile.TemporaryDirectory() as exp_dir:
 
-        experiment_generator("ccb.torch_toolbox.model_generators.conv4_test", exp_dir, benchmark_name="test")
+        experiment_generator("ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test")
 
         sequential_dispatcher(exp_dir=exp_dir, prompt=False)
 
@@ -47,9 +48,9 @@ def test_experiment_generator_on_mnist():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not Path(io.datasets_dir).exists(), reason="Requires presence of the benchmark.")
+@pytest.mark.skipif(not Path(io.CCB_DIR).exists(), reason="Requires presence of the benchmark.")
 def test_experiment_generator_on_benchmark():
-    experiment_generator_dir = Path(__file__).absolute().parent
+    experiment_generator_dir = Path(ccb.experiment.__file__).absolute().parent
 
     experiment_dir = tempfile.mkdtemp(prefix="exp_gen_test_on_benchmark")
     # experiment_dir.mkdir(parents=True, exist_ok=True)
@@ -58,11 +59,11 @@ def test_experiment_generator_on_benchmark():
         sys.executable,
         str(experiment_generator_dir / "experiment_generator.py"),
         "--model-generator",
-        "ccb.torch_toolbox.model_generators.conv4_test",
+        "ccb.torch_toolbox.model_generators.conv4",
         "--experiment-dir",
         str(experiment_dir),
         "--benchmark",
-        "ccb-test-small",
+        "ccb-test",
     ]
 
     subprocess.check_call(cmd)
