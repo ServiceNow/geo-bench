@@ -35,6 +35,6 @@ jobs:
         poetry install
         poetry show
     - name: Run pytest checks
-      run: pytest --cov=torchgeo --cov-report=xml
+      run: pytest --cov=ccb --cov-report=xml
     - name: Report coverage
       uses: codecov/codecov-action@v2
