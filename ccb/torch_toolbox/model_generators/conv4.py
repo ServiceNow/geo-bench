@@ -1,20 +1,22 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
+import torch
+import torch.nn.functional as F
+from torch.utils.data.dataloader import default_collate
+from torchvision import transforms as tt
+
 from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     BackBone,
-    ModelGenerator,
     Model,
-    train_loss_generator,
-    train_metrics_generator,
+    ModelGenerator,
+    collate_rgb,
     eval_metrics_generator,
     head_generator,
-    collate_rgb,
+    train_loss_generator,
+    train_metrics_generator,
 )
-import torch
-from torchvision import transforms as tt
-import torch.nn.functional as F
-from torch.utils.data.dataloader import default_collate
 
 
 class Conv4Generator(ModelGenerator):

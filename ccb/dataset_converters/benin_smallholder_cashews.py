@@ -9,15 +9,17 @@
 #
 # More info on the dataset: https://mlhub.earth/10.34911/rdnt.hfv20i
 
-from ccb import io
-from pathlib import Path
-from tqdm import tqdm
-from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
 import os
-import numpy as np
 from multiprocessing import Pool
-from ccb.io.dataset import Sentinel2, CloudProbability
+from pathlib import Path
+
+import numpy as np
+from torchgeo.datasets import BeninSmallHolderCashews
+from tqdm import tqdm
+
+from ccb import io
+from ccb.io.dataset import CloudProbability, Sentinel2
 
 # Classification labels
 LABELS = (
@@ -103,38 +105,38 @@ DATES = (
 )
 DATES = [datetime.datetime.strptime(date, "%Y-%m-%d").date() for date in DATES]
 
-noclouds_25 = [2,
- 3,
- 4,
- 5,
- 6,
- 7,
- 8,
- 9,
- 10,
- 12,
- 13,
- 15,
- 16,
- 17,
- 19,
- 20,
- 22,
- 23,
- 27,
- 28,
- 30,
- 33,
- 37,
- 38,
- 69]  # 25 dates with the least clouds
+noclouds_25 = [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    12,
+    13,
+    15,
+    16,
+    17,
+    19,
+    20,
+    22,
+    23,
+    27,
+    28,
+    30,
+    33,
+    37,
+    38,
+    69,
+]  # 25 dates with the least clouds
 
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.append(
-    io.CloudProbability(alt_names=("CPL", "CLD"), spatial_resolution=10),
-)
+BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD"), spatial_resolution=10))
 
 
 SPATIAL_RESOLUTION = 0.5  # meters, to be confirmed
