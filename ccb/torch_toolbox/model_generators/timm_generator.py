@@ -1,20 +1,22 @@
-from typing import Dict, Any
+import logging
+import random
+from typing import Any, Dict
+
+import timm
+import torch
+from torch.utils.data.dataloader import default_collate
+from torchvision import transforms as tt
+
 from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
-    ModelGenerator,
     Model,
-    train_loss_generator,
-    train_metrics_generator,
+    ModelGenerator,
     eval_metrics_generator,
     head_generator,
+    train_loss_generator,
+    train_metrics_generator,
 )
-from torch.utils.data.dataloader import default_collate
-import torch
-import timm
-from torchvision import transforms as tt
-import logging
-import random
 
 
 class TIMMGenerator(ModelGenerator):

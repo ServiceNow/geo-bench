@@ -2,9 +2,10 @@
 
 import multiprocessing
 import shutil
-from ccb import io
-from pathlib import Path
 from importlib import import_module
+from pathlib import Path
+
+from ccb import io
 
 CONVERTERS = [
     "brick_kiln",

@@ -1,10 +1,11 @@
-import numpy as np
-from torchgeo.datasets import cv4a_kenya_crop_type
-from ccb import io
 import datetime
 from pathlib import Path
+
+import numpy as np
+from torchgeo.datasets import cv4a_kenya_crop_type
 from tqdm import tqdm
 
+from ccb import io
 
 # Deprecated:
 # we need to re-write this scripts so that it can properly splits into train / test

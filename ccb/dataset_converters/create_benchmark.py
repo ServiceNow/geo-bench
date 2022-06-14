@@ -1,9 +1,11 @@
-from typing import Dict
-from ccb import io
-import numpy as np
 import shutil
-from tqdm import tqdm
 from pathlib import Path
+from typing import Dict
+
+import numpy as np
+from tqdm import tqdm
+
+from ccb import io
 
 
 def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random) -> io.Partition:

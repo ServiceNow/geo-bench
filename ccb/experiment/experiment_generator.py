@@ -3,14 +3,12 @@ Generate experiment directory structure
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 """
 import argparse
-
+import json
 from datetime import datetime
 from pathlib import Path
 
-from ccb.experiment.experiment import Job
-from ccb.experiment.experiment import get_model_generator
 from ccb import io
-import json
+from ccb.experiment.experiment import Job, get_model_generator
 
 
 def experiment_generator(

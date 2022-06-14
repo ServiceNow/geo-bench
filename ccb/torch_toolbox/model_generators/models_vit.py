@@ -11,10 +11,9 @@
 
 from functools import partial
 
+import timm.models.vision_transformer
 import torch
 import torch.nn as nn
-
-import timm.models.vision_transformer
 from timm.models.vision_transformer import PatchEmbed  # with version 0.3.2
 
 # from timm.models.layers.patch_embed import PatchEmbed for newer versions

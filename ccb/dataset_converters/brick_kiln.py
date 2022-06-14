@@ -3,14 +3,16 @@
 #   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx" -O brick_kiln_v1.0.tar.gz && rm -rf /tmp/cookies.txt
 
 
-from ccb import io
-import numpy as np
 import csv
-import rasterio
-from pathlib import Path
-import h5py
-from tqdm import tqdm
 import os
+from pathlib import Path
+
+import h5py
+import numpy as np
+import rasterio
+from tqdm import tqdm
+
+from ccb import io
 
 # print(os.environ["HOME"])
 # print(os.environ["CC_BENCHMARK_SOURCE_DATASETS"])
