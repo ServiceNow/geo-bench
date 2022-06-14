@@ -194,11 +194,7 @@ def start():
         required=True,
     )
 
-    parser.add_argument(
-        "--result_dir",
-        help="Directory where resulting overview should be saved.",
-        required=True,
-    )
+    parser.add_argument("--result_dir", help="Directory where resulting overview should be saved.", required=True)
 
     args = parser.parse_args()
 

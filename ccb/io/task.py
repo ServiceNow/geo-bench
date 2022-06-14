@@ -1,30 +1,16 @@
-from asyncio import Task
 from functools import cached_property
-from os import rename
-from typing import List, Sequence
+from typing import Sequence
 import pickle
 from pathlib import Path
 from ccb.io.label import Classification
 
 from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
-from typing import Generator
 import json
 import numpy as np
 
 
 class TaskSpecifications:
-    """
-    Attributes:
-        dataset_name: The name of the dataset.
-        benchmark_name: The name of the benchmark used. Defaults to "converted".
-        patch_size: maximum image patch size across bands (width, height).
-        n_time_steps: integer specifying the number of time steps for each sample.
-            This should be 1 for most dataset unless it's time series.
-        bands_info: list of object of type BandInfo descrbing the type of each band.
-        label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
-        eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
-        spatial_resolution: physical distance between pixels in meters.
-    """
+    """Task Specifications define information necessary to run a training/evaluation on a dataset."""
 
     def __init__(
         self,
@@ -39,6 +25,19 @@ class TaskSpecifications:
         eval_metrics=None,
         spatial_resolution=None,
     ) -> None:
+        """Initialize a new instance of TaskSpecifications.
+
+        Args:
+            dataset_name: The name of the dataset.
+            benchmark_name: The name of the benchmark used. Defaults to "converted".
+            patch_size: maximum image patch size across bands (width, height).
+            n_time_steps: integer specifying the number of time steps for each sample.
+                This should be 1 for most dataset unless it's time series.
+            bands_info: list of object of type BandInfo descrbing the type of each band.
+            label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
+            eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
+            spatial_resolution: physical distance between pixels in meters.
+        """
         self.dataset_name = dataset_name
         self.benchmark_name = benchmark_name
         self.patch_size = patch_size
@@ -62,9 +61,7 @@ class TaskSpecifications:
         split: str,
         partition: str = "default",
         transform=None,
-        band_names: Sequence[
-            str,
-        ] = ("red", "green", "blue"),
+        band_names: Sequence[str, ...] = ("red", "green", "blue"),
         format: str = "hdf5",
     ):
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
