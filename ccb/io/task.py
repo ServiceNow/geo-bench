@@ -62,9 +62,7 @@ class TaskSpecifications:
         split: str,
         partition: str = "default",
         transform=None,
-        band_names: Sequence[
-            str,
-        ] = ("red", "green", "blue"),
+        band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
     ):
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
