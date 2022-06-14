@@ -7,14 +7,15 @@ Expects to find files "hparams.json" and "task_specs.json".
 Usage: sweep-trainer.py --model-generator path/to/my/model/generator.py --job-dir path/to/job/dir
 """
 import argparse
-
-from ccb.torch_toolbox.dataset import DataModule
-from ccb.experiment.experiment import get_model_generator, Job
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.callbacks import ModelCheckpoint
 import os
+
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
 import wandb
+from ccb.experiment.experiment import Job, get_model_generator
+from ccb.torch_toolbox.dataset import DataModule
 
 
 def train(model_gen, job_dir) -> None:
@@ -64,11 +65,7 @@ def train(model_gen, job_dir) -> None:
 
         ckpt_dir = os.path.join(job_dir, "checkpoint")
         checkpoint_callback = ModelCheckpoint(
-            dirpath=ckpt_dir,
-            save_top_k=1,
-            monitor="val_loss",
-            mode="min",
-            every_n_epochs=1,
+            dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
         )
 
         trainer = pl.Trainer(
@@ -112,11 +109,7 @@ def start():
         help="Module name that defines a model generator. Must be in PYTHONPATH and expects a model_generator variable to exist.",
         required=True,
     )
-    parser.add_argument(
-        "--job-dir",
-        help="Path to the job.",
-        required=True,
-    )
+    parser.add_argument("--job-dir", help="Path to the job.", required=True)
 
     args = parser.parse_args()
 

@@ -1,24 +1,26 @@
-from typing import List, Dict, Any
+import logging
+from typing import Any, Dict, List
+
+import segmentation_models_pytorch as smp
+import timm
+import torch
+import torch.nn.functional as F
+import torchvision.transforms.functional as TF
+from torch.utils.data.dataloader import default_collate
+from torchvision import transforms as tt
+
 from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     BackBone,
-    ModelGenerator,
     Model,
-    train_loss_generator,
-    train_metrics_generator,
+    ModelGenerator,
+    collate_rgb,
     eval_metrics_generator,
     head_generator,
-    collate_rgb,
+    train_loss_generator,
+    train_metrics_generator,
 )
-from torch.utils.data.dataloader import default_collate
-import torch
-import torch.nn.functional as F
-import timm
-from torchvision import transforms as tt
-import logging
-import segmentation_models_pytorch as smp
-import torchvision.transforms.functional as TF
 
 
 class SegmentationGenerator(ModelGenerator):

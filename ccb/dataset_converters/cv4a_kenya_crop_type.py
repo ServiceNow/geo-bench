@@ -1,10 +1,11 @@
-import numpy as np
-from torchgeo.datasets import cv4a_kenya_crop_type
-from ccb import io
 import datetime
 from pathlib import Path
+
+import numpy as np
+from torchgeo.datasets import cv4a_kenya_crop_type
 from tqdm import tqdm
 
+from ccb import io
 
 # Deprecated:
 # we need to re-write this scripts so that it can properly splits into train / test
@@ -56,9 +57,7 @@ max_band_value = {
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.append(
-    io.CloudProbability(alt_names=("CPL", "CLD")),
-)
+BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")))
 
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=8)
 

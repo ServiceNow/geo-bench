@@ -7,9 +7,8 @@ import argparse
 import json
 import os
 
-from ccb.io.dataset import compute_dataset_statistics
 from ccb import io
-
+from ccb.io.dataset import compute_dataset_statistics
 
 parser = argparse.ArgumentParser()
 parser.add_argument("dataset", help="path to CCB dataset folder")
