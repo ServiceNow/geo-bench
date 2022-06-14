@@ -40,7 +40,7 @@ timm = { git = "https://github.com/rwightman/pytorch-image-models.git", branch =
 black = "22.3.0"
 pytest = "7.1.2"
 pytest-cov = "3.0.0"
-isort = "5.10.1"
+isort[colors] = "5.10.1"
 flake8 = "4.0.1"
 pydocstyle = "6.1.1"
 

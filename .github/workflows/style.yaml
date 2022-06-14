@@ -53,7 +53,7 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run flake8 checks
-      run: poetry run python -m flake8 . --check --diff
+      run: poetry run python -m flake8 .
   isort:
     name: isort
     runs-on: ubuntu-latest
@@ -99,4 +99,4 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run pydocstyle checks
-      run: poetry run python -m pydocstyle --check --diff
+      run: poetry run python -m pydocstyle
