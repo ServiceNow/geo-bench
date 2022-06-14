@@ -2,16 +2,17 @@
 # (Available at this webpage: https://stanfordmlgroup.github.io/projects/forestnet/)
 # Unzip the directory, then either place contents in dataset/forestnet_v1.0
 # or create a symlink.
-import pickle
-import rasterio
 import datetime
+import pickle
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+import rasterio
 from PIL import Image, ImageDraw
-from pathlib import Path
-from ccb import io
+from tqdm import tqdm
 
+from ccb import io
 
 DATASET_NAME = "forestnet_v1.0"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
@@ -34,8 +35,7 @@ LABELS = [
 ]
 
 
-def get_band_data(img, channel_index, band_idx, date,
-                  resolution, transform, crs, meta_info):
+def get_band_data(img, channel_index, band_idx, date, resolution, transform, crs, meta_info):
     band_data = io.Band(
         data=img[:, :, channel_index],
         band_info=io.landsat8_9_bands[band_idx],
@@ -63,7 +63,7 @@ def overlay_mask(img, mask):
     faded_img = img.copy()
     faded_img.putalpha(192)
     overlaid_img = Image.new("RGB", img.size, (255, 255, 255))
-    overlaid_img.paste(faded_img, mask = faded_img.split()[3])
+    overlaid_img.paste(faded_img, mask=faded_img.split()[3])
     img = np.array(img)
     overlaid_img = np.array(overlaid_img)
     overlaid_img[np.where(mask)] = img[np.where(mask)]
@@ -85,7 +85,7 @@ def load_sample(example_dir: Path, label: str, year: int):
 
     mask = Image.new("L", (PATCH_SIZE, PATCH_SIZE), 0)
     draw_img_roi(ImageDraw.Draw(mask), forest_loss_polygon, 1)
-    mask = np.tile(np.array(mask), (3,1,1)).transpose((1,2,0))
+    mask = np.tile(np.array(mask), (3, 1, 1)).transpose((1, 2, 0))
 
     # Load the visible + infrared images and add them as bands
     images_dir = example_dir / "images"
@@ -107,7 +107,7 @@ def load_sample(example_dir: Path, label: str, year: int):
                 # To get one image per year
                 continue
             seen_years.add(img_year)
-        
+
         visible_img = Image.open(visible_image_path).convert("RGB")
         infrared_img = Image.fromarray(np.load(infrared_path).astype(np.uint8))
         # Overlay loss region
@@ -118,48 +118,36 @@ def load_sample(example_dir: Path, label: str, year: int):
             composite_visible_img = visible_img
             composite_infrared_img = infrared_img
             continue
-        meta_info = {
-            "n_cloud_pixels": clouds,
-            "is_composite": False,
-            "forest_loss_region": forest_loss_polygon.wkt
-        }
+        meta_info = {"n_cloud_pixels": clouds, "is_composite": False, "forest_loss_region": forest_loss_polygon.wkt}
         # Visible
         for i, band_idx in enumerate([3, 2, 1]):
-            band_data = get_band_data(visible_img, i, band_idx, date,
-                                      SPATIAL_RESOLUTION, transform,
-                                      crs, meta_info)
+            band_data = get_band_data(visible_img, i, band_idx, date, SPATIAL_RESOLUTION, transform, crs, meta_info)
             bands.append(band_data)
 
         # Infrared
         for i, band_idx in enumerate([4, 5, 6]):
-            band_data = get_band_data(infrared_img, i, band_idx, date,
-                                      SPATIAL_RESOLUTION, transform,
-                                      crs, meta_info)
+            band_data = get_band_data(infrared_img, i, band_idx, date, SPATIAL_RESOLUTION, transform, crs, meta_info)
             bands.append(band_data)
 
     # Impute missing years with composite
     year = max(year, 2012)
-    for year_succ in range(year+1, year+5):
+    for year_succ in range(year + 1, year + 5):
         if year_succ not in seen_years:
-            meta_info = {
-                "n_cloud_pixels": None,
-                "is_composite": True,
-                "forest_loss_region": forest_loss_polygon.wkt
-            }
+            meta_info = {"n_cloud_pixels": None, "is_composite": True, "forest_loss_region": forest_loss_polygon.wkt}
             date = f"{year_succ}_01_01"
             date = datetime.datetime.strptime(date, "%Y_%m_%d").date()
             # Visible
             for i, band_idx in enumerate([3, 2, 1]):
-                band_data = get_band_data(composite_visible_img, i, band_idx,
-                                          date, SPATIAL_RESOLUTION, transform,
-                                          crs, meta_info)
+                band_data = get_band_data(
+                    composite_visible_img, i, band_idx, date, SPATIAL_RESOLUTION, transform, crs, meta_info
+                )
                 bands.append(band_data)
 
             # Infrared
             for i, band_idx in enumerate([4, 5, 6]):
-                band_data = get_band_data(composite_infrared_img, i, band_idx,
-                                          date, SPATIAL_RESOLUTION, transform,
-                                          crs, meta_info)
+                band_data = get_band_data(
+                    composite_infrared_img, i, band_idx, date, SPATIAL_RESOLUTION, transform, crs, meta_info
+                )
                 bands.append(band_data)
 
     label_int = LABELS.index(label)

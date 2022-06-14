@@ -1,11 +1,13 @@
 # So2Sat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
 import os
-from ccb import io
-import numpy as np
 from pathlib import Path
-from tqdm import tqdm
+
+import numpy as np
 from torchgeo.datasets import So2Sat
+from tqdm import tqdm
+
+from ccb import io
 
 DATASET_NAME = "so2sat"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME

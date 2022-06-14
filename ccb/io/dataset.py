@@ -1,21 +1,23 @@
 import ast
+import datetime
+import errno
+import json
+import os
 import pathlib
+import pickle
+from collections import OrderedDict, defaultdict
+from functools import cached_property, lru_cache
+from pathlib import Path
+from typing import Dict, List, Sequence, Tuple, Union
+from warnings import warn
+
+import h5py
 import numpy as np
 import rasterio
-import json
-from pathlib import Path
-import datetime
-from typing import List, Union, Dict, Tuple, Sequence
-import os
-import errno
 from scipy.ndimage import zoom
-import pickle
-from functools import cached_property, lru_cache
-from warnings import warn
-from ccb.io.label import LabelType
-from collections import OrderedDict, defaultdict
 from tqdm import tqdm
-import h5py
+
+from ccb.io.label import LabelType
 
 # Deprecated, use CCB_DIR instead
 src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
@@ -998,9 +1000,7 @@ class Dataset:
             red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
-    def normalization_stats(
-        self,
-    ) -> Tuple[Tuple[float, ...]]:
+    def normalization_stats(self) -> Tuple[Tuple[float, ...]]:
         """Retrieve band mean and std statistics for image normalization for dataset bands."""
         means = []
         stds = []

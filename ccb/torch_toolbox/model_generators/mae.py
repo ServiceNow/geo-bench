@@ -1,20 +1,19 @@
 from functools import partial
-import torch
-from torch import nn
-import torch.nn.functional as F
+
 import pytest
+import timm.models.vision_transformer
+import torch
+import torch.nn.functional as F
+from timm.models.vision_transformer import PatchEmbed  # with version 0.3.2
+from torch import nn
 from torchvision import transforms
 
-import timm.models.vision_transformer
-from timm.models.vision_transformer import PatchEmbed  # with version 0.3.2
-
-# from timm.models.layers.patch_embed import PatchEmbed for newer versions
-
 from ccb import io
-from ccb.io.task import TaskSpecifications
+from ccb.io.task import TaskSpecifications, imagenet_task_specs, mnist_task_specs
 from ccb.torch_toolbox import model
 from ccb.torch_toolbox.tests.test_toolbox import train_job_on_task
-from ccb.io.task import mnist_task_specs, imagenet_task_specs
+
+# from timm.models.layers.patch_embed import PatchEmbed for newer versions
 
 
 class MaeGenerator(model.ModelGenerator):
