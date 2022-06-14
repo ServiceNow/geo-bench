@@ -6,15 +6,16 @@
 #
 
 
-from ccb import io
-import numpy as np
 from pathlib import Path
-from tqdm import tqdm
-import pandas as pd
 
-from PIL import Image
-import tifffile
+import numpy as np
+import pandas as pd
 import rasterio
+import tifffile
+from PIL import Image
+from tqdm import tqdm
+
+from ccb import io
 
 DATASET_NAME = "geolifeclef-2021"
 SPATIAL_RESOLUTION = 1

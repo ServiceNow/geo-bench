@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 from ccb.torch_toolbox.model_generators import conv4
-from typing import Dict, Any
 
 
 def model_generator(hparams: Dict[str, Any] = {}) -> conv4.Conv4Generator:

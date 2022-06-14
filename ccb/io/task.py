@@ -1,12 +1,13 @@
-from functools import cached_property
-from typing import Sequence
-import pickle
-from pathlib import Path
-from ccb.io.label import Classification
-
-from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
 import json
+import pickle
+from functools import cached_property
+from pathlib import Path
+from typing import Sequence
+
 import numpy as np
+
+from ccb.io.dataset import CCB_DIR, BandInfo, Dataset
+from ccb.io.label import Classification
 
 
 class TaskSpecifications:
@@ -74,8 +75,8 @@ class TaskSpecifications:
             band_names: band names to select from dataset
         """
         if self.benchmark_name == "test":
-            import torchvision.transforms as tt
             import torchvision
+            import torchvision.transforms as tt
 
             if transform is None:
                 transform = tt.ToTensor()
@@ -91,9 +92,9 @@ class TaskSpecifications:
             if split == "test":
                 split = "val"  # ugly fix
             assert split in ["train", "val", "valid"], "Only train and val supported"
-            import torchvision.transforms as tt
-            import torchvision
             import PIL
+            import torchvision
+            import torchvision.transforms as tt
 
             imagenet_mean = [0.485, 0.456, 0.406]
             imagenet_std = [0.229, 0.224, 0.225]

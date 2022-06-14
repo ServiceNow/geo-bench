@@ -1,19 +1,21 @@
 import csv
+import glob
 import json
-from os import mkdir
+import os
 import pickle
 import stat
 import sys
-import glob
+from functools import cached_property
 from importlib import import_module
 from itertools import chain
+from os import mkdir
 from pathlib import Path
-from functools import cached_property
+from typing import Any, Dict
+
+from ruamel.yaml import YAML
+
 from ccb import io
 from ccb.torch_toolbox.model import ModelGenerator
-from ruamel.yaml import YAML
-import os
-from typing import Dict, Any
 
 
 def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:

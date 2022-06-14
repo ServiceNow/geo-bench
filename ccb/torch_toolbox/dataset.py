@@ -1,7 +1,9 @@
-from torch.utils.data import DataLoader
-from ccb import io
 from typing import Sequence
+
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from ccb import io
 
 
 class DataModule(pl.LightningDataModule):

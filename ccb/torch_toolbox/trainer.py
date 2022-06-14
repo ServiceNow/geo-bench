@@ -5,16 +5,17 @@ Expects to find files "hparams.json" and "task_specs.json".
 Usage: trainer.py --model-generator path/to/my/model/generator.py
 """
 import argparse
-
-from ccb.torch_toolbox.dataset import DataModule
-from ccb.experiment.experiment import get_model_generator, Job
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-from pytorch_lightning.callbacks import ModelCheckpoint
-import os
-import string
-import random
 import json
+import os
+import random
+import string
+
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+from ccb.experiment.experiment import Job, get_model_generator
+from ccb.torch_toolbox.dataset import DataModule
 
 
 def train(model_gen, job_dir) -> None:

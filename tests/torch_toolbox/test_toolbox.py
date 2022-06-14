@@ -1,13 +1,14 @@
 import pickle
 import tempfile
+from pathlib import Path
 
 import pytest
+
+from ccb import io
 from ccb.experiment.experiment import Job
 from ccb.io import mnist_task_specs
-from ccb.torch_toolbox.model_generators import conv4, timm_generator, py_segmentation_generator
 from ccb.torch_toolbox import trainer
-from ccb import io
-from pathlib import Path
+from ccb.torch_toolbox.model_generators import conv4, py_segmentation_generator, timm_generator
 
 
 def train_job_on_task(

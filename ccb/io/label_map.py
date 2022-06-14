@@ -4,14 +4,16 @@ Compute dataset band statistics for each band and save them in bandstats.json
 For the future, implement partitions and splits
 """
 import json
-from pathlib import Path
-from collections import defaultdict
 import pickle
+from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List
 from warnings import warn
-from ccb import io
-from tqdm import tqdm
+
 import numpy as np
+from tqdm import tqdm
+
+from ccb import io
 from ccb.io import bandstats
 from ccb.io.task import TaskSpecifications
 
