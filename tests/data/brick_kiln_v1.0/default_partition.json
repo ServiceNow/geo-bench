@@ -1,0 +1,9 @@
+{
+  "train": [
+    "examples_0_9.hdf5",
+    "examples_0_12.hdf5",
+    "examples_0_19.hdf5",
+    "examples_0_37.hdf5",
+    "examples_0_40.hdf5"
+  ]
+}
