@@ -1,3 +1,4 @@
+import os
 import pickle
 import tempfile
 from pathlib import Path
@@ -21,7 +22,7 @@ def train_job_on_task(
         task_specs: task specifications which to train model on
 
     """
-    with tempfile.TemporaryDirectory(prefix="ccb_mnist_test") as job_dir:
+    with tempfile.TemporaryDirectory(prefix="test") as job_dir:
         job = Job(job_dir)
         task_specs.save(job.dir)
 
@@ -99,11 +100,8 @@ def test_toolbox_wandb():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
-)
 def test_toolbox_brick_kiln():
-    with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
+    with open(os.path.join("tests", "data", "brick_kiln_v1.0", "task_specs.pkl"), "rb") as fd:
         task_specs = pickle.load(fd)
     hparams = {
         "backbone": "resnet18",
@@ -123,7 +121,7 @@ def test_toolbox_brick_kiln():
 
 
 def test_toolbox_segmentation():
-    with open(Path(io.CCB_DIR) / "segmentation_v0.2/cvpr_chesapeake_landcover/task_specs.pkl", "rb") as fd:
+    with open(os.path.join("tests", "data", "cvpr_chesapeake_landcover", "task_specs.pkl"), "rb") as fd:
         task_specs = pickle.load(fd)
 
     hparams = {
@@ -149,9 +147,6 @@ def test_toolbox_segmentation():
 
 # this test is too slow
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists(), reason="Requires presence of the benchmark."
-)
 def test_toolbox_timm():
     hparams = {
         "backbone": "resnet18",
@@ -166,7 +161,7 @@ def test_toolbox_timm():
         "band_names": ["red", "green", "blue"],
         "num_workers": 0,
     }
-    with open(Path(io.CCB_DIR) / "ccb-test" / "brick_kiln_v1.0" / "task_specs.pkl", "rb") as fd:
+    with open(os.path.join("tests", "data", "brick_kiln_v1.0", "task_specs.pkl"), "rb") as fd:
         task_specs = pickle.load(fd)
     train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70)
 
@@ -190,18 +185,15 @@ def test_toolbox_bigearthnet():
         "format": "hdf5",
         "num_workers": 0,
     }
-    with open(Path(io.CCB_DIR) / "classification_v0.4" / "bigearthnet" / "task_specs.pkl", "rb") as fd:
+    with open(os.path.join("tests", "data", "brick_kiln_v1.0", "task_specs.pkl"), "rb") as fd:
         task_specs = pickle.load(fd)
     train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70, check_logs=False)
 
 
-@pytest.mark.skipif(
-    not Path(io.CCB_DIR / "ccb-test" / "brick_kiln_v1.0").exists() or not Path("/mnt/datasets/public").exists(),
-    reason="Requires presence of the benchmark and ImageNet.",
-)
 def test_toolbox_getitem():
+    benchmark_dir = Path(os.path.join("tests", "data"))
     for benchmark_name in ("test", "imagenet", "ccb-test"):
-        for task in io.task_iterator(benchmark_name):
+        for task in io.task_iterator(benchmark_name, benchmark_dir):
             dataset = task.get_dataset(split="valid")
             data = dataset[0]
             if benchmark_name != "ccb-test":
