@@ -16,7 +16,7 @@ class DataModule(pl.LightningDataModule):
         train_transform=None,
         eval_transform=None,
         collate_fn=None,
-        band_names: Sequence[str, ...] = ("red", "green", "blue"),
+        band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
     ):
         """DataModule providing dataloaders from task_specs.
