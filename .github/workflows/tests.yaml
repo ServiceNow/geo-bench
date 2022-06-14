@@ -35,7 +35,9 @@ jobs:
       
     - name: Install dependencies
       shell: bash
-      run: python -m poetry install
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
 
     - name: Run pytest checks
       run: |
