@@ -37,8 +37,8 @@ segmentation-models-pytorch = { git = "https://github.com/ElementAI/segmentation
 timm = { git = "https://github.com/rwightman/pytorch-image-models.git", branch = "master"}
 
 [tool.poetry.dev-dependencies]
-black = "*"
-pytest = "*"
+black = "22.3.0"
+pytest = "7.1.2"
 
 [tool.black]
 line-length = 120
