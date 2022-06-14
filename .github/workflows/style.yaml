@@ -19,6 +19,7 @@ jobs:
         python-version: '3.10'
     - name: Install pip dependencies
       run: |
+        pip install poetry
         poetry install
     - name: Run black checks
       run: black . --check --diff
@@ -34,6 +35,7 @@ jobs:
         python-version: '3.10'
     - name: Install pip dependencies
       run: |
+        pip install poetry
         poetry install
     - name: Run flake8 checks
       run: flake8
@@ -49,6 +51,7 @@ jobs:
         python-version: '3.10'
     - name: Install pip dependencies
       run: |
+        pip install poetry
         poetry install
     - name: Run isort checks
       run: isort . --check --diff
@@ -64,6 +67,7 @@ jobs:
         python-version: '3.10'
     - name: Install pip dependencies
       run: |
+        pip install poetry
         poetry install
     - name: Run pydocstyle checks
       run: pydocstyle
