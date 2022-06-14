@@ -278,11 +278,7 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, sli
         if SEGMENTATION:
             label_data = rasterize_box(boxes=new_boxes, img_shape=rgb_data.shape[:2], scale=0.6)
             label = io.Band(
-                data=label_data,
-                band_info=label_type,
-                spatial_resolution=0.1,
-                transform=rgb_transform,
-                crs=crs,
+                data=label_data, band_info=label_type, spatial_resolution=0.1, transform=rgb_transform, crs=crs
             )
         else:
             label = new_boxes

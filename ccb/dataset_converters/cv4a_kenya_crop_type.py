@@ -56,9 +56,7 @@ max_band_value = {
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.append(
-    io.CloudProbability(alt_names=("CPL", "CLD")),
-)
+BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")))
 
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=8)
 

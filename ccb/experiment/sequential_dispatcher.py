@@ -30,8 +30,7 @@ def sequential_dispatcher(exp_dir, prompt=True):
 def start():
     # Command line arguments
     parser = argparse.ArgumentParser(
-        prog="sequential_dispatcher.py",
-        description="Sequentially dispatch all run.sh in the experiment directory.",
+        prog="sequential_dispatcher.py", description="Sequentially dispatch all run.sh in the experiment directory."
     )
 
     parser.add_argument(

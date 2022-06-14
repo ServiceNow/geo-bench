@@ -77,9 +77,7 @@ def experiment_generator(
             job.save_task_specs(task_specs)
 
             job.write_wandb_sweep_cl_script(
-                model_generator_module_name,
-                job_dir=job_dir,
-                base_sweep_config=hparams["sweep_config_yaml_path"],
+                model_generator_module_name, job_dir=job_dir, base_sweep_config=hparams["sweep_config_yaml_path"]
             )
 
         elif experiment_type == "seeded_runs":

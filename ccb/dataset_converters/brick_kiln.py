@@ -74,11 +74,7 @@ def make_sample(src_bands, label, coord_box, sample_name):
     bands = []
     for i, band in enumerate(src_bands):
         band_data = io.Band(
-            data=band,
-            band_info=io.sentinel2_13_bands[i],
-            spatial_resolution=10,
-            transform=transform,
-            crs="EPSG:4326",
+            data=band, band_info=io.sentinel2_13_bands[i], spatial_resolution=10, transform=transform, crs="EPSG:4326"
         )
         bands.append(band_data)
 
