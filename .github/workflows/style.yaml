@@ -38,6 +38,7 @@ jobs:
     - name: Install pip dependencies
       run: |
         pip install poetry
+        poetry lock --no-update
         poetry install
         poetry show
     - name: Run flake8 checks
@@ -55,6 +56,7 @@ jobs:
     - name: Install pip dependencies
       run: |
         pip install poetry
+        poetry lock --no-update
         poetry install
         poetry show
     - name: Run isort checks
@@ -72,6 +74,7 @@ jobs:
     - name: Install pip dependencies
       run: |
         pip install poetry
+        poetry lock --no-update
         poetry install
         poetry show
     - name: Run pydocstyle checks
