@@ -33,6 +33,8 @@ jobs:
         poetry install
         poetry show
     - name: Run pytest checks
-      run: pytest -m --cov=ccb --cov-report=xml
+      shell: bash -l {0}
+      run: |
+        pytest -m --cov=ccb --cov-report=xml
     - name: Report coverage
       uses: codecov/codecov-action@v2
