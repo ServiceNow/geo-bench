@@ -14,12 +14,12 @@
 # rm test_images_labels_targets.tar.gz
 
 import json
-import numpy as np
 from pathlib import Path
-from tqdm import tqdm
 
+import numpy as np
 import rasterio
 from torchgeo.datasets import XView2
+from tqdm import tqdm
 
 from ccb import io
 

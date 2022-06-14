@@ -11,12 +11,7 @@ def rasterize_box(boxes, img_shape, scale=1):
         if isinstance(obj, dict) and "xmin" in obj:
 
             if scale != 1:
-                range = np.array(
-                    [
-                        obj["xmax"] - obj["xmin"],
-                        obj["ymax"] - obj["ymin"],
-                    ]
-                )
+                range = np.array([obj["xmax"] - obj["xmin"], obj["ymax"] - obj["ymin"]])
                 d_x, d_y = range * (1 - scale) / 2.0
             else:
                 d_x, d_y = (0, 0)
@@ -31,12 +26,7 @@ def point_to_boxes(points, radius):
     boxes = []
     for point in points:
         boxes.append(
-            {
-                "xmin": point[0] - radius,
-                "ymin": point[1] - radius,
-                "xmax": point[0] + radius,
-                "ymax": point[1] + radius,
-            }
+            {"xmin": point[0] - radius, "ymin": point[1] - radius, "xmax": point[0] + radius, "ymax": point[1] + radius}
         )
     return boxes
 

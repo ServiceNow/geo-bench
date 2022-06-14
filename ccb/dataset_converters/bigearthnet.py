@@ -1,8 +1,10 @@
-from ccb import io
-import numpy as np
 from pathlib import Path
-from tqdm import tqdm
+
+import numpy as np
 from torchgeo.datasets import BigEarthNet
+from tqdm import tqdm
+
+from ccb import io
 
 DATASET_NAME = "bigearthnet"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")

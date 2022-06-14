@@ -1,12 +1,14 @@
-from math import ceil, floor
 import random
-from typing import Dict, List, Tuple
-from ccb import io
-import numpy as np
 import shutil
-from tqdm import tqdm
-from pathlib import Path
 from collections import defaultdict
+from math import ceil, floor
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+import numpy as np
+from tqdm import tqdm
+
+from ccb import io
 
 
 def make_subsampler(max_sizes):
@@ -190,10 +192,7 @@ def transform_dataset(
     new_dataset_dir.mkdir(parents=True, exist_ok=True)
 
     if resampler is not None:
-        new_partition = resampler(
-            partition=dataset.load_partition(partition_name),
-            task_specs=task_specs,
-        )
+        new_partition = resampler(partition=dataset.load_partition(partition_name), task_specs=task_specs)
     else:
         new_partition = dataset.load_partition(partition_name)
 
