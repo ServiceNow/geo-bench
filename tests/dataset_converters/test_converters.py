@@ -1,7 +1,9 @@
-from ccb import io
-from pathlib import Path
 import tempfile
+from pathlib import Path
+
 import pytest
+
+from ccb import io
 
 
 def converter_tester(converter):

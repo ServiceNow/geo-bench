@@ -1,5 +1,6 @@
 from types import new_class
 from typing import List
+
 import numpy as np
 
 

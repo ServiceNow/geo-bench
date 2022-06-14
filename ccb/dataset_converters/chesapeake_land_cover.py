@@ -1,12 +1,13 @@
 # Chesapeake Bay Land Cover dataset will be automatically downloaded by
 # TorchGeo (https://github.com/microsoft/torchgeo)
 
-from ccb import io
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+from torchgeo.datamodules import ChesapeakeCVPRDataModule
 from tqdm import tqdm
 
-from torchgeo.datamodules import ChesapeakeCVPRDataModule
+from ccb import io
 
 # Note: both of the following datasets need to be downloaded manually
 # into the same directory. It will not download successfully using

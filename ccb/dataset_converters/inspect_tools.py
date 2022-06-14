@@ -1,27 +1,20 @@
-from ccb.io.dataset import (
-    Sample,
-    HyperSpectralBands,
-    Band,
-    SegmentationClasses,
-    Dataset,
-    compute_stats,
-    compute_dataset_statistics,
-)
-from collections import defaultdict
-import numpy as np
-from tqdm import tqdm
-from matplotlib import pyplot as plt
-from ipyleaflet import Map, Marker, Rectangle
 import math
-from matplotlib import cm
 from typing import List
 from warnings import warn
-from rasterio.crs import CRS
-from rasterio import warp
+
 import ipyplot
-from ccb import io
+import numpy as np
+from ipyleaflet import Map, Marker, Rectangle
+from matplotlib import cm
+from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw
+from rasterio import warp
+from rasterio.crs import CRS
+from tqdm import tqdm
+
+from ccb import io
 from ccb.io import dataset as io_ds
+from ccb.io.dataset import Band, Dataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
 
 
 def compare(a, b, name, src_a, src_b):
