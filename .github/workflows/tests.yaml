@@ -26,9 +26,6 @@ jobs:
     - name: Install apt dependencies (Linux)
       run: sudo apt-get install unrar
       if: ${{ runner.os == 'Linux' }}
-    - name: Install brew dependencies (macOS)
-      run: brew install rar
-      if: ${{ runner.os == 'macOS' }}
     - name: Install Dependencies
       run: |
         pip install poetry
@@ -36,6 +33,6 @@ jobs:
         poetry install
         poetry show
     - name: Run pytest checks
-      run: pytest --cov=ccb --cov-report=xml
+      run: pytest -m --cov=ccb --cov-report=xml
     - name: Report coverage
       uses: codecov/codecov-action@v2
