@@ -14,11 +14,7 @@ def random_sentinel2_sample(sample_name, max_shape):
         shape = int(max_shape // (band_info.spatial_resolution / 10))
         data = (np.random.rand(shape, shape, 1) * 255).astype(np.int16)
 
-        band_data = io.Band(
-            data=data,
-            band_info=band_info,
-            spatial_resolution=band_info.spatial_resolution,
-        )
+        band_data = io.Band(data=data, band_info=band_info, spatial_resolution=band_info.spatial_resolution)
         bands.append(band_data)
 
     return io.Sample(bands, label=int(np.random.randint(10)), sample_name=sample_name)

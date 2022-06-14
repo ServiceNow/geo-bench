@@ -73,11 +73,7 @@ def test_write_read():
             for band in sample.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         partition = io.Partition()
@@ -121,11 +117,7 @@ def test_dataset_partition():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         # Create default partition
@@ -255,11 +247,7 @@ def test_dataset_statistics():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         # Default partition, only train

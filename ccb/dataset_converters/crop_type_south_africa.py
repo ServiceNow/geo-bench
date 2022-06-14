@@ -67,11 +67,7 @@ BANDNAMES = [
 BAND_INFO_LIST = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
-BAND_INFO_LIST.extend(
-    [
-        io.CloudProbability(alt_names=("CPL", "CLM")),
-    ]
-)
+BAND_INFO_LIST.extend([io.CloudProbability(alt_names=("CPL", "CLM"))])
 
 
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels))
@@ -168,10 +164,7 @@ def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
         return src
 
 
-def load_tif_mask(
-    filepath: str,
-    dest_crs: CRS,
-) -> np.array:
+def load_tif_mask(filepath: str, dest_crs: CRS) -> np.array:
     """Load the mask.
 
     Args:
@@ -221,13 +214,7 @@ def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample
         )
         bands.append(band)
 
-    label = io.Band(
-        data=mask,
-        band_info=LABEL_BAND,
-        spatial_resolution=10,
-        transform=SRC_TRANSFORM,
-        crs=PARTITION_CRS,
-    )
+    label = io.Band(data=mask, band_info=LABEL_BAND, spatial_resolution=10, transform=SRC_TRANSFORM, crs=PARTITION_CRS)
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
@@ -270,10 +257,7 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
         matched_image_dirs = [os.path.join(img_dir, dir) for dir in img_dir_paths if id in dir]
 
-        mask = load_tif_mask(
-            filepath=path,
-            dest_crs=PARTITION_CRS,
-        )
+        mask = load_tif_mask(filepath=path, dest_crs=PARTITION_CRS)
 
         imgs = load_images(filepaths=matched_image_dirs, band_names=BANDNAMES, dest_crs=PARTITION_CRS, cloud_p=CLOUD_P)
 

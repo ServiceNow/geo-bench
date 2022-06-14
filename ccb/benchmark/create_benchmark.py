@@ -190,10 +190,7 @@ def transform_dataset(
     new_dataset_dir.mkdir(parents=True, exist_ok=True)
 
     if resampler is not None:
-        new_partition = resampler(
-            partition=dataset.load_partition(partition_name),
-            task_specs=task_specs,
-        )
+        new_partition = resampler(partition=dataset.load_partition(partition_name), task_specs=task_specs)
     else:
         new_partition = dataset.load_partition(partition_name)
 

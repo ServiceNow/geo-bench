@@ -998,9 +998,7 @@ class Dataset:
             red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
-    def normalization_stats(
-        self,
-    ) -> Tuple[Tuple[float, ...]]:
+    def normalization_stats(self) -> Tuple[Tuple[float, ...]]:
         """Retrieve band mean and std statistics for image normalization for dataset bands."""
         means = []
         stds = []

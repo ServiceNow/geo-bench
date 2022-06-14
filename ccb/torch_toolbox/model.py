@@ -89,11 +89,7 @@ class Model(LightningModule):
             pred_mask = outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
             gt_mask = outputs[0]["target"][current_element].cpu().numpy()
             image = wandb.Image(
-                image,
-                masks={
-                    "predictions": {"mask_data": pred_mask},
-                    "ground_truth": {"mask_data": gt_mask},
-                },
+                image, masks={"predictions": {"mask_data": pred_mask}, "ground_truth": {"mask_data": gt_mask}}
             )
             wandb.log({"segmentation_images": image})
 
@@ -118,12 +114,7 @@ class Model(LightningModule):
             if lr > 0:
                 to_optimize.append({"params": params, "lr": lr})
         if optimizer_type == "sgd":
-            optimizer = torch.optim.SGD(
-                to_optimize,
-                momentum=momentum,
-                nesterov=nesterov,
-                weight_decay=weight_decay,
-            )
+            optimizer = torch.optim.SGD(to_optimize, momentum=momentum, nesterov=nesterov, weight_decay=weight_decay)
         elif optimizer_type == "adam":
             optimizer = torch.optim.Adam(to_optimize)
         elif optimizer_type == "adamw":
@@ -268,16 +259,12 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     """
 
     metrics = {
-        io.Classification: [
-            torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1),
-        ],
+        io.Classification: [torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)],
         io.MultiLabelClassification: [
             # torchmetrics.Accuracy(dist_sync_on_step=True),
             torchmetrics.F1Score(task_specs.label_type.n_classes)
         ],
-        io.SegmentationClasses: [
-            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
-        ],
+        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
     for metric_name in hparams.get("train_metrics", ()):
@@ -291,9 +278,7 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     Returns the appropriate eval function depending on the task_specs.
     """
     metrics = {
-        io.Classification: [
-            torchmetrics.Accuracy(),
-        ],
+        io.Classification: [torchmetrics.Accuracy()],
         io.SegmentationClasses: [
             torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
             torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),

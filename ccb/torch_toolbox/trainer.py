@@ -74,11 +74,7 @@ def train(model_gen, job_dir) -> None:
 
     ckpt_dir = os.path.join(job_dir, "checkpoint")
     checkpoint_callback = ModelCheckpoint(
-        dirpath=ckpt_dir,
-        save_top_k=1,
-        monitor="val_loss",
-        mode="min",
-        every_n_epochs=1,
+        dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
     )
 
     trainer = pl.Trainer(
@@ -110,19 +106,14 @@ def train(model_gen, job_dir) -> None:
 def start():
     # Command line arguments
     parser = argparse.ArgumentParser(
-        prog="trainer.py",
-        description="Trains the model using job information contained in the current directory.",
+        prog="trainer.py", description="Trains the model using job information contained in the current directory."
     )
     parser.add_argument(
         "--model-generator",
         help="Module name that defines a model generator. Must be in PYTHONPATH and expects a model_generator variable to exist.",
         required=True,
     )
-    parser.add_argument(
-        "--job-dir",
-        help="Path to the job.",
-        required=True,
-    )
+    parser.add_argument("--job-dir", help="Path to the job.", required=True)
 
     args = parser.parse_args()
 
