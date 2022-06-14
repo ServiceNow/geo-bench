@@ -26,6 +26,14 @@ jobs:
     - name: Install apt dependencies (Linux)
       run: sudo apt-get install unrar
       if: ${{ runner.os == 'Linux' }}
+    - name: Install brew dependencies (macOS)
+      run: brew install rar
+      if: ${{ runner.os == 'macOS' }}
+    - name: Install Dependencies
+      run: |
+        pip install poetry
+        poetry install
+        poetry show
     - name: Run pytest checks
       run: pytest --cov=torchgeo --cov-report=xml
     - name: Report coverage

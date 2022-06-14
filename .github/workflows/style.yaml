@@ -22,6 +22,7 @@ jobs:
         pip install poetry
         poetry lock --no-update
         poetry install
+        poetry show
     - name: Run black checks
       run: black . --check --diff
   flake8:
@@ -38,6 +39,7 @@ jobs:
       run: |
         pip install poetry
         poetry install
+        poetry show
     - name: Run flake8 checks
       run: flake8
   isort:
@@ -54,6 +56,7 @@ jobs:
       run: |
         pip install poetry
         poetry install
+        poetry show
     - name: Run isort checks
       run: isort . --check --diff
   pydocstyle:
@@ -70,5 +73,6 @@ jobs:
       run: |
         pip install poetry
         poetry install
+        poetry show
     - name: Run pydocstyle checks
       run: pydocstyle
