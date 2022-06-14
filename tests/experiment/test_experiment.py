@@ -1,11 +1,12 @@
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from ccb import io
-import ccb
+from pathlib import Path
 
 import pytest
+
+import ccb
+from ccb import io
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher

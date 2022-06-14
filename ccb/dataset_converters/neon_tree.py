@@ -10,19 +10,19 @@
 # For running this code:
 # $ pip install xmltodict
 
+import csv
 import re
+from pathlib import Path
 from typing import List
-from ccb import io
+from warnings import warn
+
 import numpy as np
 import rasterio
-from pathlib import Path
-from tqdm import tqdm
 import xmltodict
-from warnings import warn
-import csv
+from tqdm import tqdm
 
+from ccb import io
 from ccb.benchmark.rasterize_detection import rasterize_box
-
 
 SEGMENTATION = True
 

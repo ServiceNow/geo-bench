@@ -1,10 +1,12 @@
 from typing import List
-import torch
-from pytorch_lightning import LightningModule
-from ccb import io
+
 import numpy as np
+import torch
 import torch.nn.functional as F
 import torchmetrics
+from pytorch_lightning import LightningModule
+
+from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.modules import ClassificationHead
 

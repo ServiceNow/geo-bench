@@ -1,11 +1,13 @@
 # EuroSat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
 import os
-from ccb import io
-import numpy as np
 from pathlib import Path
-from tqdm import tqdm
+
+import numpy as np
 from torchgeo.datasets import EuroSAT
+from tqdm import tqdm
+
+from ccb import io
 
 DATASET_NAME = "eurosat"
 SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)

@@ -1,12 +1,14 @@
-from math import ceil, floor
 import random
-from typing import Dict, List, Tuple
-from ccb import io
-import numpy as np
 import shutil
-from tqdm import tqdm
-from pathlib import Path
 from collections import defaultdict
+from math import ceil, floor
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+import numpy as np
+from tqdm import tqdm
+
+from ccb import io
 
 
 def make_subsampler(max_sizes):

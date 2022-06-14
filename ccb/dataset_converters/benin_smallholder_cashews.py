@@ -9,15 +9,17 @@
 #
 # More info on the dataset: https://mlhub.earth/10.34911/rdnt.hfv20i
 
-from ccb import io
-from pathlib import Path
-from tqdm import tqdm
-from torchgeo.datasets import BeninSmallHolderCashews
 import datetime
 import os
-import numpy as np
 from multiprocessing import Pool
-from ccb.io.dataset import Sentinel2, CloudProbability
+from pathlib import Path
+
+import numpy as np
+from torchgeo.datasets import BeninSmallHolderCashews
+from tqdm import tqdm
+
+from ccb import io
+from ccb.io.dataset import CloudProbability, Sentinel2
 
 # Classification labels
 LABELS = (

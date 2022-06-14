@@ -5,12 +5,13 @@ from typing import List, Tuple
 
 import numpy as np
 import rasterio
-from ccb import io
 from rasterio.crs import CRS
 from rasterio.io import DatasetReader
 from rasterio.transform import Affine
 from rasterio.vrt import WarpedVRT
 from tqdm import tqdm
+
+from ccb import io
 
 DATASET_NAME = "southAfricaCropType"
 SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)

@@ -1,9 +1,11 @@
+import os
+import time
 from pathlib import Path
 from tempfile import mkdtemp
-import time
+
 import numpy as np
+
 from ccb import io
-import os
 
 
 def random_sentinel2_sample(sample_name, max_shape):

@@ -1,8 +1,10 @@
-from ccb import io
-import numpy as np
 import tempfile
-from ccb.io.bandstats import produce_band_stats
+
+import numpy as np
 import pytest
+
+from ccb import io
+from ccb.io.bandstats import produce_band_stats
 
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):

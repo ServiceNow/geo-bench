@@ -2,16 +2,17 @@
 # (Available at this webpage: https://stanfordmlgroup.github.io/projects/forestnet/)
 # Unzip the directory, then either place contents in dataset/forestnet_v1.0
 # or create a symlink.
-import pickle
-import rasterio
 import datetime
+import pickle
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+import rasterio
 from PIL import Image, ImageDraw
-from pathlib import Path
-from ccb import io
+from tqdm import tqdm
 
+from ccb import io
 
 DATASET_NAME = "forestnet_v1.0"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
