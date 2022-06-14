@@ -30,7 +30,7 @@ jobs:
         python -m poetry install
 
     - name: Run black checks
-      run: python -m black . --check --diff
+      run: poetry run python -m black . --check --diff
   flake8:
     name: flake8
     runs-on: ubuntu-latest
