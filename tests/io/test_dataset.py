@@ -1,8 +1,10 @@
-from ccb import io
-import numpy as np
 import tempfile
-from ccb.io.bandstats import produce_band_stats
+
+import numpy as np
 import pytest
+
+from ccb import io
+from ccb.io.bandstats import produce_band_stats
 
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
@@ -73,11 +75,7 @@ def test_write_read():
             for band in sample.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         partition = io.Partition()
@@ -121,11 +119,7 @@ def test_dataset_partition():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         # Create default partition
@@ -255,11 +249,7 @@ def test_dataset_statistics():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(
-            dataset_name="test",
-            patch_size=(16, 16),
-            bands_info=bands_info,
-        )
+        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
         task_specs.save(dataset_dir, overwrite=True)
 
         # Default partition, only train

@@ -8,12 +8,14 @@
 6. Copy imagery. Note that requester pays data transfer costs: aws s3 cp --request-payer requester s3://pv4ger/NRW_image_data/{classification,segmentation}/ dataset/pv4ger_v1.0/
 """
 import sys
-import rasterio
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
+import rasterio
 from PIL import Image
-from pathlib import Path
+from tqdm import tqdm
+
 from ccb import io
 
 sys.path.append(str(Path.cwd()))

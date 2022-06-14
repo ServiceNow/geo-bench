@@ -3,14 +3,12 @@ Generate experiment directory structure
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 """
 import argparse
-
+import json
 from datetime import datetime
 from pathlib import Path
 
-from ccb.experiment.experiment import Job
-from ccb.experiment.experiment import get_model_generator
 from ccb import io
-import json
+from ccb.experiment.experiment import Job, get_model_generator
 
 
 def experiment_generator(
@@ -77,9 +75,7 @@ def experiment_generator(
             job.save_task_specs(task_specs)
 
             job.write_wandb_sweep_cl_script(
-                model_generator_module_name,
-                job_dir=job_dir,
-                base_sweep_config=hparams["sweep_config_yaml_path"],
+                model_generator_module_name, job_dir=job_dir, base_sweep_config=hparams["sweep_config_yaml_path"]
             )
 
         elif experiment_type == "seeded_runs":

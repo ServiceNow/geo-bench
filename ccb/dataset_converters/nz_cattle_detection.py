@@ -5,13 +5,15 @@
 # * specify the coordintates are for the center.
 # * can we change "Kapiti_Coast" to "Kapiti-Coast"
 
-from ccb import io
-import numpy as np
-from pathlib import Path
-from tqdm import tqdm
-from PIL import Image
-import rasterio
 import datetime
+from pathlib import Path
+
+import numpy as np
+import rasterio
+from PIL import Image
+from tqdm import tqdm
+
+from ccb import io
 from ccb.benchmark.rasterize_detection import point_to_boxes, rasterize_box
 
 SEGMENTATION = True

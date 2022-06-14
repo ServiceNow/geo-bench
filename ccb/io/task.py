@@ -1,30 +1,17 @@
-from asyncio import Task
-from functools import cached_property
-from os import rename
-from typing import List, Sequence
-import pickle
-from pathlib import Path
-from ccb.io.label import Classification
-
-from ccb.io.dataset import Dataset, BandInfo, CCB_DIR
-from typing import Generator
 import json
+import pickle
+from functools import cached_property
+from pathlib import Path
+from typing import Sequence
+
 import numpy as np
+
+from ccb.io.dataset import CCB_DIR, BandInfo, Dataset
+from ccb.io.label import Classification
 
 
 class TaskSpecifications:
-    """
-    Attributes:
-        dataset_name: The name of the dataset.
-        benchmark_name: The name of the benchmark used. Defaults to "converted".
-        patch_size: maximum image patch size across bands (width, height).
-        n_time_steps: integer specifying the number of time steps for each sample.
-            This should be 1 for most dataset unless it's time series.
-        bands_info: list of object of type BandInfo descrbing the type of each band.
-        label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
-        eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
-        spatial_resolution: physical distance between pixels in meters.
-    """
+    """Task Specifications define information necessary to run a training/evaluation on a dataset."""
 
     def __init__(
         self,
@@ -39,6 +26,19 @@ class TaskSpecifications:
         eval_metrics=None,
         spatial_resolution=None,
     ) -> None:
+        """Initialize a new instance of TaskSpecifications.
+
+        Args:
+            dataset_name: The name of the dataset.
+            benchmark_name: The name of the benchmark used. Defaults to "converted".
+            patch_size: maximum image patch size across bands (width, height).
+            n_time_steps: integer specifying the number of time steps for each sample.
+                This should be 1 for most dataset unless it's time series.
+            bands_info: list of object of type BandInfo descrbing the type of each band.
+            label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
+            eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
+            spatial_resolution: physical distance between pixels in meters.
+        """
         self.dataset_name = dataset_name
         self.benchmark_name = benchmark_name
         self.patch_size = patch_size
@@ -75,8 +75,8 @@ class TaskSpecifications:
             band_names: band names to select from dataset
         """
         if self.benchmark_name == "test":
-            import torchvision.transforms as tt
             import torchvision
+            import torchvision.transforms as tt
 
             if transform is None:
                 transform = tt.ToTensor()
@@ -92,9 +92,9 @@ class TaskSpecifications:
             if split == "test":
                 split = "val"  # ugly fix
             assert split in ["train", "val", "valid"], "Only train and val supported"
-            import torchvision.transforms as tt
-            import torchvision
             import PIL
+            import torchvision
+            import torchvision.transforms as tt
 
             imagenet_mean = [0.485, 0.456, 0.406]
             imagenet_std = [0.229, 0.224, 0.225]
