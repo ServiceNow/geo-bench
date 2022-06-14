@@ -26,14 +26,13 @@ jobs:
     - name: Install apt dependencies (Linux)
       run: sudo apt-get install unrar
       if: ${{ runner.os == 'Linux' }}
-    - name: Install Dependencies
+    - name: Install Dependencies with poetry
+      uses: Gr1N/setup-poetry@v7
       run: |
-        pip install poetry
         poetry lock --no-update
         poetry install
         poetry show
     - name: Run pytest checks
-      shell: bash -l {0}
       run: |
         pytest -m --cov=ccb --cov-report=xml
     - name: Report coverage
