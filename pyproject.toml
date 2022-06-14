@@ -57,6 +57,16 @@ exclude = '''
 )/
 '''
 
+[tool.pydocstyle]
+convention = "google"
+match_dir = "(benchmark|dataset_converters|experiment|io|torch_toolbox|model_generators)"
+
+[tool.isort]
+profile = "black"
+known_first_party = ["ccb", "tests"]
+skip_gitignore = true
+color_output = true
+
 [tool.poetry.scripts]
 ccb-expgen = "ccb.experiment.experiment_generator:start"
 ccb-trainer = "ccb.torch_toolbox.trainer:start"
