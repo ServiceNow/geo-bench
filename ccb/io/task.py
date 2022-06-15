@@ -156,7 +156,7 @@ class TaskSpecifications:
             return None
 
 
-def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
+def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
 
     if benchmark_name == "test":
         yield mnist_task_specs
@@ -165,7 +165,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield imagenet_task_specs
         return
 
-    benchmark_dir = CCB_DIR / benchmark_name
+    benchmark_dir = benchmark_dir / benchmark_name
 
     for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
