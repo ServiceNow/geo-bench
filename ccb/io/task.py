@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 from functools import cached_property
 from pathlib import Path
@@ -86,7 +87,12 @@ class TaskSpecifications:
                     x, y = super().__getitem__(item)
                     return {"input": x, "label": y}
 
-            return MNISTDict("/tmp/mnist", train=split == "train", transform=transform, download=True)
+            return MNISTDict(
+                os.path.abspath(os.path.join("tests", "data")),
+                train=split == "train",
+                transform=transform,
+                download=True,
+            )
 
         elif self.benchmark_name == "imagenet":
             if split == "test":
@@ -129,7 +135,8 @@ class TaskSpecifications:
 
     def get_dataset_dir(self):
         benchmark_name = self.benchmark_name or "default"
-        return CCB_DIR / "converted" / benchmark_name / self.dataset_name
+        benchmark_dir = get_benchmark_dir(benchmark_name)
+        return benchmark_dir / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -156,6 +163,14 @@ class TaskSpecifications:
             return None
 
 
+def get_benchmark_dir(benchmark_name):
+    if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
+        ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
+    else:
+        ccb_dir = CCB_DIR
+    return ccb_dir / benchmark_name
+
+
 def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
 
     if benchmark_name == "test":
@@ -165,7 +180,7 @@ def task_iterator(benchmark_name: str = "default") -> TaskSpecifications:
         yield imagenet_task_specs
         return
 
-    benchmark_dir = CCB_DIR / "converted" / benchmark_name
+    benchmark_dir = get_benchmark_dir(benchmark_name)
 
     for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):

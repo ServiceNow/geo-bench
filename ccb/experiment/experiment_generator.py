@@ -131,6 +131,8 @@ def experiment_generator(
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
+            print("job dir")
+            print(job_dir)
             job = Job(job_dir)
             job.save_hparams(hparams)
             job.save_task_specs(task_specs)
