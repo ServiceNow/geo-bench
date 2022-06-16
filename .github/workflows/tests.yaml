@@ -7,7 +7,7 @@ on:
     branches:
     - main
 env:
-  CCB_DIR: "climate-change-benchmark/tests/data/"
+  CCB_DIR: "tests/data/"
 jobs:
   pytest:
     name: pytest
