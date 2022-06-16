@@ -170,7 +170,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(PATCH_SIZE, PATCH_SIZE),
-        n_time_steps=23,  # Variable number of time steps, max 23 across the dataset
+        n_time_steps=4,  # Variable number of time steps, max 23 across the dataset
         bands_info=bands_info,
         bands_stats=None,  # Will be automatically written with inspect script
         label_type=io.Classification(len(LABELS), LABELS),
