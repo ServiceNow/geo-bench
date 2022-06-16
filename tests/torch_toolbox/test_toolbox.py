@@ -198,9 +198,8 @@ def test_toolbox_bigearthnet():
 
 
 def test_toolbox_getitem():
-    benchmark_dir = Path(os.path.join("tests", "data"))
     for benchmark_name in ("test", "imagenet", "ccb-test"):
-        for task in io.task_iterator(benchmark_name, benchmark_dir):
+        for task in io.task_iterator(benchmark_name):
             dataset = task.get_dataset(split="valid")
             data = dataset[0]
             if benchmark_name != "ccb-test":
