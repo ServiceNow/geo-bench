@@ -31,10 +31,13 @@ def train_job_on_task(
 
         trainer.train(model_gen=model_generator, job_dir=job_dir)
 
+        print(task_specs.benchmark_name)
         if check_logs:
 
             metrics = job.get_metrics()
             print(metrics)
+            print(task_specs.benchmark_name)
+            print(hparams)
             assert (
                 float(metrics[f"test_{metric_name}"]) > threshold
             )  # has to be better than random after seeing 20 batches
@@ -44,30 +47,17 @@ def train_job_on_task(
 
 
 @pytest.mark.slow
-def test_toolbox_mnist():
-    hparams = {
-        "backbone": "resnet18",
-        "pretrained": True,
-        "logger": "csv",
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
-        "optimizer": "sgd",
-        "momentum": 0.9,
-        "batch_size": 32,
-        "max_epochs": 1,
-        "num_workers": 0,
-    }
-    train_job_on_task(conv4.model_generator(hparams), mnist_task_specs, 0.05)
-
-
-@pytest.mark.slow
 def test_toolbox_seeds():
+    with open(
+        os.path.join("tests", "data", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
+    ) as fd:
+        task_specs = pickle.load(fd)
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
         "logger": "csv",
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-2,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
@@ -75,11 +65,11 @@ def test_toolbox_seeds():
         "num_workers": 0,
         "seed": 1,
     }
-    metrics1 = train_job_on_task(conv4.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
-    metrics2 = train_job_on_task(conv4.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
-    hparams.update({"seed": 2})
-    metrics3 = train_job_on_task(conv4.model_generator(hparams), mnist_task_specs, 0.05, deterministic=True)
-    assert metrics1["test_Accuracy"] == metrics2["test_Accuracy"] != metrics3["test_Accuracy"]
+
+    metrics1 = train_job_on_task(conv4.model_generator(hparams), task_specs, 0.05, deterministic=True)
+    metrics2 = train_job_on_task(conv4.model_generator(hparams), task_specs, 0.05, deterministic=True)
+
+    assert metrics1["test_Accuracy"] == metrics2["test_Accuracy"]
 
 
 @pytest.mark.optional
@@ -88,13 +78,14 @@ def test_toolbox_wandb():
         "backbone": "resnet18",
         "pretrained": True,
         "logger": "csv",
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-2,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
         "num_workers": 0,
+        "seed": 1,
     }
     train_job_on_task(conv4.model_generator(hparams), mnist_task_specs, 0.05, logger="wandb")
 
@@ -102,15 +93,15 @@ def test_toolbox_wandb():
 @pytest.mark.slow
 def test_toolbox_brick_kiln():
     with open(
-        os.path.join("tests", "data", "converted", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
+        os.path.join("tests", "data", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
     ) as fd:
         task_specs = pickle.load(fd)
     hparams = {
         "backbone": "resnet18",
         "pretrained": True,
-        "lr_backbone": 1e-6,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-2,
         "logger": "csv",
-        "lr_head": 1e-4,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
@@ -118,15 +109,14 @@ def test_toolbox_brick_kiln():
         "band_names": ["red", "green", "blue"],
         "format": "hdf5",
         "num_workers": 0,
+        "seed": 1,
     }
     train_job_on_task(conv4.model_generator(hparams), task_specs, 0.40)
 
 
 def test_toolbox_segmentation():
     with open(
-        os.path.join(
-            "tests", "data", "converted", "ccb-test-segmentation", "cvpr_chesapeake_landcover", "task_specs.pkl"
-        ),
+        os.path.join("tests", "data", "ccb-test-segmentation", "cvpr_chesapeake_landcover", "task_specs.pkl"),
         "rb",
     ) as fd:
         task_specs = pickle.load(fd)
@@ -134,8 +124,8 @@ def test_toolbox_segmentation():
     hparams = {
         "input_size": (3, 64, 64),  # FIXME
         "pretrained": True,
-        "lr_backbone": 1e-5,
-        "lr_head": 1e-4,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-2,
         "logger": "csv",
         "optimizer": "sgd",
         "head_type": "linear",
@@ -147,6 +137,7 @@ def test_toolbox_segmentation():
         "decoder_weights": "imagenet",
         "format": "hdf5",
         "num_workers": 0,
+        "seed": 1,
     }
 
     train_job_on_task(py_segmentation_generator.model_generator(hparams), task_specs, 0.50, check_logs=False)
@@ -159,29 +150,30 @@ def test_toolbox_timm():
         "backbone": "resnet18",
         "pretrained": True,
         "logger": "csv",
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
+        "lr_backbone": 1e-3,
+        "lr_head": 1e-2,
         "optimizer": "sgd",
         "momentum": 0.9,
         "batch_size": 32,
         "max_epochs": 1,
         "band_names": ["red", "green", "blue"],
         "num_workers": 0,
+        "seed": 1,
     }
     with open(
-        os.path.join("tests", "data", "converted", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
+        os.path.join("tests", "data", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
     ) as fd:
         task_specs = pickle.load(fd)
-    train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70)
+    train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.40)
 
 
 def test_toolbox_getitem():
-    benchmark_dir = Path(os.path.join("tests", "data"))
-    for benchmark_name in ("test", "imagenet", "ccb-test"):
-        for task in io.task_iterator(benchmark_name, benchmark_dir):
+    test_dirs = ["ccb-test-classification", "ccb-test-segmentation"]
+    for benchmark_name in test_dirs:
+        for task in io.task_iterator(benchmark_name):
             dataset = task.get_dataset(split="valid")
             data = dataset[0]
-            if benchmark_name != "ccb-test":
+            if benchmark_name not in test_dirs:
                 assert isinstance(data, dict)
             else:
                 assert isinstance(data, io.Sample)
