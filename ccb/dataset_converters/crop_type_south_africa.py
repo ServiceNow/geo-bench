@@ -219,7 +219,7 @@ def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     """Convert dataset to desired format.
 
     Args:
@@ -277,6 +277,9 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
             partition.add(split, sample_name)
             j += 1
 
+            if max_count is not None and j >= max_count:
+                break
+
         if max_count is not None and j >= max_count:
             break
 
@@ -284,4 +287,4 @@ def convert(max_count=5, dataset_dir=DATASET_DIR) -> None:
 
 
 if __name__ == "__main__":
-    convert(25)
+    convert()
