@@ -269,7 +269,7 @@ class Band:
             shape = self.data.shape
         else:
             shape = "unknown"
-        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date}, data={self.date})"
+        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date})"
 
     def get_descriptor(self):
         descriptor = self.band_info.name
