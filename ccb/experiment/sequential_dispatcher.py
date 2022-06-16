@@ -6,7 +6,7 @@ from pathlib import Path
 from ccb.experiment.experiment import Job
 
 
-def sequential_dispatcher(exp_dir, prompt=True, env=dict(os.environ)):
+def sequential_dispatcher(exp_dir, prompt=True):
     exp_dir = Path(exp_dir)
 
     print(f"Scanning {exp_dir}.")
@@ -23,8 +23,7 @@ def sequential_dispatcher(exp_dir, prompt=True, env=dict(os.environ)):
     for script in script_list:
         print(f"Running {script}.")
         job = Job(script.parent)
-
-        subprocess.run([script], env=env)
+        subprocess.run([script])
         print(job.get_stderr())
 
     print("Done.")

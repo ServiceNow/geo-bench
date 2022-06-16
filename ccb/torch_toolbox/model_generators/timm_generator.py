@@ -34,7 +34,7 @@ class TIMMGenerator(ModelGenerator):
             "loss_type": "crossentropy",
             "batch_size": 64,
             "num_workers": 0,
-            "max_epochs": 500,
+            "max_epochs": 1,
             "n_gpus": 0,
             "logger": "wandb",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
