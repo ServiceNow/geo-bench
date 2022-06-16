@@ -1,9 +1,8 @@
-import random
 import shutil
 from collections import defaultdict
-from math import ceil, floor
+from math import floor
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 from tqdm import tqdm
@@ -78,7 +77,7 @@ def make_resampler(max_sizes, min_class_sizes={"train": 10, "valid": 1, "test": 
     """Matrialize a resampler with the required interface."""
 
     def _resample(partition, task_specs, rng=np.random):
-        label_map = task_specs.label_map
+        label_map = task_specs.get_label_map()
         return resample(
             partition=partition, label_map=label_map, max_sizes=max_sizes, min_class_sizes=min_class_sizes, rng=rng
         )
@@ -235,7 +234,8 @@ def make_classification_benchmark():
 
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
-        "eurosat": (default_resampler, None),
+        "forestnet_v1.0": (default_resampler, None),
+        # "eurosat": (default_resampler, None),
         # "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
         # "pv4ger_classification": (default_resampler, None),
@@ -253,7 +253,8 @@ def make_segmentation_benchmark():
         # "pv4ger_segmentation": (resampler_from_stats, None),
         # "xview2": (resampler_from_stats, None),
         # # "forestnet_v1.0": (resampler_from_stats, None),
-        "cvpr_chesapeake_landcover": (resampler_from_stats, None),
+        # "cvpr_chesapeake_landcover": (resampler_from_stats, None),
+        "smallholder_cashew": (resampler_from_stats, None)
         # "nz_cattle_segmentation": (resampler_from_stats, None),
         # "NeonTree_segmentation": (resampler_from_stats, None),
     }
@@ -263,3 +264,9 @@ def make_segmentation_benchmark():
 if __name__ == "__main__":
     make_classification_benchmark()
     # make_segmentation_benchmark()
+
+
+# procedure
+# * make sure label_map.py was executed for the considered dataset (ensure benchmark_name set to "converted")
+# * create your benchmark here
+# * run label_map.py again to create band_stats (make sure that benchmark_name is set to the newly created benchmark, also make sure that compute_band_stats=True )
