@@ -161,10 +161,15 @@ def convert(max_count=None, dataset_dir=DATASET_DIR):
     print("Loading dataset from torchgeo")
     cashew = BeninSmallHolderCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
 
+    if GROUP_BY_TIMESTEP:
+        n_time_steps = (len(noclouds_25) if NOCLOUDS else N_TIMESTEPS,)
+    else:
+        n_time_steps = 1
+
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
-        n_time_steps=len(noclouds_25) if NOCLOUDS else N_TIMESTEPS,
+        n_time_steps=n_time_steps,
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
