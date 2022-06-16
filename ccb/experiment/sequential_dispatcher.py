@@ -1,15 +1,17 @@
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
 from ccb.experiment.experiment import Job
 
 
-def sequential_dispatcher(exp_dir, prompt=True):
+def sequential_dispatcher(exp_dir, prompt=True, env=dict(os.environ)):
     exp_dir = Path(exp_dir)
 
     print(f"Scanning {exp_dir}.")
     script_list = list(exp_dir.glob("**/run.sh"))
+
     if prompt:
         print("Will sequentially execute all of these scripts:")
         for script in script_list:
@@ -22,7 +24,7 @@ def sequential_dispatcher(exp_dir, prompt=True):
         print(f"Running {script}.")
         job = Job(script.parent)
 
-        subprocess.run([script])
+        subprocess.run([script], env=env)
         print(job.get_stderr())
 
     print("Done.")
