@@ -19,12 +19,20 @@ from tqdm import tqdm
 
 from ccb.io.label import LabelType
 
-# Deprecated, use CCB_DIR instead
-src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
-datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+CCB_DIR = os.environ.get("CCB_DIR", None)
 
-# src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
-CCB_DIR = Path(datasets_dir).parent
+if CCB_DIR is None:
+    # Deprecated, use CCB_DIR instead
+    src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
+    datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+
+    # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
+    CCB_DIR = Path(datasets_dir).parent
+
+else:
+    CCB_DIR = Path(CCB_DIR)
+    src_datasets_dir = CCB_DIR / "source"
+    datasets_dir = CCB_DIR / "converted"
 
 
 class BandInfo(object):
@@ -894,7 +902,6 @@ class Dataset:
         self._sample_name_list = []
         for sample_names in self.active_partition.partition_dict.values():
             self._sample_name_list.extend(sample_names)
-
         # self._sample_name_list = []
         # for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
         #     if p.name.endswith("_partition.json"):
@@ -931,10 +938,9 @@ class Dataset:
         """
         Select active partition by name
         """
-
         if partition_name not in self._partition_path_dict:
             raise ValueError(
-                f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?"
+                f"Unknown partition {partition_name}. Maybe the dataset in {self.dataset_dir} is missing a default_partition.json?"
             )
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
