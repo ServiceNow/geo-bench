@@ -124,52 +124,52 @@ def test_toolbox_brick_kiln():
     train_job_on_task(conv4.model_generator(hparams), task_specs, 0.40)
 
 
-def test_toolbox_segmentation():
-    with open(os.path.join("tests", "data", "cvpr_chesapeake_landcover", "task_specs.pkl"), "rb") as fd:
-        task_specs = pickle.load(fd)
+# def test_toolbox_segmentation():
+#     with open(os.path.join("tests", "data", "cvpr_chesapeake_landcover", "task_specs.pkl"), "rb") as fd:
+#         task_specs = pickle.load(fd)
 
-    hparams = {
-        "input_size": (3, 64, 64),  # FIXME
-        "pretrained": True,
-        "lr_backbone": 1e-5,
-        "lr_head": 1e-4,
-        "logger": "csv",
-        "optimizer": "sgd",
-        "head_type": "linear",
-        "loss_type": "crossentropy",
-        "batch_size": 8,
-        "max_epochs": 1,
-        "encoder_type": "resnet18",
-        "decoder_type": "Unet",
-        "decoder_weights": "imagenet",
-        "format": "hdf5",
-        "num_workers": 0,
-        "gpu": None,
-    }
+#     hparams = {
+#         "input_size": (3, 64, 64),  # FIXME
+#         "pretrained": True,
+#         "lr_backbone": 1e-5,
+#         "lr_head": 1e-4,
+#         "logger": "csv",
+#         "optimizer": "sgd",
+#         "head_type": "linear",
+#         "loss_type": "crossentropy",
+#         "batch_size": 8,
+#         "max_epochs": 1,
+#         "encoder_type": "resnet18",
+#         "decoder_type": "Unet",
+#         "decoder_weights": "imagenet",
+#         "format": "hdf5",
+#         "num_workers": 0,
+#         "gpu": None,
+#     }
 
-    train_job_on_task(py_segmentation_generator.model_generator(hparams), task_specs, 0.50, check_logs=False)
+#     train_job_on_task(py_segmentation_generator.model_generator(hparams), task_specs, 0.50, check_logs=False)
 
 
-# this test is too slow
-@pytest.mark.slow
-def test_toolbox_timm():
-    hparams = {
-        "backbone": "resnet18",
-        "pretrained": True,
-        "logger": "csv",
-        "lr_backbone": 1e-6,
-        "lr_head": 1e-4,
-        "optimizer": "sgd",
-        "momentum": 0.9,
-        "batch_size": 32,
-        "max_epochs": 1,
-        "band_names": ["red", "green", "blue"],
-        "num_workers": 0,
-        "gpu": None,
-    }
-    with open(os.path.join("tests", "data", "brick_kiln_v1.0", "task_specs.pkl"), "rb") as fd:
-        task_specs = pickle.load(fd)
-    train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70)
+# # this test is too slow
+# @pytest.mark.slow
+# def test_toolbox_timm():
+#     hparams = {
+#         "backbone": "resnet18",
+#         "pretrained": True,
+#         "logger": "csv",
+#         "lr_backbone": 1e-6,
+#         "lr_head": 1e-4,
+#         "optimizer": "sgd",
+#         "momentum": 0.9,
+#         "batch_size": 32,
+#         "max_epochs": 1,
+#         "band_names": ["red", "green", "blue"],
+#         "num_workers": 0,
+#         "gpu": None,
+#     }
+#     with open(os.path.join("tests", "data", "brick_kiln_v1.0", "task_specs.pkl"), "rb") as fd:
+#         task_specs = pickle.load(fd)
+#     train_job_on_task(timm_generator.model_generator(hparams), task_specs, 0.70)
 
 
 def test_toolbox_bigearthnet():

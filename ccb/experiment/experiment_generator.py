@@ -122,7 +122,12 @@ def experiment_generator(
             hparams["dataset_name"] = task_specs.dataset_name
             hparams["benchmark_name"] = benchmark_name
             hparams["model_generator_name"] = model_generator_module_name
-            hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
+            if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
+                hparams["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
+            else:
+                hparams[
+                    "name"
+                ] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['encoder_type']}/{hparams['decoder_type']}"
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
