@@ -43,7 +43,7 @@ class SegmentationGenerator(ModelGenerator):
             "loss_type": "crossentropy",
             "batch_size": 1,
             "num_workers": 0,
-            "max_epochs": 500,
+            "max_epochs": 1,
             "n_gpus": 0,
             "logger": "csv",  # Set to wandb for wandb tracking
             "encoder_type": "resnet18",
