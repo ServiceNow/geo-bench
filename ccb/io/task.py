@@ -1,8 +1,10 @@
+"""Task."""
+
 import json
 import pickle
 from functools import cached_property
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Dict, List, Sequence, Union
 
 import numpy as np
 
@@ -15,16 +17,16 @@ class TaskSpecifications:
 
     def __init__(
         self,
-        dataset_name=None,
-        benchmark_name=None,
-        patch_size=None,
-        n_time_steps=None,
-        bands_info=None,
+        dataset_name: str = None,
+        benchmark_name: str = None,
+        patch_size: int = None,
+        n_time_steps: int = None,
+        bands_info: BandInfo = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
         eval_metrics=None,
-        spatial_resolution=None,
+        spatial_resolution: float = None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
 
@@ -50,7 +52,16 @@ class TaskSpecifications:
         self.eval_metrics = eval_metrics
         self.spatial_resolution = spatial_resolution
 
-    def save(self, directory, overwrite=False):
+    def save(self, directory: str, overwrite: bool = False) -> None:
+        """Save task specs.
+
+        Args:
+            directory: directory where task_specs.pkl can be found
+            overwrite: whether or not to overwrite existing task_specs
+
+        Raises:
+            Exception if task_specs already exists and overwrite is False
+        """
         file_path = Path(directory, "task_specs.pkl")
         if file_path.exists() and not overwrite:
             raise Exception("task_specifications.pkl alread exists and overwrite is set to False.")
@@ -128,15 +139,22 @@ class TaskSpecifications:
             )
 
     def get_dataset_dir(self):
+        """Retrieve directory where dataset is stored."""
         benchmark_name = self.benchmark_name or "default"
         return CCB_DIR / benchmark_name / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
     def benchmark_name(self):
+        """Return benchmark name."""
         return "default"
 
-    def get_label_map(self):
+    def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
+        """Retriebe the label map, a dictionary defining labels to input paths.
+
+        Returns:
+            label map if present or None
+        """
         label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
@@ -146,7 +164,12 @@ class TaskSpecifications:
             return None
 
     @cached_property
-    def label_stats(self):
+    def label_stats(self) -> Union[None, Dict[str, List[Any]]]:
+        """Retriebe the label stats, a dictionary defining labels to statistics.
+
+        Returns:
+            label stats if present or None
+        """
         label_stats_path = self.get_dataset_dir() / "label_stats.json"
         if label_stats_path.exists():
             with open(label_stats_path, "r") as fp:
@@ -157,7 +180,14 @@ class TaskSpecifications:
 
 
 def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
+    """Iterate over all tasks present in a benchmark.
 
+    Args:
+        benchmark_name: name of the benchmark
+
+    Returns:
+        task specifications for the desired benchmark dataset
+    """
     if benchmark_name == "test":
         yield mnist_task_specs
         return
@@ -174,7 +204,16 @@ def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR
         yield load_task_specs(dataset_dir)
 
 
-def load_task_specs(dataset_dir: Path, rename_benchmark=True) -> TaskSpecifications:
+def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpecifications:
+    """Load task specifications from a path.
+
+    Args:
+        dataset_dir: path to directory of task_specifications
+        rename_benchmark: whether or not to rename benchmark with with benchmark directory name
+
+    Returns:
+        task specifications
+    """
     dataset_dir = Path(dataset_dir)
     with open(dataset_dir / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
@@ -185,37 +224,85 @@ def load_task_specs(dataset_dir: Path, rename_benchmark=True) -> TaskSpecificati
 
 
 class Loss(object):
+    """Loss.
+
+    Define a general loss object that is library agnostic.
+    """
+
     def __call__(self, label, prediction):
+        """Define computation when Loss is called.
+
+        Args:
+            label: Array containing labels
+            predictions: model predictions
+
+        """
         raise NotImplementedError()
 
     def __repr__(self) -> str:
+        """Return string representation of loss object."""
         return self.__class__.__name__
 
     @property
     def name(self):
+        """Return loss object name."""
         return self.__class__.__name__.lower()
 
 
 class Accuracy(Loss):
-    def __call__(self, prediction, label):
+    """Accuracy.
+
+    Define Accuracy computations
+    """
+
+    def __call__(self, prediction, label) -> float:
+        """Define computation when Accuracy is called.
+
+        Args:
+            label: Array containing labels
+            predictions: model predictions
+
+        Returns:
+            accuracy scores
+        """
         return float(label != prediction)
 
 
 class MultilabelAccuracy(Loss):
+    """Multilabel Accuracy.
+
+    Define Multi-label Accuracy computations
+    """
+
     def __call__(self, prediction, label):
+        """Define computation when Accuracy is called.
+
+        Args:
+            label: Array containing labels
+            predictions: model predictions
+
+        Returns:
+            mulit-label accuracy scores
+        """
         return np.mean(label != prediction)
 
 
 class AccuracyTop30(Loss):
+    """Top 30 Accuracy."""
+
     # TODO: Could be integrated above or with extra argument for TopK
     pass
 
 
 class CrossEntropy(Loss):
+    """Cross Entropy Loss."""
+
     pass
 
 
 class SegmentationAccuracy(Loss):
+    """Segmentation Accuracy."""
+
     pass
 
 
