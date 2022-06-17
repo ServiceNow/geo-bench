@@ -1,5 +1,4 @@
-"""
-Compute dataset band statistics for each band and save them in bandstats.json
+"""Compute dataset band statistics for each band and save them in bandstats.json.
 
 For the future, implement partitions and splits
 """
@@ -19,6 +18,14 @@ from ccb.io.task import TaskSpecifications
 
 
 def load_label(sample_path):
+    """Load a label.
+
+    Args:
+        sample_path: path to the sample
+
+    Returns:
+        loaded sample
+    """
     if sample_path.suffix == ".hdf5":
         sample = io.load_sample_hdf5(sample_path, label_only=True)
         label = sample.label
@@ -30,6 +37,11 @@ def load_label(sample_path):
 
 
 def clean_partition(partition: io.Partition):
+    """Clean partition.
+
+    Args:
+        partition: partition to clean
+    """
     all_samples = set()
     squeezed_out = []
     original_count = 0
@@ -45,7 +57,17 @@ def clean_partition(partition: io.Partition):
     return partition, all_samples, squeezed_out, original_count - len(all_samples)
 
 
-def get_samples_and_verify_partition(dataset_dir, partition_name="default", max_count=None):
+def get_samples_and_verify_partition(dataset_dir, partition_name="default", max_count=None) -> List[str]:
+    """Retrieve samples and verify partition.
+
+    Args:
+        dataset_dir: path to dataset directory
+        partition_name: name of partition
+        max_count: max count
+
+    Returns:
+        list of samples
+    """
     dataset = io.Dataset(dataset_dir)
     partition = dataset.load_partition(partition_name)
 
@@ -73,8 +95,16 @@ def get_samples_and_verify_partition(dataset_dir, partition_name="default", max_
     return sample_names
 
 
-def load_label_map(dataset_dir, max_count=None):
+def load_label_map(dataset_dir: str, max_count: int = None) -> Dict[str, List[str]]:
+    """Load label map, which maps labels to sample names.
 
+    Args:
+        dataset_dir: path to dataset directory
+        max_count: max count
+
+    Return:
+        label map
+    """
     sample_paths = get_samples_and_verify_partition(dataset_dir, max_count=max_count)
 
     label_map = defaultdict(list)
@@ -85,23 +115,42 @@ def load_label_map(dataset_dir, max_count=None):
     return label_map
 
 
-def load_label_stats(task: TaskSpecifications, max_count=None):
-    dataset_dir = task.get_dataset_dir()
+def load_label_stats(task_specs: TaskSpecifications, max_count: int = None):
+    """Load label statistics.
+
+    Args:
+        task_specs: task specifications
+        max_count: max count
+
+    Returns:
+        label statistics
+    """
+    dataset_dir = task_specs.get_dataset_dir()
     sample_paths = get_samples_and_verify_partition(dataset_dir, max_count=max_count)
 
-    # label_stats = np.zeros((len(sample_paths), task.label_type.n_classes))
+    # label_stats = np.zeros((len(sample_paths), task_specs.label_type.n_classes))
     # sample_names = []
     label_stats = {}
 
     for sample_path in tqdm(sample_paths, desc="Loading labels."):
         label = load_label(sample_path)
 
-        label_stats[sample_path.stem] = list(task.label_type.label_stats(label))
+        label_stats[sample_path.stem] = list(task_specs.label_type.label_stats(label))
 
     return label_stats
 
 
-def write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True, task_filter=None):
+def write_all_label_map(
+    benchmark_name: str = "converted", max_count: int = None, compute_band_stats: bool = True, task_filter=None
+) -> None:
+    """Write all label maps for a benchmark.
+
+    Args:
+        benchmark_name: name of benchmark
+        max_count: max count
+        compute_band_stats: whether or not to compute band statistics
+        task_filter: filter out some tasks
+    """
     for task in io.task_iterator(benchmark_name=benchmark_name):
 
         if task_filter is not None and task_filter(task):
@@ -135,14 +184,26 @@ def write_all_label_map(benchmark_name="converted", max_count=None, compute_band
             print(f"Skipping task {task.dataset_name}.")
 
 
-def print_label_stats(label_stats: Dict[str, List]):
+def print_label_stats(label_stats: Dict[str, List]) -> None:
+    """Print label statistics.
+
+    Args:
+        label_stats: label statistics
+    """
     label_stats_array = np.array(list(label_stats.values()))
     cum_per_label = np.sum(label_stats_array, axis=0)
     for i, count in enumerate(cum_per_label):
         print(f"class {i:2d}: {count}")
 
 
-def print_label_map(label_map, prefix="  ", max_count=200):
+def print_label_map(label_map, prefix: str = "  ", max_count: int = 200) -> None:
+    """Print label mapping.
+
+    Args:
+        label_map: label mapping
+        prefix: prefix to add
+        max_count: max count
+    """
     lenghts = [(key, len(values)) for key, values in label_map.items()]
     lenghts.sort(key=lambda items: items[1], reverse=True)
 
@@ -150,7 +211,12 @@ def print_label_map(label_map, prefix="  ", max_count=200):
         print(f"{i:3d} {prefix}class {key}: {len(label_map[key])} samples.")
 
 
-def view_label_map_count(benchmark_name="converted"):
+def view_label_map_count(benchmark_name="converted") -> None:
+    """Print counts of label maps.
+
+    Args:
+        benchmark_name: name of benchmark
+    """
     for task in io.task_iterator(benchmark_name=benchmark_name):
 
         label_map = task.label_map
@@ -163,6 +229,11 @@ def view_label_map_count(benchmark_name="converted"):
 
 
 def task_filter(task: TaskSpecifications):
+    """Filter tasks from a benchmark.
+
+    Args:
+        task: task specifications
+    """
     return isinstance(task.label_type, io.SegmentationClasses)
 
 
