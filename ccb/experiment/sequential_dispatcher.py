@@ -1,5 +1,4 @@
 import argparse
-import os
 import subprocess
 from pathlib import Path
 
@@ -11,7 +10,6 @@ def sequential_dispatcher(exp_dir, prompt=True):
 
     print(f"Scanning {exp_dir}.")
     script_list = list(exp_dir.glob("**/run.sh"))
-
     if prompt:
         print("Will sequentially execute all of these scripts:")
         for script in script_list:
@@ -23,6 +21,7 @@ def sequential_dispatcher(exp_dir, prompt=True):
     for script in script_list:
         print(f"Running {script}.")
         job = Job(script.parent)
+
         subprocess.run([script])
         print(job.get_stderr())
 
