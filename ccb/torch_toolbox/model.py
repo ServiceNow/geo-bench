@@ -1,10 +1,13 @@
-from typing import List
+"""Model."""
+
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 import torchmetrics
 from pytorch_lightning import LightningModule
+from torch import Tensor
 
 from ccb import io
 from ccb.io.task import TaskSpecifications
@@ -12,13 +15,32 @@ from ccb.torch_toolbox.modules import ClassificationHead
 
 
 class Model(LightningModule):
-    """
-    Default Model class provided by the toolbox.
+    """Default Model class provided by the toolbox.
 
-    TODO(pau-pow)
+    Define model training, evaluation and testing steps for
+    `Pytorch LightningModule <https://pytorch-lightning.readthedocs.io/en/latest/common/lightning_module.html>`_
     """
 
-    def __init__(self, backbone, head, loss_function, hyperparameters, train_metrics=None, eval_metrics=None):
+    def __init__(
+        self,
+        backbone,
+        head: ClassificationHead,
+        loss_function,
+        hyperparameters,
+        train_metrics=None,
+        eval_metrics=None,
+    ) -> None:
+        """Initialize a new instance of Model.
+
+        Args:
+            backbone: model backbone
+            head: model prediction head
+            loss_function: loss function for training
+            hyperparameters: model hyperparameters
+            train_metrics: metrics used during training
+            eval_metrics: metrics used during evaluation
+
+        """
         super().__init__()
         self.backbone = backbone
         self.head = head
@@ -28,6 +50,14 @@ class Model(LightningModule):
         self.hyperparameters = hyperparameters
 
     def forward(self, x):
+        """Forward input through model.
+
+        Args:
+            x: input
+
+        Returns:
+            feature representation
+        """
         if self.hyperparameters["lr_backbone"] == 0:
             self.backbone.eval()
             with torch.no_grad():
@@ -37,23 +67,52 @@ class Model(LightningModule):
         logits = self.head(features)
         return logits
 
-    def training_step(self, batch, batch_idx):
+    def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
+        """Define steps taken during training mode.
+
+        Args:
+            batch: input batch
+            batch_idx: index of batch
+
+        Returns:
+            training step outputs
+        """
         inputs = batch["input"]
         target = batch["label"]
         output = self(inputs)
         loss_train = self.loss_function(output, target)
         return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
 
-    def training_step_end(self, outputs):
+    def training_step_end(self, outputs: Dict[str, Tensor]) -> None:
+        """Define steps taken after training phase.
+
+        Args:
+            outputs: outputs from :meth:`__training_step`
+        """
         # update and log
         self.log("train_loss", outputs["loss"], logger=True)
         self.train_metrics.update(outputs["output"], outputs["target"])
 
-    def training_epoch_end(self, outputs):
+    def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:
+        """Define actions after a training epoch.
+
+        Args:
+            outputs: outputs from :meth:`__training_step`
+        """
         self.log_dict({f"train_{k}": v for k, v in self.train_metrics.compute().items()}, logger=True)
         self.train_metrics.reset()
 
-    def eval_step(self, batch, batch_idx, prefix):
+    def eval_step(self, batch: Tensor, batch_idx: int, prefix: str) -> Dict[str, Tensor]:
+        """Define steps taken during validation and testing.
+
+        Args:
+            batch: input batch
+            batch_idx: index of batch
+            prefix: prefix for logging
+
+        Returns:
+            evaluation step outputs
+        """
         inputs = batch["input"]
         target = batch["label"]
         output = self(inputs)
@@ -63,23 +122,62 @@ class Model(LightningModule):
         return {"loss": loss.detach(), "input": inputs.detach(), "output": output.detach(), "target": target.detach()}
 
     def validation_step(self, batch, batch_idx):
+        """Define steps taken during validation mode.
+
+        Args:
+            batch: input batch
+            batch_idx: index of batch
+
+        Returns:
+            validation step outputs
+        """
         return self.eval_step(batch, batch_idx, "val")
 
     def test_step(self, batch, batch_idx):
+        """Define steps taken during test mode.
+
+        Args:
+            batch: input batch
+            batch_idx: index of batch
+
+        Returns:
+            test step outputs
+        """
         return self.eval_step(batch, batch_idx, "test")
 
-    def eval_step_end(self, outputs, prefix):
+    def eval_step_end(self, outputs, prefix) -> None:
+        """Define steps after evaluation phase.
+
+        Args:
+            outputs: outputs from :meth:`__eval_step`
+            prefix: prefix for logging
+        """
         # update and log
         self.log(f"{prefix}_loss", outputs["loss"], logger=True)
         self.eval_metrics.update(outputs["output"], outputs["target"])
 
     def validation_step_end(self, outputs):
+        """Define steps after validation phase.
+
+        Args:
+            outputs: outputs from :meth:`__eval_step`
+        """
         self.eval_step_end(outputs, "val")
 
     def test_step_end(self, outputs):
+        """Define steps after testing phase.
+
+        Args:
+            outputs: outputs from :meth:`__eval_step`
+        """
         self.eval_step_end(outputs, "test")
 
     def validation_epoch_end(self, outputs):
+        """Define actions after a validation epoch.
+
+        Args:
+            outputs: outputs from :meth:`__validation_step`
+        """
         eval_metrics = self.eval_metrics.compute()
         self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
         self.eval_metrics.reset()
@@ -96,11 +194,17 @@ class Model(LightningModule):
             wandb.log({"segmentation_images": image})
 
     def test_epoch_end(self, outputs):
+        """Define actions after a test epoch.
+
+        Args:
+            outputs: outputs from :meth:`__test_step`
+        """
         eval_metrics = self.eval_metrics.compute()
         self.log_dict({f"test_{k}": v for k, v in eval_metrics.items()}, logger=True)
         self.eval_metrics.reset()
 
     def configure_optimizers(self):
+        """Configure optimizers for training."""
         backbone_parameters = self.backbone.parameters()
         # backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
         head_parameters = self.head.parameters()
@@ -133,20 +237,28 @@ class Model(LightningModule):
 
 
 class ModelGenerator:
-    """
+    """Model Generator.
+
     Class implemented by the user. The goal is to specify how to connect the backbone with the head and the loss function.
     """
 
     def __init__(self, model_path=None) -> None:
-        """This should not load the model at this point"""
-        self.model_path = model_path
+        """Initialize a new instance of Model Generator.
 
-    def generate(self, task_specs, hyperparams):
-        """Generate a Model to train
+        This should not load the model at this point
 
         Args:
-            task_specs (TaskSpecifications): an object describing the task to be performed
-            hyperparams (dict): dictionary containing hyperparameters of the experiment
+            model_path: path to model
+
+        """
+        self.model_path = model_path
+
+    def generate(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+        """Generate a Model to train.
+
+        Args:
+            task_specs: an object describing the task to be performed
+            hyperparams: dictionary containing hyperparameters of the experiment
 
         Raises:
             NotImplementedError
@@ -159,12 +271,12 @@ class ModelGenerator:
         """
         raise NotImplementedError()
 
-    def get_collate_fn(self, task_specs, hyperparams):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
-            task_specs (TaskSpecifications): an object describing the task to be performed
-            hyperparams (dict): dictionary containing hyperparameters of the experiment
+            task_specs: an object describing the task to be performed
+            hyperparams: dictionary containing hyperparameters of the experiment
 
         Returns:
             A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
@@ -178,12 +290,13 @@ class ModelGenerator:
         """
         raise None
 
-    def get_transform(self, task_specs, hyperparams, train=True):
+    def get_transform(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], train: bool = True):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
-            task_specs (TaskSpecifications): an object describing the task to be performed
-            hyperparams (dict): dictionary containing hyperparameters of the experiment
+            task_specs: an object describing the task to be performed
+            hyperparams: dictionary containing hyperparameters of the experiment
+            train: whether to return train or evaluation transforms
 
         Returns:
             A callable taking an object of type Sample as input. The return will be fed to the collate_fn
@@ -191,18 +304,20 @@ class ModelGenerator:
         return None
 
 
-def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: dict):
-    """
-    Returns a an appropriate head based on the task specifications. We can use task_specs.task_type as follow:
+def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: Dict[str, Any]):
+    """Return an appropriate head based on the task specifications.
+
+    We can use task_specs.task_type as follow:
         classification: 2 layer MLP with softmax activation
         semantic_segmentation: U-Net decoder.
     we can also do something special for a specific dataet using task_specs.dataset_name. Hyperparams and input_shape
     can also be used to adapt the head.
 
     Args:
-        task_specs: object of type TaskSpecifications providing information on what type of task we are solving
+        task_specs: providing information on what type of task we are solving
         features_shape: lists with the shapes of the output features at different depths in the architecture [(ch, h, w), ...]
         hyperparams: dict of hyperparameters.
+
     """
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
@@ -227,15 +342,37 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
-def vit_head_generator(task_specs, hyperparams, input_shape):
-    """
-    ViT architectures may require different type of heads. In which case, we should provide this to the users as well. TO BE DISCUSSED.
+def vit_head_generator(task_specs: TaskSpecifications, hyperparams: Dict[str, Any], input_shape: int):
+    """Generate head for VIT.
+
+    ViT architectures may require different type of heads.
+    In which case, we should provide this to the users as well. TO BE DISCUSSED.
+
+    Args:
+        task_specs: an object describing the task to be performed
+        hyperparams: dictionary containing hyperparameters of the experiment
+        input_shape: input shape to transformer
+
     """
     pass
 
 
-def compute_accuracy(output, target, prefix, topk=(1,), *args, **kwargs):
-    """Computes the accuracy over the k top predictions for the specified values of k."""
+def compute_accuracy(
+    output: Tensor, target: Tensor, prefix: str, topk: Tuple[int] = (1,), *args, **kwargs
+) -> Dict[float]:
+    """Compute the accuracy over the k top predictions for the specified values of k.
+
+    Args:
+        output: model output
+        target: target to compute accuracy on
+        pefix: prefix for k
+        topk: define k values for which to compute accuracy
+        *args: Variable length argument list.
+        **kwargs: Arbitrary keyword arguments.
+
+    Returns:
+        computed accuracy values for each k
+    """
     with torch.no_grad():
         maxk = max(topk)
         batch_size = target.size(0)
@@ -254,12 +391,19 @@ def compute_accuracy(output, target, prefix, topk=(1,), *args, **kwargs):
 METRIC_MAP = {}
 
 
-def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
-    """
-    Returns the appropriate loss function depending on the task_specs. We should implement basic loss and we can leverage the
-    following attributes: task_specs.task_type and task_specs.eval_loss
-    """
+def train_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> torchmetrics.MetricCollection:
+    """Return the appropriate loss function depending on the task_specs.
 
+    We should implement basic loss and we can leverage the
+    following attributes: task_specs.task_type and task_specs.eval_loss
+
+    Args:
+        task_specs: an object describing the task to be performed
+        hyperparams: dictionary containing hyperparameters of the experiment
+
+    Returns:
+        metric collection used during training
+    """
     metrics = {
         io.Classification: [torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)],
         io.MultiLabelClassification: [
@@ -275,9 +419,15 @@ def train_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     return torchmetrics.MetricCollection(metrics)
 
 
-def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
-    """
-    Returns the appropriate eval function depending on the task_specs.
+def eval_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> torchmetrics.MetricCollection:
+    """Return the appropriate eval function depending on the task_specs.
+
+    Args:
+        task_specs: an object describing the task to be performed
+        hyperparams: dictionary containing hyperparameters of the experiment
+
+    Returns:
+        metric collection used during evaluation
     """
     metrics = {
         io.Classification: [torchmetrics.Accuracy()],
@@ -294,18 +444,30 @@ def eval_metrics_generator(task_specs: io.TaskSpecifications, hparams: dict):
     return torchmetrics.MetricCollection(metrics)
 
 
-def _balanced_binary_cross_entropy_with_logits(inputs, targets):
+def _balanced_binary_cross_entropy_with_logits(outputs: Tensor, targets: Tensor) -> Tensor:
+    """Compute balance binary cross entropy for multi-label classification.
+
+    Args:
+        outputs: model outputs
+        targets: targets to compute binary cross entropy on
+    """
     classes = targets.shape[-1]
-    inputs = inputs.view(-1, classes)
+    outputs = outputs.view(-1, classes)
     targets = targets.view(-1, classes).float()
-    loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    loss = F.binary_cross_entropy_with_logits(outputs, targets, reduction="none")
     loss = loss[targets == 0].mean() + loss[targets == 1].mean()
     return loss
 
 
-def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
-    """
-    Returns the appropriate loss function depending on the task_specs.
+def train_loss_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> Dict:
+    """Return the appropriate loss function depending on the task_specs.
+
+    Args:
+        task_specs: an object describing the task to be performed
+        hyperparams: dictionary containing hyperparameters of the experiment
+
+    Returns:
+        available loss functions for training
     """
     loss = {
         io.Classification: F.cross_entropy,
@@ -317,24 +479,46 @@ def train_loss_generator(task_specs: io.TaskSpecifications, hparams):
 
 
 class BackBone(torch.nn.Module):
-    def __init__(self, model_path, task_specs, hyperparams) -> None:
+    """Backbone.
+
+    Create a model Backbone to produce feature representations.
+
+    """
+
+    def __init__(self, model_path: str, task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> None:
+        """Initialize a new instance of Backbone.
+
+        Args:
+            model_path:
+            task_specs: an object describing the task to be performed
+            hparams: dictionary containing hyperparameters of the experiment
+
+        """
         super().__init__()
         self.model_path = model_path
         self.task_specs = task_specs
-        self.hyperparams = hyperparams
+        self.hparams = hparams
 
-    def forward(self, data_dict):
+    def forward(self, data_dict: Dict[str, Tensor]) -> Tensor:
+        """Forward input through backbone.
+
+        Args:
+            data_dict:  is a collection of tensors returned by the data loader.
+
+        Returns:
+            the encoded representation or a list of representations for
         """
-        data_dict is a collection of tensors returned by the data loader.
-        The user is responsible to implement something that will map
-        the information from the dataset and encode it into a list of tensors.
-        Returns: the encoded representation or a list of representations for
-        models like u-net.
-        raise NotImplementedError()
-        """
 
 
-def collate_rgb(samples: List[io.Sample]):
+def collate_rgb(samples: List[io.Sample]) -> Dict[str, Tensor]:
+    """Collate function for RGB images.
+
+    Args:
+        samples: list of samples
+
+    Returns:
+        collated version of samples
+    """
     x_list = []
     label_list = []
     for sample in samples:
@@ -345,7 +529,15 @@ def collate_rgb(samples: List[io.Sample]):
     return {"input": torch.stack(x_list), "label": stack_labels(label_list)}
 
 
-def stack_labels(label_list):
+def stack_labels(label_list: List[Tensor]) -> Tensor:
+    """Stack labels for collate function.
+
+    Args:
+        label_list: list of labels to be stacked
+
+    Returns:
+        stacked labels
+    """
     if isinstance(label_list[0], int):
         return torch.tensor(label_list)
     else:
