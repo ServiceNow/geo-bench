@@ -34,21 +34,6 @@ def test_unexisting_path():
         assert isinstance(e, ModuleNotFoundError)
 
 
-# @pytest.mark.slow
-# def test_experiment_generator_on_mnist():
-
-#     with tempfile.TemporaryDirectory() as exp_dir:
-
-#         experiment_generator("ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test")
-
-#         sequential_dispatcher(exp_dir=exp_dir, prompt=False, env=dict(os.environ))
-
-#         job = Job(Path(exp_dir) / "MNIST")
-#         print(Path(exp_dir) / "MNIST")
-#         metrics = job.get_metrics()
-#         assert float(metrics["test_Accuracy"]) > 0.05
-
-
 @pytest.mark.slow
 @pytest.mark.parametrize(
     "model_gen, benchmark_name",
