@@ -42,7 +42,4 @@ jobs:
 
     - name: Run pytest checks
       run: |
-
         poetry run python -m pytest -v tests --cov=ccb --cov-report=xml
-    - name: Report coverage
-      uses: codecov/codecov-action@v2
