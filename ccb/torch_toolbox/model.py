@@ -359,7 +359,7 @@ def vit_head_generator(task_specs: TaskSpecifications, hyperparams: Dict[str, An
 
 def compute_accuracy(
     output: Tensor, target: Tensor, prefix: str, topk: Tuple[int] = (1,), *args, **kwargs
-) -> Dict[float]:
+) -> Dict[str, float]:
     """Compute the accuracy over the k top predictions for the specified values of k.
 
     Args:
