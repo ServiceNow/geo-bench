@@ -4,6 +4,10 @@ from warnings import warn
 
 import ipyplot
 import numpy as np
+from ccb import io
+from ccb.io import dataset as io_ds
+from ccb.io.dataset import (Band, Dataset, HyperSpectralBands, Sample,
+                            SegmentationClasses, compute_dataset_statistics)
 from ipyleaflet import Map, Marker, Rectangle
 from matplotlib import cm
 from matplotlib import pyplot as plt
@@ -11,10 +15,6 @@ from PIL import Image, ImageDraw
 from rasterio import warp
 from rasterio.crs import CRS
 from tqdm import tqdm
-
-from ccb import io
-from ccb.io import dataset as io_ds
-from ccb.io.dataset import Band, Dataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
 
 
 def compare(a, b, name, src_a, src_b):
