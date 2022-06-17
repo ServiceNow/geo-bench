@@ -76,8 +76,7 @@ def test_experiment_generator_on_benchmark(model_gen, benchmark_name):
     ]
 
     subprocess.check_call(cmd)
-    # trainer.train(model_gen=get_model_generator(model_gen), job_dir=os.path.join(experiment_dir, "brick_kiln_v1.0"))
-    sequential_dispatcher(exp_dir=experiment_dir, prompt=False)  # , env=dict(os.environ))
+    sequential_dispatcher(exp_dir=experiment_dir, prompt=False)
     for ds_dir in Path(experiment_dir).iterdir():
         job = Job(ds_dir)
         print(ds_dir)

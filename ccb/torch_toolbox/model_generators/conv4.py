@@ -69,6 +69,7 @@ class Conv4Generator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
+
         if task_specs.dataset_name == "imagenet":
             mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
             t = []

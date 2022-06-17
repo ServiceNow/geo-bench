@@ -96,7 +96,7 @@ class Job:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
             fd.write(
-                f'cd $(dirname "$0") && ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out'
+                f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
