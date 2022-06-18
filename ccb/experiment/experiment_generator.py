@@ -1,11 +1,12 @@
-"""
-Generate experiment directory structure
+"""Generate experiment directory structure.
+
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 """
 import argparse
 import json
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
 from ccb import io
 from ccb.experiment.experiment import Job, get_model_generator
@@ -14,30 +15,25 @@ from ccb.experiment.experiment import Job, get_model_generator
 def experiment_generator(
     model_generator_module_name: str,
     experiment_dir: str,
-    task_filter: callable = None,
+    task_filter: Callable = None,
     benchmark_name: str = "default",
     experiment_name: str = None,
     experiment_type: str = "standard",
 ):
-    """
-    Generates the directory structure for every tasks and every hyperparameter configuration.
+    """Generate the directory structure for every tasks and every hyperparameter configuration.
+
     According to model_generator.hp_search.
-    Parameters:
-    -----------
-    model_generator: ModelGenerator
-        The generator associated with the current model. Used to get hyperparameter combinations.
-    experiment_dir: str
-        The directory in which to create the experiment directories.
-    task_filter: callable(TaskSpecification)
-        A function that takes as input a task specification instance and returns False if it should be skipped.
-    benchmark_name: str
-        The name of the benchmark on which to conduct the experiment (default: "default").
-    experiment_name: str
-        The name of the current experiment. Will be used as a prefix to the results directory (default: None).
-    experiment_type: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
+
+    Args:
+        model_generator_module_name: The generator associated with the current model. Used to get hyperparameter combinations.
+        experiment_dir: The directory in which to create the experiment directories.
+        task_filter: A function that takes as input a task specification instance and returns False if it should be skipped.
+        benchmark_name: The name of the benchmark on which to conduct the experiment (default: "default").
+        experiment_name: The name of the current experiment. Will be used as a prefix to the results directory (default: None).
+        experiment_type: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
 
     Returns:
-        Name of the experiment.
+        Name of the experiment directory.
     """
     experiment_dir = Path(experiment_dir)
     experiment_prefix = (
@@ -135,7 +131,8 @@ def experiment_generator(
     return experiment_dir
 
 
-def start():
+def start() -> None:
+    """Start generating experiments."""
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="experiment_generator.py",
