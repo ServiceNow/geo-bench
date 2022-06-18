@@ -1,3 +1,4 @@
+"""Benin Smallholder Cashew dataset."""
 # Smallholder Cashew Dataset will be downloaded by torchgeo
 #
 # 1) This requires Radiant MLHub package and API token
@@ -151,11 +152,25 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
-def get_sample_name(total_samples):
+def get_sample_name(total_samples) -> str:
+    """Return the name of the samples.
+
+    Args:
+        total_sample:
+
+    Returns:
+        sample name
+    """
     return f"sample_{total_samples}"
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert Benin Smallholder Cashews dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     print("Loading dataset from torchgeo")
