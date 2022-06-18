@@ -1,3 +1,4 @@
+"""Neon Tree dataset."""
 # Download using zenodo_get (or manual download: https://zenodo.org/record/4746605#.Yd7mtlhKgeb)
 #
 # For training tiles:
@@ -13,7 +14,7 @@
 import csv
 import re
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Union
 from warnings import warn
 
 import numpy as np
@@ -44,15 +45,20 @@ else:
     label_type = io.Detection()
 
 
-def read_xml(xml_path):
-    """parse the xml annotation file.
+def read_xml(xml_path) -> List[Dict[str, int]]:
+    """Parse the xml annotation file.
 
     Only the bounding box is extracted all other fields contain constant information except:
         * truncated: 30891 False, 152 True
         * difficult: 31012 False, 31 True
     , which doesn't seem useful.
-    """
 
+    Args:
+        xml_path: path to xml file
+
+    Returns:
+        bounding box annotations
+    """
     with open(xml_path, "r") as fd:
         xml = fd.read()
 
@@ -69,7 +75,15 @@ def read_xml(xml_path):
     return boxes
 
 
-def load_tif(tif_path):
+def load_tif(tif_path) -> np.array:
+    """Load tif file.
+
+    Args:
+        tif_path: path to tif file
+
+    Returns:
+        tif image data array
+    """
     with rasterio.open(tif_path) as fd:
         data = fd.read()
         crs = fd.crs
@@ -78,13 +92,25 @@ def load_tif(tif_path):
     return np.moveaxis(data, 0, 2), crs, transform, no_data
 
 
-def to_csv(info_list, dst_dir):
+def to_csv(info_list: List[str], dst_dir: str) -> None:
+    """Save info to csv.
+
+    Args:
+        info_list: info to save
+        dst_dir: path to directory where to save csv
+    """
     with open(Path(dst_dir, "info.csv"), "w") as fd:
         writer = csv.writer(fd)
         writer.writerows(info_list)
 
 
-def find_missing(dir_list: List[Path], file_set):
+def find_missing(dir_list: List[Path], file_set) -> None:
+    """Find missing files.
+
+    Args:
+        dir_list: list of paths to directories
+        file_set: set of current files
+    """
     missing_list = []
     other_files = []
     for dir in dir_list:
@@ -99,7 +125,15 @@ def find_missing(dir_list: List[Path], file_set):
         print(file)
 
 
-def _extract_tag(file_name):
+def _extract_tag(file_name: str) -> Union[None, str]:
+    """Extract tag with regex.
+
+    Args:
+        file_name: file name
+
+    Returns:
+        tag if found
+    """
     tags = re.findall("[A-Z]{4}", file_name)
     if len(tags) == 0:
         tag = None
@@ -111,7 +145,15 @@ def _extract_tag(file_name):
     return tag
 
 
-def convert_dataset(src_dataset_dir, zenodo_dataset_dir, dataset_dir, max_count):
+def convert_dataset(src_dataset_dir: str, zenodo_dataset_dir: str, dataset_dir: str, max_count: int) -> None:
+    """Convert dataset.
+
+    Args:
+        src_dataset_dir: source dataset directory
+        zenodo_dataset_dir: directory to zenodo dataset
+        dataset_dir: directory where to convert dataset to
+        max_count: maximum number of samples
+    """
     sample_count = 0
 
     info_list = []
@@ -181,7 +223,18 @@ BAND_INFO_LIST.append(io.ElevationBand("Canopy Height Model", alt_names=("lidar"
 BAND_INFO_LIST.append(io.HyperSpectralBands("Neon", n_bands=369, spatial_resolution=1))
 
 
-def extract_boxes(boxes, y_offset, x_offset, area_threshold=10):
+def extract_boxes(boxes, y_offset, x_offset, area_threshold=10) -> List[Dict[str, int]]:
+    """Extract bounding boxes.
+
+    Args:
+        boxes: list of bounding boxes
+        y_offset: y offset for box
+        x_offset: x offset for box
+        area_threshold: minimum area of bounding box to extract
+
+    Return:
+        extracted bounding boxes
+    """
     new_boxes = []
 
     def clip(box, key, offset):
@@ -201,6 +254,18 @@ def extract_boxes(boxes, y_offset, x_offset, area_threshold=10):
 
 
 def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
+    """Extract image patch slices.
+
+    Args:
+        rgb_data: RGB imagery data
+        chm_data: canopy height model data
+        hs_data: hyperspectral data
+        boxes: bounding boxes
+        slice_shape: desired shape of slice
+
+    Returns:
+        sliced data
+    """
     # TODO slice boxes
     def get_patch(data, start_x, start_y, scale=1):
         start_x, start_y, size_x, size_y = tuple(
@@ -225,8 +290,23 @@ def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
     return data_list
 
 
-def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, slice=False) -> io.Sample:
+def make_sample(
+    name: str, rgb_path: str, chm_path: str, hs_path: str, boxes, check_shapes: bool = True, slice: bool = False
+) -> io.Sample:
+    """Create a sample.
 
+    Args:
+        name: name of sample
+        rgb_path: path to rgb data
+        chm_path: path to canopy height model data
+        hs_path: path to hyperspectral data
+        boxes: set of bounding boxes
+        check_shapes: whether or not to check shapes before making sample
+        slice: whether or not to slice sample
+
+    Returns:
+        sample
+    """
     rgb_data, crs, rgb_transform, rgb_nodata = load_tif(rgb_path)
     chm_data, chm_crs, chm_transform, chm_nodata = load_tif(chm_path)
     hs_data, _, hs_transform, hs_nodata = load_tif(hs_path)
@@ -286,8 +366,13 @@ def make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True, sli
     return sample_list
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert Neon Tree dataset dataset.
 
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     task_specs = io.TaskSpecifications(

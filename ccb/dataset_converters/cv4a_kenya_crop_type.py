@@ -1,3 +1,4 @@
+"""CV4A Kenya Crop Type dataset."""
 import datetime
 from pathlib import Path
 
@@ -62,7 +63,17 @@ BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")))
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=8)
 
 
-def make_sample(images, mask, sample_name):
+def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample:
+    """Create a sample from images and label.
+
+    Args:
+        images: image array to be contained in sample
+        mask: label to be contained in sample
+        sample_name: name of sample
+
+    Returns:
+        sample
+    """
     n_dates, n_bands, _height, _width = images.shape
 
     transform = None  # TODO can't find the GPS coordinates from torch geo.
@@ -93,7 +104,13 @@ def make_sample(images, mask, sample_name):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert CV4A Kenya crop type dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     cv4a_dataset = cv4a_kenya_crop_type.CV4AKenyaCropType(
