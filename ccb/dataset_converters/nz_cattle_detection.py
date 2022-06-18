@@ -1,3 +1,4 @@
+"""Nz cattle detection dataset."""
 # Downloaded from "https://zenodo.org/record/5908869"
 
 # to authors
@@ -38,6 +39,14 @@ else:
 
 
 def parse_file_name(name):
+    """Parse file name and extract information.
+
+    Args:
+        name: filename
+
+    Returns:
+        location, date, transform and crs information
+    """
     name = name.replace("Kapiti_Coast", "Kapiti-Coast")
     _index, location, year, lon_lat = name.split("_")[:4]
     lon_center, lat_center = [float(val) for val in lon_lat.split(",")]
@@ -52,7 +61,15 @@ def parse_file_name(name):
     return location, date, transform, crs
 
 
-def load_sample(img_path: Path):
+def load_sample(img_path: Path) -> io.Sample:
+    """Create sample from a given image path.
+
+    Args:
+        img_path: path to image
+
+    Return:
+        created sample
+    """
     label_path = img_path.with_suffix(".png.mask.0.txt")
     with Image.open(img_path) as im:
         data = np.array(im)[:, :, :3]
@@ -94,7 +111,13 @@ def load_sample(img_path: Path):
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert Nz Cattle detection dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     task_specs = io.TaskSpecifications(

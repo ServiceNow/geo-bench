@@ -1,3 +1,5 @@
+"""GeoLifeCLEF dataset."""
+
 # pip install kaggle
 # set kaggle.json according to https://www.kaggle.com/docs/api
 # accept terms and conditions from: https://www.kaggle.com/c/geolifeclef-2021/data
@@ -40,8 +42,19 @@ BAND_INFO_LIST.append(NIR_BAND)
 BAND_INFO_LIST.append(io.ElevationBand("Altitude", ("elevation",), spatial_resolution=SPATIAL_RESOLUTION))
 
 
-def make_sample(observation_id, label, lat, lng, kaggle_sample=False):
+def make_sample(observation_id, label, lat, lng, kaggle_sample=False) -> io.Sample:
+    """Create a sample.
 
+    Args:
+        observation_id:
+        label:
+        lat:
+        lng:
+        kaggle_sample:
+
+    Returns:
+        sample
+    """
     observation_id = str(observation_id)
 
     region_id = observation_id[0]
@@ -120,7 +133,14 @@ def make_sample(observation_id, label, lat, lng, kaggle_sample=False):
     return io.Sample(bands, label=label, sample_name=observation_id)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR, kaggle_sample=True):
+def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, kaggle_sample: bool = True) -> None:
+    """Convert GeoLifeCLEF dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+        kaggle_sample:
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
     partition = io.dataset.Partition()
 
