@@ -16,7 +16,7 @@ jobs:
       MPLBACKEND: Agg
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.8', '3.9', '3.10']
     steps:
     - name: Clone repo
@@ -28,12 +28,14 @@ jobs:
     - name: Install apt dependencies (Linux)
       run: sudo apt-get install unrar
       if: ${{ runner.os == 'Linux' }}
+    - name: Install brew dependencies (macOS)
+      run: brew install rar
+      if: ${{ runner.os == 'macOS' }}
     - name: Install poetry
       run: |
         python -m ensurepip
         python -m pip install --upgrade pip
         python -m pip install poetry
-
     - name: Install dependencies
       shell: bash
       run: |
