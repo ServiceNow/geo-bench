@@ -1,5 +1,6 @@
+"""Inspect tools."""
 import math
-from typing import List
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 from warnings import warn
 
 import ipyplot
@@ -17,12 +18,13 @@ from rasterio.crs import CRS
 from tqdm import tqdm
 
 
-def compare(a, b, name, src_a, src_b):
+def compare(a, b, name, src_a, src_b) -> None:
+    """Compare two values."""
     if a != b:
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
+def plot_band_stats(band_values: Dict[str, np.array], n_cols: int = 4, n_hist_bins: int = None) -> None:
     """Plot a histogram of band values for each band.
 
     Args:
@@ -41,8 +43,20 @@ def plot_band_stats(band_values, n_cols=4, n_hist_bins=None):
     plt.tight_layout()
 
 
-def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True, per_channel_scaling=False):
-    """Convert a batch of images to uint8 such that 99.9% of values fit in the range (0,255)."""
+def float_image_to_uint8(
+    images: np.array, percentile_max=99.9, ensure_3_channels=True, per_channel_scaling=False
+) -> np.array:
+    """Convert a batch of images to uint8 such that 99.9% of values fit in the range (0,255).
+
+    Args:
+        images: batch of images
+        percentile_max: maximum percentile value
+        ensure_3_channels: whether or not to return 3 channel dimensions
+        per_channel_scaling: whether or not to apply the scaling per channel
+
+    Returns:
+        converted batch of images
+    """
     images = np.asarray(images)
     if images.dtype == np.uint8:
         return images
@@ -70,8 +84,26 @@ def float_image_to_uint8(images, percentile_max=99.9, ensure_3_channels=True, pe
 
 
 def extract_images(
-    samples, band_names=("red", "green", "blue"), percentile_max=99.9, resample=False, fill_value=None, date_index=0
-):
+    samples: List[Sample],
+    band_names: Sequence[str] = ("red", "green", "blue"),
+    percentile_max: float = 99.9,
+    resample: bool = False,
+    fill_value: int = None,
+    date_index: int = 0,
+) -> Tuple[List[np.array]]:
+    """Extract images from samples.
+
+    Args:
+        samples: set of samples
+        band_names: band names to extract from sample
+        percentile_max: maximum percentile value
+        resample: whether or not to resample
+        fill_value: fill values
+        date_index: for timeseries which date to index
+
+    Returns:
+        images and labels extracted from sample
+    """
     images = []
     labels = []
     for sample in samples:
@@ -94,7 +126,16 @@ def extract_images(
     return images, labels
 
 
-def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_width=128):
+def callback_hyperspectral_to_rgb(
+    samples: List[Sample], band_name: str, percentile_max: float = 99.9, img_width: int = 128
+) -> Callable[[int, int], Any]:
+    """Create callable to convert hyperspectral to rgb for plotting.
+
+    Args:
+        samples: set of samples
+
+    """
+
     def callback(center, width):
         rgb_extractor = make_rgb_extractor(center, width)
         images = hyperspectral_to_rgb(samples, band_name, rgb_extractor, percentile_max)
@@ -104,6 +145,16 @@ def callback_hyperspectral_to_rgb(samples, band_name, percentile_max=99.9, img_w
 
 
 def make_rgb_extractor(center, width):
+    """Create callable to extract rgb data from hyperspectral.
+
+    Args:
+        center:
+        width:
+
+    Returns:
+        callable
+    """
+
     def callback(hs_data):
         def _extrac_band(start, stop):
             return hs_data[:, :, int(start) : int(stop)].mean(axis=2)
@@ -122,6 +173,7 @@ def make_rgb_extractor(center, width):
 
 
 def hyperspectral_to_rgb(samples: List[Sample], band_name, rgb_extract, percentile_max=99.9):
+    """Convert hyperspectral to rgb."""
     images = []
     for sample in samples:
         band_array, _, _ = sample.get_band_array(band_names=(band_name,))
@@ -152,6 +204,7 @@ def extract_label_as_image(samples, percentile_max=99.9):
 
 
 def overlay_label(image, label, label_patch_size, opacity=0.5):
+    """Overlay label on image."""
     if label_patch_size is not None:
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
@@ -173,6 +226,7 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
 
 
 def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None, date_index=0):
+    """Extract bands."""
     if band_groups is None:
         band_groups = [(band_name,) for band_name in samples[0].band_names]
     all_images = []
@@ -195,6 +249,7 @@ def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=
 
 
 def center_coord(band):
+    """Find center coordinates."""
     center = np.array(band.data.shape[:2]) / 2.0
     center = transform_to_4326(band, center)
     return tuple(center[::-1])
@@ -263,6 +318,7 @@ def map_class_id_to_color(id_array, n_classes, background_id=0, background_color
 
 
 def summarize_band_info(band_info_list: List[io.BandInfo]):
+    """Summarize band info."""
     sentinel2_count = 0
     sentinel1_count = 0
     spectral_count = 0

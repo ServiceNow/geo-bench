@@ -1,4 +1,5 @@
-"""
+"""PV4GER dataset.
+
 1. Install the AWS CLI. Instructions here: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
 (requires sudo, so you may need to do it locally then copy the data over)
 2. Make an AWS account and sign into it then navigate here: https://console.aws.amazon.com/iam/
@@ -9,6 +10,7 @@
 """
 import sys
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -17,6 +19,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from ccb import io
+from ccb.io.dataset import Band, Sample
 
 sys.path.append(str(Path.cwd()))
 
@@ -33,7 +36,15 @@ LABELS = ("no solar pv", "solar pv")
 SEG_LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS)
 
 
-def get_transform(img_path):
+def get_transform(img_path: str):
+    """Create transform based on image.
+
+    Args:
+        img_path: path to image
+
+    Returns:
+        rasterio transform
+    """
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, img_path.stem.split(","))
     # Lat/lons are swapped for much of the dataset, fix this.
@@ -47,7 +58,16 @@ def get_transform(img_path):
     return transform
 
 
-def get_bands(img, transform):
+def get_bands(img: np.array, transform) -> List[Band]:
+    """Retrieve RGB bands.
+
+    Args:
+        img: image array
+        transform: transformation applied to image
+
+    Returns:
+        list of retrieved bands
+    """
     bands = []
     for i in range(3):
         band_data = io.Band(
@@ -62,7 +82,16 @@ def get_bands(img, transform):
     return bands
 
 
-def load_cls_sample(img_path: Path, label: int):
+def load_cls_sample(img_path: Path, label: int) -> Sample:
+    """Create classification sample.
+
+    Args:
+        img_path: path to image
+        label: classification label
+
+    Returns:
+        classification sample
+    """
     transform = get_transform(img_path)
 
     img = np.array(Image.open(img_path).convert("RGB"))
@@ -72,7 +101,16 @@ def load_cls_sample(img_path: Path, label: int):
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def load_seg_sample(img_path: Path, mask_path: Path):
+def load_seg_sample(img_path: Path, mask_path: Path) -> Sample:
+    """Create segmentation sample.
+
+    Args:
+        img_path: path to image
+        mask_path: path to image mask
+
+    Returns:
+        segmentation sample
+    """
     transform = get_transform(img_path)
 
     img = np.array(Image.open(img_path).convert("RGB"))
@@ -88,7 +126,14 @@ def load_seg_sample(img_path: Path, mask_path: Path):
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR, classification=True):
+def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, classification: bool = True) -> None:
+    """Convert pv4ger dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+        classification: whether or not to convert the classification version
+    """
     if classification:
         label_type = io.Classification(2, LABELS)
         eval_loss = io.Accuracy
