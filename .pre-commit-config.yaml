@@ -15,11 +15,12 @@ repos:
         rev: 5.10.1
         hooks:
         -    id: isort
-             args: ["--profile", "black", "--line-length=120", "--include_trailing_comma", "--multi_line_output=3"]
-             additional_dependencies: ["colorama>=0.4.3"]
+             args: ["--profile", "black", "--line-length=120"]
+             additional_dependencies: ["colorama>=0.4.3", "toml"]
 
     -   repo: https://github.com/pycqa/pydocstyle
         rev: 6.1.1
         hooks:
         -   id: pydocstyle
             exclude: (tests|toolkit)
+            additional_dependencies: ["toml"]

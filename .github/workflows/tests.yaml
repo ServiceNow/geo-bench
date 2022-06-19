@@ -15,6 +15,7 @@ jobs:
     env:
       MPLBACKEND: Agg
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.8', '3.9']
@@ -31,11 +32,25 @@ jobs:
     - name: Install brew dependencies (macOS)
       run: brew install rar
       if: ${{ runner.os == 'macOS' }}
+    - name: Install conda (Windows)
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge
+        channel-priority: strict
+      if: ${{ runner.os == 'Windows' }}
+    - name: Install conda dependencies (Windows)
+      run: |
+        conda install 'fiona==1.8.21' 'rasterio==1.2.10' 'poetry==1.1.13'
+        conda list
+        conda info
+      if: ${{ runner.os == 'Windows' }}
     - name: Install poetry
       run: |
         python -m ensurepip
         python -m pip install --upgrade pip
         python -m pip install poetry
+      if: ${{ runner.os != 'Windows' }}
     - name: Install dependencies
       shell: bash
       run: |
