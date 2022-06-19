@@ -1,5 +1,4 @@
-"""
-Compute dataset band statistics for each band and save them in bandstats.json
+"""Compute dataset band statistics for each band and save them in bandstats.json.
 
 For the future, implement partitions and splits
 """
@@ -17,8 +16,17 @@ parser.add_argument("--values-per-image", default=1000, help="values per image")
 parser.add_argument("--samples", default=1000, help="dataset subset size")
 
 
-def produce_band_stats(dataset: io.Dataset, use_splits=False, values_per_image=1000, samples=1000):
+def produce_band_stats(
+    dataset: io.Dataset, use_splits: bool = False, values_per_image: int = 1000, samples: int = 1000
+) -> None:
+    """Compute and save band statistics.
 
+    Args:
+        dataset: Dataset
+        use_split: whether or not use defined splits
+        values_per_image: number of values to consider per image
+        sample: number of samples
+    """
     if use_splits:
         for partition in dataset.list_partitions():
             dataset.set_partition(partition)
@@ -45,8 +53,12 @@ def produce_band_stats(dataset: io.Dataset, use_splits=False, values_per_image=1
         print(f"Statistics written to {stats_fname}.")
 
 
-def produce_all_band_stats(benchmark_name):
+def produce_all_band_stats(benchmark_name) -> None:
+    """Compute all band statistics for a benchmark.
 
+    Args:
+        benchmark_name: name of the benchmark
+    """
     for task in io.task_iterator(benchmark_name=benchmark_name):
         print(f"Producing bandstats for dataset {task.dataset_name} of benchmark {benchmark_name}.")
         produce_band_stats(task.get_dataset(split=None))

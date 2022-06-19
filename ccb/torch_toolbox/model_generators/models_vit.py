@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 
+"""VIT models."""
+
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 # --------------------------------------------------------
@@ -20,9 +22,21 @@ from timm.models.vision_transformer import PatchEmbed  # with version 0.3.2
 
 
 class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
-    """Vision Transformer with support for global average pooling"""
+    """Vision Transformer with support for global average pooling.
 
-    def __init__(self, global_pool=False, patch_embedder: str = "default", **kwargs):
+    `Timm models <https://rwightman.github.io/pytorch-image-models/>`_ Vision Transformer.
+
+    """
+
+    def __init__(self, global_pool: bool = False, patch_embedder: str = "default", **kwargs) -> None:
+        """Initialize new instance of Vision Transformer.
+
+        Args:
+            global_pool: whether or not to apply global pooling
+            patch_embedder: what type of pathch embeder to use
+            **kwargs: Arbitrary keyword arguments.
+
+        """
         super(VisionTransformer, self).__init__(**kwargs)
 
         self.patch_embedder = patch_embedder
@@ -44,6 +58,14 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             del self.norm  # remove the original norm
 
     def forward_features(self, x):
+        """Forward input through model.
+
+        Args:
+            x: input
+
+        Returns:
+            feature representation
+        """
         B = x.shape[0]
 
         if self.patch_embedder == "default":
@@ -70,7 +92,20 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
 
 class CCBVisionTransformer(VisionTransformer):
+    """CCB Vision Transformer.
+
+    The CCB Vision Transformer.
+    """
+
     def forward_features(self, x):
+        """Forward input through model.
+
+        Args:
+            x: input
+
+        Returns:
+            feature representation
+        """
         B = x.shape[0]
         x = self.sentinel2_patch_embed(x)
 
@@ -93,6 +128,11 @@ class CCBVisionTransformer(VisionTransformer):
 
 
 def vit_base_patch16(**kwargs):
+    """Build Base VT with patch size 16.
+
+    Args:
+        **kwargs: Arbitrary keyword arguments.
+    """
     model = VisionTransformer(
         patch_size=16,
         embed_dim=768,
@@ -107,6 +147,11 @@ def vit_base_patch16(**kwargs):
 
 
 def vit_large_patch16(**kwargs):
+    """Build Large VT with patch size 16.
+
+    Args:
+        **kwargs: Arbitrary keyword arguments.
+    """
     model = VisionTransformer(
         patch_size=16,
         embed_dim=1024,
@@ -121,6 +166,11 @@ def vit_large_patch16(**kwargs):
 
 
 def vit_huge_patch14(**kwargs):
+    """Build Huge VT with patch size 14.
+
+    Args:
+        **kwargs: Arbitrary keyword arguments.
+    """
     model = VisionTransformer(
         patch_size=14,
         embed_dim=1280,

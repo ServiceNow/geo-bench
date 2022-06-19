@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-"""
-Trains the model using job information contained in the current directory.
-Expects to find files "hparams.json" and "task_specs.json".
-Usage: trainer.py --model-generator path/to/my/model/generator.py
-"""
+"""Train the model using job information contained in the current directory."""
+
 import argparse
 import json
 import os
@@ -103,7 +100,8 @@ def train(model_gen, job_dir) -> None:
     trainer.test(model, datamodule)
 
 
-def start():
+def start() -> None:
+    """Start training."""
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="trainer.py", description="Trains the model using job information contained in the current directory."

@@ -1,6 +1,8 @@
+"""Timm Model Generator."""
+
 import logging
 import random
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 import timm
 import torch
@@ -20,7 +22,19 @@ from ccb.torch_toolbox.model import (
 
 
 class TIMMGenerator(ModelGenerator):
+    """Timm Model Generator.
+
+    The Timm Model Generator lets you define a model with any available
+    `Timm models <https://rwightman.github.io/pytorch-image-models/>`_ as a backbone, and
+    attaches a classification head according to the task.
+    """
+
     def __init__(self, hparams=None) -> None:
+        """Initialize a new instance of Timm model generator.
+
+        Args:
+            hparams: set of hyperparameters
+        """
         super().__init__()
 
         self.base_hparams = {
@@ -48,21 +62,22 @@ class TIMMGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
-        """Returns a ccb.torch_toolbox.model.Model instance from task specs
-           and hyperparameters
+    def generate(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+        """Return a ccb.torch_toolbox.model.Model instance from task specs and hyperparams.
+
         Args:
             task_specs (TaskSpecifications): object with task specs
-            hyperparameters (dict): dictionary containing hyperparameters
+            hyperparams (dict): dictionary containing hyperparams
+
+        Returns:
+            configured model
         """
-        backbone = timm.create_model(
-            hyperparameters["backbone"], pretrained=hyperparameters["pretrained"], features_only=False
-        )
+        backbone = timm.create_model(hyperparams["backbone"], pretrained=hyperparams["pretrained"], features_only=False)
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
 
-        new_in_channels = len(hyperparameters["band_names"])
+        new_in_channels = len(hyperparams["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
-        if hyperparameters["backbone"] in ["resnet18", "resnet50"]:
+        if hyperparams["backbone"] in ["resnet18", "resnet50"]:
             current_layer = backbone.conv1
 
             # Creating new Conv2d layer
@@ -76,10 +91,10 @@ class TIMMGenerator(ModelGenerator):
             )
 
             backbone.conv1 = self._initialize_additional_in_channels(
-                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparams
             )
 
-        elif hyperparameters["backbone"] in ["convnext_base"]:
+        elif hyperparams["backbone"] in ["convnext_base"]:
             current_layer = backbone.stem[0]
 
             # Creating new Conv2d layer
@@ -95,10 +110,10 @@ class TIMMGenerator(ModelGenerator):
 
             # add new layer back to backbone
             backbone.stem[0] = self._initialize_additional_in_channels(
-                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparams
             )
 
-        elif hyperparameters["backbone"] in [
+        elif hyperparams["backbone"] in [
             "vit_tiny_patch16_224",
             "vit_small_patch16_224",
             "swinv2_tiny_window16_256",
@@ -117,33 +132,33 @@ class TIMMGenerator(ModelGenerator):
             new_layer.bias.data = current_layer.bias
 
             backbone.patch_embed.proj = self._initialize_additional_in_channels(
-                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparameters
+                current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, hyperparams=hyperparams
             )
 
-        hyperparameters.update(
+        hyperparams.update(
             {
                 "input_size": (
-                    len(hyperparameters["band_names"]),
-                    hyperparameters["image_size"],
-                    hyperparameters["image_size"],
+                    len(hyperparams["band_names"]),
+                    hyperparams["image_size"],
+                    hyperparams["image_size"],
                 )
             }
         )
 
         with torch.no_grad():
             backbone.eval()
-            features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
+            features = torch.zeros(hyperparams["input_size"]).unsqueeze(0)
             features = backbone(features)
         shapes = [features.shape[1:]]  # get the backbone's output features
 
-        hyperparameters.update({"n_backbone_features": shapes[0][0]})
+        hyperparams.update({"n_backbone_features": shapes[0][0]})
 
-        head = head_generator(task_specs, shapes, hyperparameters)
-        loss = train_loss_generator(task_specs, hyperparameters)
-        train_metrics = train_metrics_generator(task_specs, hyperparameters)
-        eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
+        head = head_generator(task_specs, shapes, hyperparams)
+        loss = train_loss_generator(task_specs, hyperparams)
+        train_metrics = train_metrics_generator(task_specs, hyperparams)
+        eval_metrics = eval_metrics_generator(task_specs, hyperparams)
 
-        return Model(backbone, head, loss, hyperparameters, train_metrics, eval_metrics)
+        return Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
 
     def _initialize_additional_in_channels(
         self,
@@ -210,10 +225,33 @@ class TIMMGenerator(ModelGenerator):
 
         return new_layer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: dict):
+        """Define a collate function to batch input tensors.
+
+        Args:
+            task_specs: task specs to retrieve dataset
+            hyperparams: model hyperparameters
+
+        Returns:
+            collate function
+        """
         return default_collate
 
-    def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
+    def get_transform(
+        self, task_specs, hyperparams, train=True, scale=None, ratio=None
+    ) -> Callable[[io.Sample], Dict[str, Any]]:
+        """Define data transformations specific to the models generated.
+
+        Args:
+            task_specs: task specs to retrieve dataset
+            hyperparams: model hyperparameters
+            train: train mode true or false
+            scale: define image scale
+            ratio: define image ratio range
+
+        Returns:
+            callable function that applies transformations on input data
+        """
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         _, h, w = hyperparams["input_size"]
@@ -250,5 +288,13 @@ class TIMMGenerator(ModelGenerator):
 
 
 def model_generator(hparams: Dict[str, Any] = {}) -> TIMMGenerator:
+    """Generate Timm model generator with a defined set of hparams.
+
+    Args:
+        hparams: hyperparameters
+
+    Returns:
+        timm model generator
+    """
     model_generator = TIMMGenerator(hparams=hparams)
     return model_generator
