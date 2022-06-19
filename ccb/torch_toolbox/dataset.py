@@ -1,3 +1,5 @@
+"""Dataset."""
+
 from typing import Sequence
 
 import pytorch_lightning as pl
@@ -7,6 +9,13 @@ from ccb import io
 
 
 class DataModule(pl.LightningDataModule):
+    """Data Module.
+
+    Define a
+    `PyTorch Lightning <https://pytorch-lightning.readthedocs.io/en/stable/extensions/datamodules.html>`_
+    that provides dataloaders from task_specs.
+    """
+
     def __init__(
         self,
         task_specs: io.TaskSpecifications,
@@ -18,8 +27,8 @@ class DataModule(pl.LightningDataModule):
         collate_fn=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
-    ):
-        """DataModule providing dataloaders from task_specs.
+    ) -> None:
+        """Initialize new instance of DataModule .
 
         Args:
             task_specs: TaskSpecifications object to call get_dataset.
@@ -42,7 +51,8 @@ class DataModule(pl.LightningDataModule):
         self.band_names = band_names
         self.format = format
 
-    def train_dataloader(self):
+    def train_dataloader(self) -> DataLoader:
+        """Create the train dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
                 split="train", transform=self.train_transform, band_names=self.band_names, format=self.format
@@ -53,7 +63,8 @@ class DataModule(pl.LightningDataModule):
             collate_fn=self.collate_fn,
         )
 
-    def val_dataloader(self):
+    def val_dataloader(self) -> DataLoader:
+        """Create the validation dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
                 split="valid", transform=self.eval_transform, band_names=self.band_names, format=self.format
@@ -64,7 +75,8 @@ class DataModule(pl.LightningDataModule):
             collate_fn=self.collate_fn,
         )
 
-    def test_dataloader(self):
+    def test_dataloader(self) -> DataLoader:
+        """Create the test dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
                 split="test", transform=self.eval_transform, band_names=self.band_names, format=self.format
