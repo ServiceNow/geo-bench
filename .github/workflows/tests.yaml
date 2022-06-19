@@ -12,6 +12,7 @@ jobs:
   pytest:
     name: pytest
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os }}
     env:
       MPLBACKEND: Agg
     strategy:
