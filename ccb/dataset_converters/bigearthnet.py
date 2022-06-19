@@ -1,3 +1,4 @@
+"""Big Earth Net dataset."""
 from pathlib import Path
 
 import numpy as np
@@ -11,7 +12,18 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
-def make_sample(images, label, sample_name, task_specs):
+def make_sample(images: np.array, label, sample_name: str, task_specs: io.TaskSpecifications) -> io.Sample:
+    """Create a sample from images and label.
+
+    Args:
+        images: image array to be contained in sample
+        label: label to be contained in sample
+        sample_name: name of sample
+        task_specs: task specifications of this datasets
+
+    Returns:
+        sample
+    """
     n_bands, _height, _width = images.shape
 
     transform = None  # TODO can't find the GPS coordinates from torch geo.
@@ -36,7 +48,13 @@ def make_sample(images, label, sample_name, task_specs):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert BigEarthNet dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
     partition = io.dataset.Partition()
 
