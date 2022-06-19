@@ -188,10 +188,10 @@ class TaskSpecifications:
 
 def get_benchmark_dir(benchmark_name: str) -> Path:
     """Retrieve benchmark directory depending on experiment or testing case.
-    
+
     Args:
         benchmark_name: name of the benchmark
-        
+
     Returns:
         path to benchmark directory
     """
@@ -200,6 +200,7 @@ def get_benchmark_dir(benchmark_name: str) -> Path:
     else:
         ccb_dir = CCB_DIR
     return ccb_dir / benchmark_name
+
 
 def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
     """Iterate over all tasks present in a benchmark.

@@ -1,3 +1,4 @@
+"""Dataset."""
 import ast
 import datetime
 import errno
@@ -101,7 +102,7 @@ class BandInfo(object):
         return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels."""
+        """Return the name of the band repated with the numbe or channels."""
         return [self.name]
 
 
@@ -144,7 +145,7 @@ class Sentinel2(SpectralBand):
 
 
 class Landsat8(SpectralBand):
-    "Spectral band of type Landsat 8"
+    """Spectral band of type Landsat 8."""
 
     def __repr__(self):
         """Return representation of spectral band."""
@@ -183,7 +184,7 @@ class MultiBand(BandInfo):
         self.n_bands = n_bands
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels."""
+        """Expand the name of the band repated with the numbef or channels."""
         return [self.name] * self.n_bands
 
 
@@ -348,7 +349,8 @@ class Band:
         meta_info=None,
         convert_to_int16: bool = True,
     ) -> None:
-        """
+        """Initialize new instance of Band.
+
         Args:
             data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands)
             band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
@@ -940,7 +942,7 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
 
 
 def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[str, List[str]], Sample]:
-    """Helper function to decide what sample loader to use.
+    """Create helper function to decide what sample loader to use.
 
     Args:
         sample_path: path to sample
@@ -1095,7 +1097,7 @@ class GeneratorWithLength(object):
         self.length = length
 
     def __len__(self):
-        """Return length of Generator with length"""
+        """Return length of Generator with length."""
         return self.length
 
     def __iter__(self):
@@ -1116,6 +1118,7 @@ class Dataset:
         format="hdf5",
     ) -> None:
         """Initialize new CCB dataset.
+
         CCB datasets can have different split partitions (e.g. for few-shot learning).
         The default partition is
 
@@ -1251,6 +1254,7 @@ class Dataset:
 
     def _load_partition(self, partition_name) -> None:
         """Load a partition.
+
         Maybe this logic can be improved???
 
         Current:
@@ -1398,7 +1402,7 @@ class Dataset:
 
     #### len and printing utils ####
     def get_available_stats_str(self):
-        """String for visualizing which stats are available (used for __repr__ and __str__)."""
+        """Return string for visualizing which stats are available (used for __repr__ and __str__)."""
         which_stats = []
         for partition in self.stats:
             if partition == "all":
@@ -1594,7 +1598,6 @@ def check_dataset_integrity(
         sample: list of samples
         assert_dense: whether or not to check that there are no None values
     """
-
     for partition_name in dataset._partition_path_dict.keys():
         print(f"check integrity of {partition_name}")
         partition = dataset.load_partition(partition_name)
