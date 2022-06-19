@@ -1,3 +1,4 @@
+"""Chesapeake Land Cover dataset."""
 # Chesapeake Bay Land Cover dataset will be automatically downloaded by
 # TorchGeo (https://github.com/microsoft/torchgeo)
 
@@ -40,7 +41,20 @@ BAND_INFO_LIST = io.make_rgb_bands(SPATIAL_RESOLUTION)
 BAND_INFO_LIST.append(io.SpectralBand("NearInfrared", ("nir",), SPATIAL_RESOLUTION, 0.876))
 
 
-def make_sample(image, label, sample_name, task_specs, crs):
+def make_sample(
+    image: np.array, label: np.array, sample_name: str, task_specs: io.TaskSpecifications, crs
+) -> io.Sample:
+    """Create a sample from images and label.
+
+    Args:
+        images: image array to be contained in sample
+        label: label to be contained in sample
+        sample_name: name of sample
+        task_specs: task specifications of this datasets
+
+    Returns:
+        sample
+    """
     n_bands, _height, _width = image.shape
 
     if (_height, _width) != (PATCH_SIZE, PATCH_SIZE):
@@ -72,7 +86,13 @@ def make_sample(image, label, sample_name, task_specs, crs):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert Chesapeake Land Cover dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
     np.random.seed(0)  # Set random seed for reproducibility
     partition = io.dataset.Partition()

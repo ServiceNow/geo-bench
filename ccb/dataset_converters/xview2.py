@@ -1,3 +1,5 @@
+"""Xview2 dataset."""
+
 # Need to download XView2 dataset manually:
 # Register at https://xview2.org/signup
 # Copy link address to download Challenge training set (~7.8GB) and test set (~2.6GB) from https://xview2.org/download-links
@@ -51,7 +53,7 @@ LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=1.24, n_classes=
 
 def convert_origin_transform_gdal_to_rasterio(transform_origin):
     """
-    Converts geotransform in origin format, i.e., coordinates of upper left image corner, from gdal to rasterio format.
+    Convert geotransform in origin format, i.e., coordinates of upper left image corner, from gdal to rasterio format.
 
     Args:
         geo_t list: Geotransforms of upper left image corner in GDALDataset::GetGeoTransform() format
@@ -70,14 +72,15 @@ def convert_origin_transform_gdal_to_rasterio(transform_origin):
 
 
 def make_sample(image_A, image_B, mask, sample_name):
-    """
-    Creates one xview2 sample. One sample contains two images of pre- and post-disaster
+    """Create one xview2 sample.
+
+    One sample contains two images of pre- and post-disaster
     satellite imagery and a semantic segmentation mask. The mask classifies the building
     damage in the post-disaster image via pixel-level classes, such as, "destroyed building",
     "building with minor damage", or "no building".
 
     Args:
-        image_A dict(
+        image_A :dict(
             'image' np.array(3,1024,1024, dtype=np.uint8): RGB images
             'transform' rasterio.transform.Affine: geotransform
             'crs' rasterio.crs.CRS: Coordinate reference system, e.g., EPSG '4326'
@@ -127,13 +130,12 @@ def make_sample(image_A, image_B, mask, sample_name):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
-    """
-    Converts torchgeo.XView2 dataset into ccb dataset
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert torchgeo.XView2 dataset into ccb dataset.
+
     Args:
         max_count int: Maximum number of images to be converted
         dataset_dir string: Dataset directory
-    Returns:
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)  # Creates path to converted data
     partition = io.Partition()  # Creates dictionary to store train, val, test filenames
