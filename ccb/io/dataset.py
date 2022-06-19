@@ -8,7 +8,7 @@ import pickle
 from collections import OrderedDict, defaultdict
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union
 from warnings import warn
 
 import h5py
@@ -38,8 +38,9 @@ else:
 class BandInfo(object):
     """Base class for storing non pixel information about bands such as band name, wavelenth and spatial resolution."""
 
-    def __init__(self, name=None, alt_names=(), spatial_resolution=None) -> None:
-        """
+    def __init__(self, name: str = None, alt_names: Sequence[str] = (), spatial_resolution: float = None) -> None:
+        """Initialize new instance of BandInfo.
+
         Args:
             name: The main name of the band. This name is used for sorting the band and providing an order.
             alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
@@ -50,21 +51,39 @@ class BandInfo(object):
         self.spatial_resolution = spatial_resolution
 
     def __key(self):
+        """Return BandInfo name."""
         return self.name
 
     def __hash__(self):
+        """Return hash value of object."""
         return hash(self.__key())
 
     def __eq__(self, other):
+        """Compare instances of BandInfo.
+
+        Args:
+            other: other BandInfo object
+        """
         if type(other) is type(self):
             return self.__key() == other.__key()
         else:
             return False
 
     def __lt__(self, other):
+        """Compare keys of two BandInfo.
+
+        Args:
+            other: other BandInfo object
+        """
         return self.__key() < other.__key()
 
-    def assert_valid(self, band):
+    def assert_valid(self, band) -> None:
+        """Check whether a band is valid.
+
+        Args:
+            band: single band
+
+        """
         assert isinstance(band, Band)
         assert band.band_info == self, f"{str(band.band_info)} vs {str(self)}"
         assert isinstance(band.data, np.ndarray)
@@ -74,36 +93,53 @@ class BandInfo(object):
             warn(f"No geotransformation specified for band {band.band_info.name}.")
 
     def __str__(self):
+        """Return string representation of band."""
         return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
 
     def __repr__(self):
-
+        """Return representation of band."""
         return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels"""
+        """The name of the band repated with the numbef or channels."""
         return [self.name]
 
 
 class SpectralBand(BandInfo):
     """Extends BandInfo to provide wavelength of the band."""
 
-    def __init__(self, name=None, alt_names=(), spatial_resolution=None, wavelength=None) -> None:
+    def __init__(
+        self, name=None, alt_names: Sequence[str] = (), spatial_resolution: float = None, wavelength: float = None
+    ) -> None:
+        """Initialize new instance of SpectralBand.
+
+        Args:
+            name: The main name of the band. This name is used for sorting the band and providing an order.
+            alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
+            spatial_resolution: original spatial resolution of this band.
+            wavelength: spectral band wavelength
+        """
         super().__init__(name, alt_names, spatial_resolution)
         self.wavelength = wavelength
 
-    def __key(self):
+    def __key(self) -> Tuple[str, float]:
+        """Return spectral band key."""
         return (self.name, self.wavelength)
 
     def __repr__(self):
+        """Return representation of spectral band."""
         return f"{self.__class__.__name__}(name={self.name}, wavelen={self.wavelength}, original_res={self.spatial_resolution:.1f}m)"
 
 
 class Sentinel1(SpectralBand):
+    """Sentinel1 spectral band."""
+
     pass
 
 
 class Sentinel2(SpectralBand):
+    """Sentinel2 spectral band."""
+
     pass
 
 
@@ -111,44 +147,95 @@ class Landsat8(SpectralBand):
     "Spectral band of type Landsat 8"
 
     def __repr__(self):
+        """Return representation of spectral band."""
         return "Landsat8(name={}, wavelen={}, original_res={:.1f}m)".format(
             self.name, self.wavelength, self.spatial_resolution
         )
 
 
 class Mask(BandInfo):
+    """Mask band info."""
+
     pass
 
 
 class ElevationBand(BandInfo):
+    """Elevation band info."""
+
     pass
 
 
 class MultiBand(BandInfo):
-    """Contains a 3d object with multiple band of the same resolution e.g. HyperSpectralBands"""
+    """Contains a 3d object with multiple band of the same resolution e.g. HyperSpectralBands."""
 
-    def __init__(self, name=None, alt_names=(), spatial_resolution=None, n_bands=None) -> None:
+    def __init__(
+        self, name: str = None, alt_names: Sequence[str] = (), spatial_resolution: float = None, n_bands: int = None
+    ) -> None:
+        """Initialize new instance of MultiBand.
+
+        Args:
+            name: The main name of the band. This name is used for sorting the band and providing an order.
+            alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
+            spatial_resolution: original spatial resolution of this band.
+            n_bands: number of bands
+        """
         super().__init__(name=name, alt_names=alt_names, spatial_resolution=spatial_resolution)
         self.n_bands = n_bands
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels"""
+        """The name of the band repated with the numbef or channels."""
         return [self.name] * self.n_bands
 
 
 class HyperSpectralBands(MultiBand):
-    def __init__(self, name=None, alt_names=(), spatial_resolution=None, n_bands=None, wavelength_range=None) -> None:
+    """HyperSpectral Bands."""
+
+    def __init__(
+        self,
+        name: str = None,
+        alt_names: Sequence[str] = (),
+        spatial_resolution: float = None,
+        n_bands: int = None,
+        wavelength_range=None,
+    ) -> None:
+        """Initialize new instance of MultiBand.
+
+        Args:
+            name: The main name of the band. This name is used for sorting the band and providing an order.
+            alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
+            spatial_resolution: original spatial resolution of this band.
+            n_bands: number of bands
+            wavelength_range: range of wavelengths contained in collection of hyperspectral bands
+        """
         super().__init__(name=name, alt_names=alt_names, spatial_resolution=spatial_resolution, n_bands=n_bands)
         self.wavelength_range = wavelength_range
 
 
 class CloudProbability(Mask):
-    def __init__(self, alt_names=(), spatial_resolution=None) -> None:
+    """Cloud Probability mask."""
+
+    def __init__(self, alt_names: Sequence[str] = (), spatial_resolution: float = None) -> None:
+        """Initialize new instance of CloudProbability.
+
+        Args:
+            alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
+            spatial_resolution: original spatial resolution of this band.
+        """
         super().__init__("Cloud Probability", alt_names=alt_names, spatial_resolution=spatial_resolution)
 
 
 class SegmentationClasses(BandInfo, LabelType):
-    def __init__(self, name, spatial_resolution, n_classes, class_names=None) -> None:
+    """Segmentation classes."""
+
+    def __init__(self, name: str, spatial_resolution: float, n_classes: int, class_names: List[str] = None) -> None:
+        """Initialize new instance of CloudProbability.
+
+        Args:
+            name: The main name of the band. This name is used for sorting the band and providing an order.
+            spatial_resolution: original spatial resolution of this band.
+            n_classes: number of classes
+            class_names: names of classes
+        """
         super().__init__(name=name, spatial_resolution=spatial_resolution)
         self.n_classes = n_classes
         if class_names is not None:
@@ -156,23 +243,36 @@ class SegmentationClasses(BandInfo, LabelType):
         self._class_names = class_names
 
     def assert_valid(self, value):
+        """Check if a value is a valid instance of Band.
+
+        Args:
+            value: value to be checked
+        """
         assert isinstance(value, Band)
         assert value.band_info == self
         assert np.all(value.data >= 0)
         assert np.all(value.data < self.n_classes)
 
     def label_stats(self, band):
+        """Compute the label statistics.
+
+        Args:
+            band: band to compute stats for
+
+        """
         stats = np.bincount(band.data.flat, minlength=self.n_classes)
         return stats / np.sum(stats)
 
     @property
-    def class_names(self):
+    def class_names(self) -> List[str]:
+        """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
         else:
             return self.class_name  # for backward compatibility with saved pickles with a typo
 
     def __repr__(self) -> str:
+        """Return representation of segmentation classes."""
         if self.class_names is not None:
             if self.n_classes > 3:
                 names = ", ".join(self.class_names[:3]) + "..."
@@ -195,7 +295,8 @@ sentinel1_8_bands = [
 ]
 
 
-def make_rgb_bands(spatial_resolution):
+def make_rgb_bands(spatial_resolution: float) -> List[SpectralBand]:
+    """Create RGB spectral bands."""
     return [
         SpectralBand("Red", ("red",), spatial_resolution, 0.665),
         SpectralBand("Green", ("green",), spatial_resolution, 0.56),
@@ -233,7 +334,7 @@ landsat8_9_bands = [
 
 
 class Band:
-    """Group Band information and provide function for saving to geotiff"""
+    """Group Band information and provide function for saving to geotiff."""
 
     def __init__(
         self,
@@ -273,28 +374,29 @@ class Band:
         self.convert_to_int16 = convert_to_int16
 
     def __repr__(self):
+        """Return representation of a Band."""
         if isinstance(self.data, np.ndarray):
             shape = self.data.shape
         else:
             shape = "unknown"
-        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date}, data={self.date})"
+        return f"Band(info={self.band_info}, shape={shape}, resampled_resolution={self.spatial_resolution}m, date={self.date})"
 
-    def get_descriptor(self):
+    def get_descriptor(self) -> str:
+        """Get description of band."""
         descriptor = self.band_info.name
         if self.date is not None:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
 
     def write_to_geotiff(self, directory):
-        """
-        Write an image from an array to a geotiff file with its label.
+        """Write an image from an array to a geotiff file with its label.
 
         We compress with zstd, a lossless compression which gains a factor of ~2 in compression.
         Write speed can be 4x-5x slower and read speed ~2x slower.
         Interesting benchmark can be found here
         https://kokoalberti.com/articles/geotiff-compression-optimization-guide/
 
-        Arguments:
+        Args:
             directory: Destination path to save the file.
 
         Raises:
@@ -363,7 +465,15 @@ class Band:
         return file_path
 
 
-def load_band_tif(file_path):
+def load_band_tif(file_path) -> Band:
+    """Load a tif band object at a given filepath.
+
+    Args:
+        file_path: path to tif file
+
+    Returns:
+        Band object of tif file
+    """
     with rasterio.open(file_path) as src:
         tags = pickle.loads(ast.literal_eval(src.tags()["data"]))
         data = src.read()
@@ -379,14 +489,27 @@ def load_band_tif(file_path):
     return band
 
 
-def _make_map(elements):
+def _make_map(elements) -> Tuple[Any]:
+    """Make a enumerated map.
+
+    Args:
+        elements:
+
+    Returns:
+        original and enumerated map
+    """
     elements = list(elements)
     elements.sort()
     element_map = {element: i for i, element in enumerate(elements)}
     return element_map, elements
 
 
-def _map_bands(band_info_set):
+def _map_bands(band_info_set) -> Tuple[Any]:
+    """Map a set of band info objects.
+
+    Args:
+        band_info_set: set of band info
+    """
     band_info_list = list(band_info_set)
     # band_info_list.sort()
 
@@ -401,7 +524,16 @@ def _map_bands(band_info_set):
 
 # TODO need to make sure that band order is consistant through the dataset
 class Sample(object):
+    """Samples that contains all band information as well as input and label."""
+
     def __init__(self, bands: List[Band], label, sample_name: str) -> None:
+        """Initialize new instance of Sample.
+
+        Args:
+            bands: list of bands
+            label: label for this input
+            sample_name: name of sample
+        """
         super().__init__()
         self.bands = bands
         self.label = label
@@ -409,11 +541,12 @@ class Sample(object):
         self._build_index()
 
     def __repr__(self):
+        """Return representation of sample."""
         np.set_printoptions(threshold=5)
         return f"Sample:(name={self.sample_name}, bands=\n{self.bands}\n)"
 
-    def _build_index(self):
-
+    def _build_index(self) -> None:
+        """Build index so that bands can all be accessed."""
         dates = set()
         band_info_set = OrderedDict()  # using it as an ordered set
         bands = self.bands
@@ -434,9 +567,11 @@ class Sample(object):
             self.band_array[date_idx, band_idx] = band
 
     def get_band_info(self, band_name):
+        """Retrieve indexed band info."""
         return self.band_info_list[self.band_name_map[band_name]]
 
-    def is_time_series(self):
+    def is_time_series(self) -> bool:
+        """Check if sample is a time series."""
         return len(self.dates) > 1
 
     def pack_to_4d(
@@ -447,8 +582,9 @@ class Sample(object):
         fill_value: float = None,
         resample_order: int = 3,
     ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
-        """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands). If it contains MultiBands, the final
-        dimension
+        """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands).
+
+        If it contains MultiBands, the final dimension.
 
         Args:
             dates: Selects a subset of dates. Defaults to None, which selects all dates.
@@ -503,7 +639,18 @@ class Sample(object):
         array = np.array(data_grid)
         return array, dates, nand_names_
 
-    def get_band_array(self, dates=None, band_names=None):
+    def get_band_array(
+        self, dates: List[Union[datetime.date, datetime.datetime]] = None, band_names: List[str] = None
+    ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
+        """Retrieve an array for selected datase and band_names.
+
+        Args:
+            dates: list of dates to be included
+            band_names: names of bands to be included
+
+        Returns:
+            array of band data across dates and band names
+        """
         band_array = self.band_array
 
         if band_names is not None:
@@ -520,20 +667,50 @@ class Sample(object):
 
         return band_array, dates, band_names
 
-    def pack_to_3d(self, band_names=None, resample=False, fill_value=None, resample_order=3):
+    def pack_to_3d(
+        self, band_names: List[str] = None, resample: bool = False, fill_value=None, resample_order=3
+    ) -> Tuple[np.ndarray, List[str]]:
+        """Pack representation to 3d array.
+
+        Args:
+            band_names: list of band names to pack into 3d array
+            resample: whether to resample or not
+            fill_value: fills missing bands with this value.
+            resample_order
+
+        Returns:
+            data array and band names
+        """
         data_4d, _, band_names = self.pack_to_4d(
             band_names=band_names, resample=resample, fill_value=fill_value, resample_order=resample_order
         )
         assert data_4d.shape[0] == 1
         return data_4d[0], band_names
 
-    def write(self, dataset_dir, format="hdf5"):
+    def write(self, dataset_dir: str, format: str = "hdf5"):  # -> Callable[[Sample, str], None]:
+        """Write sample to a directory.
+
+        Args:
+            dataset_dir: path to dataset directory.
+            format: 'hdf5' or 'tif'
+
+        Returns:
+            callable function of correct writer for file format options
+        """
         writer = dict(hdf5=write_sample_hdf5, tif=write_sample_tif)[format]
         return writer(sample=self, dataset_dir=dataset_dir)
 
 
-def write_sample_tif(sample, dataset_dir):
+def write_sample_tif(sample: Sample, dataset_dir: str) -> Path:
+    """Write a sample to tif.
 
+    Args:
+        sample: sample to write to directory
+        dataset_dir: path to dataset directory
+
+    Return
+        path to dataset directory
+    """
     dst_dir = pathlib.Path(dataset_dir, sample.sample_name)
     dst_dir.mkdir(exist_ok=True, parents=True)
 
@@ -567,7 +744,16 @@ def write_sample_tif(sample, dataset_dir):
     return dst_dir
 
 
-def write_sample_hdf5(sample: Sample, dataset_dir):
+def write_sample_hdf5(sample: Sample, dataset_dir: str):
+    """Write a sample to tif.
+
+    Args:
+        sample: sample to write to directory
+        dataset_dir: path to dataset directory
+
+    Return
+        path to sample
+    """
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.hdf5"
 
     with h5py.File(sample_path, "w") as fp:
@@ -604,7 +790,17 @@ def write_sample_hdf5(sample: Sample, dataset_dir):
     return sample_path
 
 
-def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
+def load_sample_hdf5(sample_path: Path, band_names: List[str] = None, label_only: bool = False) -> Sample:
+    """Load hdf5 sample.
+
+    Args:
+        sample_path: path to the sample
+        band_names: list of bandnames to return from sample
+        label_only: whether or not to only return the label
+
+    Returns:
+        loaded sample
+    """
     with h5py.File(sample_path, "r") as fp:
 
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
@@ -628,7 +824,17 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
     return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
-def write_sample_npz(sample: Sample, dataset_dir):
+def write_sample_npz(sample: Sample, dataset_dir: str):
+    """Write a sample to npz.
+
+    Args:
+        sample: sample to write to directory
+        dataset_dir: path to dataset directory
+
+    Return
+        path to sample
+    """
+    sample
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
 
     bands = sample.bands
@@ -667,6 +873,16 @@ def write_sample_npz(sample: Sample, dataset_dir):
 
 
 def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
+    """Load a npz sample.
+
+    Args:
+        sample_path: path to sample
+        band_names: list of bandnames to return from sample
+        label_only: whether or not to only return the label
+
+    Return
+        loaded sample
+    """
     band_dict = np.load(sample_path, allow_pickle=True)
     attr_dict = pickle.loads(ast.literal_eval(str(band_dict["pickle"])))
     # attr_dict = band_dict["attr"]
@@ -691,7 +907,16 @@ def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
     return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
-def load_sample_tif(sample_dir, band_names=None):
+def load_sample_tif(sample_dir: str, band_names: List[str] = None):
+    """Load a tif sample.
+
+    Args:
+        sample_dir: path to sample directoy
+        band_names: list of bandnames to return from sample
+
+    Return
+        loaded sample
+    """
     sample_dir = Path(sample_dir)
     band_list = []
     with open(Path(sample_dir, "band_index.json"), "r") as fd:
@@ -714,14 +939,30 @@ def load_sample_tif(sample_dir, band_names=None):
     return Sample(band_list, label, sample_name=sample_dir.name)
 
 
-def load_sample(sample_path: Path, band_names=None, format=None):
+def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[str, List[str]], Sample]:
+    """Helper function to decide what sample loader to use.
+
+    Args:
+        sample_path: path to sample
+        band_names: list of band_names
+        format: 'hdf5' or 'tif'
+
+    Return:
+        loader corresponding to format
+    """
     loader = dict(tif=load_sample_tif, hdf5=load_sample_hdf5)[format]
     return loader(sample_path, band_names=band_names)
 
 
-def _largest_shape(band_array):
+def _largest_shape(band_array: np.ndarray) -> Tuple[int]:
     """Extract the largest shape and the dtype from an array of bands.
-    Assertion error is raised if there is more than one type."""
+
+    Args:
+        band_array: to extract shape from
+
+    Raises:
+        Assertion error is raised if there is more than one type
+    """
     shape = [0, 0]
     for band in band_array.flat:
         if band is None:
@@ -733,6 +974,7 @@ def _largest_shape(band_array):
 
 
 def force_symlink(file1, file2):
+    """Force symlink."""
     try:
         os.symlink(file1, file2)
     except OSError as e:
@@ -741,8 +983,17 @@ def force_symlink(file1, file2):
             os.symlink(file1, file2)
 
 
-def split_iid(sample_set: List[str], ratios, rng=np.random):
+def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[str]:
+    """Split a sample set iif.
 
+    Args:
+        sample_set: list of paths to samples
+        ratios: ratios to split
+        rng: random number generator
+
+    Returns:
+        iid sample list
+    """
     if len(sample_set) != len(set(sample_set)):
         warn(
             f"There is redundancy in the sample_set. len(sample_set) != len(set(sample_set)) i.e., {len(sample_set)} != {len(set(sample_set))}."
@@ -768,11 +1019,16 @@ class Partition:
 
     @staticmethod
     def check_split_name(split_name):
+        """Check if split name is valid."""
         if split_name not in ("train", "valid", "test"):
             raise ValueError(f"split_name must be one of 'train', 'valid', 'test'. Got {split_name}.")
 
-    def __init__(self, partition_dict=None) -> None:
-        """If `partition_dict` is None, it will initialize to a dict of empty lists."""
+    def __init__(self, partition_dict: Dict[str, List[str]] = None) -> None:
+        """If `partition_dict` is None, it will initialize to a dict of empty lists.
+
+        Args:
+            partiton_dict: mapping from 'train', 'valid', 'test' to samples
+        """
         if partition_dict is None:
             self.partition_dict = {"train": [], "valid": [], "test": []}
         else:
@@ -780,11 +1036,23 @@ class Partition:
                 Partition.check_split_name(key)
             self.partition_dict = partition_dict
 
-    def add(self, split_name, sample_name):
+    def add(self, split_name: str, sample_name: str) -> None:
+        """Add a sample to a partition.
+
+        Args:
+            split_name: name of dataset split
+            sample_name: sample name
+        """
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
-    def resplit_iid(self, split_names=("valid", "test"), ratios=(0.5, 0.5)):
+    def resplit_iid(self, split_names: Tuple[str] = ("valid", "test"), ratios: Tuple[float] = (0.5, 0.5)):
+        """Resplit partition iid.
+
+        Args:
+            split_names: dataset partition split names to split
+            ratios: ratios of split
+        """
         assert len(split_names) == len(ratios)
         union = []
         for split_name in split_names:
@@ -795,10 +1063,16 @@ class Partition:
         for split_name, subset in zip(split_names, subsets):
             self.partition_dict[split_name] = subset
 
-    def save(self, directory, partition_name, as_default=False):
-        """
+    def save(self, directory: str, partition_name: str, as_default: bool = False) -> None:
+        """Save partition.
+
         If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
         This will be loaded as the default partition by class Dataset
+
+        Args:
+            directory: path to directory where partition is stored
+            partition_name: name of partition
+            as_default: whether or not this should be the default partition
         """
         file_path = Path(directory, partition_name + "_partition.json")
         with open(file_path, "w") as fd:
@@ -810,18 +1084,28 @@ class Partition:
 class GeneratorWithLength(object):
     """A generator containing its length. Useful for e.g., tqdm."""
 
-    def __init__(self, generator, length):
+    def __init__(self, generator: Generator, length: int):
+        """Initialize new instance of Generator with length.
+
+        Args:
+            generator: generator
+            length: length of generator
+        """
         self.generator = generator
         self.length = length
 
     def __len__(self):
+        """Return length of Generator with length"""
         return self.length
 
     def __iter__(self):
+        """Return the generator to iteratre over."""
         return self.generator
 
 
 class Dataset:
+    """Dataset."""
+
     def __init__(
         self,
         dataset_dir,
@@ -831,11 +1115,9 @@ class Dataset:
         transform=None,
         format="hdf5",
     ) -> None:
-        """
-        Load CCB dataset.
+        """Initialize new CCB dataset.
         CCB datasets can have different split partitions (e.g. for few-shot learning).
         The default partition is
-        Partition
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
@@ -889,9 +1171,11 @@ class Dataset:
         return alt_band_names
 
     #### Loading paths
-    def _load_partitions(self, active_partition_name) -> None:
-        """
-        Scan directory for partition files
+    def _load_partitions(self, active_partition_name: str) -> None:
+        """Scan directory for partition files.
+
+        Args:
+            active_partition_name: name of active partition
         """
         self._partition_path_dict = {}
         for p in self.dataset_dir.glob("*_partition.json"):
@@ -915,6 +1199,7 @@ class Dataset:
     ### Task specifications
     @cached_property
     def task_specs(self):
+        """Load and return task specifications."""
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
             task = pickle.load(fd)
         task.benchmark_name = self.dataset_dir.parent.name
@@ -923,20 +1208,25 @@ class Dataset:
     #### Splits ####
 
     def set_split(self, split):
+        """Set split.
+
+        Args:
+            split: split which to set.
+
+        """
         assert split is None or split in self.list_splits()
         self.split = split
 
-    def list_splits(self):
-        """
-        List splits for active partition
-        """
+    def list_splits(self) -> List[str]:
+        """List splits for active partition."""
         return list(self.active_partition.partition_dict.keys())
 
     #### Partitions ####
+    def set_partition(self, partition_name="default") -> None:
+        """Select active partition by name.
 
-    def set_partition(self, partition_name="default"):
-        """
-        Select active partition by name
+        Args:
+            partition_name: name of the partition to set
         """
         if partition_name not in self._partition_path_dict:
             raise ValueError(
@@ -945,19 +1235,22 @@ class Dataset:
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
 
-    def list_partitions(self):
+    def list_partitions(self) -> List[str]:
+        """List available partitions."""
         return list(self._partition_path_dict.keys())
 
     @lru_cache(maxsize=3)
     def load_partition(self, partition_name="default") -> Partition:
-        """
-        Load and return partition content from json file
+        """Load and return partition content from json file.
+
+        Args:
+            partition_name: name of partition
         """
         with open(self._partition_path_dict[partition_name], "r") as fd:
             return Partition(json.load(fd))
 
-    def _load_partition(self, partition_name):
-        """
+    def _load_partition(self, partition_name) -> None:
+        """Load a partition.
         Maybe this logic can be improved???
 
         Current:
@@ -969,6 +1262,9 @@ class Dataset:
         -> Always provide a default_partition.json (job of converter)
         -> Don't consider original_partition.json to be a special case
         -> Use "default" as default parameter for partition_name in __init__
+
+        Args:
+            partition_name: name of partition
         """
         if len(self._partition_path_dict) == 0:
             warn(f"No partition found for dataset {self.dataset_dir.name}.")
@@ -988,6 +1284,7 @@ class Dataset:
 
     @cached_property
     def band_stats(self):
+        """Retrieve band statistics."""
         with open(self.dataset_dir / "band_stats.json", "r") as fd:
             all_band_stats_dict = json.load(fd)
         band_stats = {}
@@ -996,6 +1293,7 @@ class Dataset:
         return band_stats
 
     def rgb_stats(self):
+        """Retrieve band statistics for RGB only."""
         try:
             blue = self.band_stats["02 - Blue"]
             green = self.band_stats["03 - Green"]
@@ -1019,9 +1317,14 @@ class Dataset:
 
     #### Common accessors and iterators ####
 
-    def __getitem__(self, idx):
-        """
-        Return item idx from active split, from active partition
+    def __getitem__(self, idx: int) -> Sample:
+        """Return item idx from active split, from active partition.
+
+        Args:
+            idx: index for active split
+
+        Returns:
+            sample
         """
         if self.split is None:
             sample_name_list = self._sample_name_list
@@ -1029,7 +1332,15 @@ class Dataset:
             sample_name_list = self.active_partition.partition_dict[self.split]
         return self.get_sample(sample_name_list[idx])
 
-    def get_sample(self, sample_name):
+    def get_sample(self, sample_name: str) -> Sample:
+        """Load sample.
+
+        Args:
+            sample_name: name of sample
+
+        Returns:
+            sample
+        """
         if self.format == "hdf5":
             sample_name_ = sample_name + ".hdf5"
         else:
@@ -1040,17 +1351,23 @@ class Dataset:
         else:
             return sample
 
-    def __len__(self):
-        """
-        Return length of active split, from active partition
-        """
+    def __len__(self) -> int:
+        """Return length of active split, from active partition."""
         if self.split is None:
             sample_name_list = self._sample_name_list
         else:
             sample_name_list = self.active_partition.partition_dict[self.split]
         return len(sample_name_list)
 
-    def _iter_dataset(self, max_count=None):
+    def _iter_dataset(self, max_count=None) -> int:
+        """Iterate over dataset.
+
+        Args:
+            max_count: maximum number of samples to make available.
+
+        Returns:
+            index of a sample in active split
+        """
         indexes = np.random.choice(len(self), size=max_count, replace=False)
         for idx in indexes:
             yield self[idx]
@@ -1062,7 +1379,15 @@ class Dataset:
         # for sample_name in sample_names:
         #     yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count=None):
+    def iter_dataset(self, max_count: int = None) -> GeneratorWithLength:
+        """Iterate over dataset.
+
+        Args:
+            max_count: maximum number of samples to make available.
+
+        Returns:
+            generator
+        """
         n = len(self)
         if max_count is None:
             max_count = n
@@ -1073,10 +1398,7 @@ class Dataset:
 
     #### len and printing utils ####
     def get_available_stats_str(self):
-        """
-        String for visualizing which stats are available
-        (used for __repr__ and __str__)
-        """
+        """String for visualizing which stats are available (used for __repr__ and __str__)."""
         which_stats = []
         for partition in self.stats:
             if partition == "all":
@@ -1090,10 +1412,13 @@ class Dataset:
             return "<N/A>"
 
     def __repr__(self):
+        """Return representation of dataset."""
         return f"Dataset(dataset_dir={ self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
 
 
 class Stats:
+    """Band Statistics."""
+
     def __init__(
         self,
         min,
@@ -1108,6 +1433,21 @@ class Stats:
         percentile_99,
         percentile_99_9,
     ) -> None:
+        """Initialize new instance of Stats.
+
+        Args:
+            min:
+            max:
+            mean:
+            std:
+            median:
+            percentile_0_1:
+            percentile_1:
+            percentile_5:
+            percentile_95:
+            percentile_99:
+            percentile_99_9:
+        """
         # Convert all to float to avoid serialization issues with int16
         self.min = float(min)
         self.max = float(max)
@@ -1121,11 +1461,20 @@ class Stats:
         self.percentile_99 = float(percentile_99)
         self.percentile_99_9 = float(percentile_99_9)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, float]:
+        """Create dictionary representation of statistics."""
         return self.__dict__
 
 
-def compute_stats(values):
+def compute_stats(values) -> Stats:
+    """Compute statistics.
+
+    Args:
+        values: values over which to compute statistics
+
+    Returns:
+        computed statistics
+    """
     q_0_1, q_1, q_5, median, q_95, q_99, q_99_9 = np.percentile(values, q=[0.1, 1, 5, 50, 95, 99, 99.9])
     stats = Stats(
         min=np.min(values),
@@ -1143,8 +1492,19 @@ def compute_stats(values):
     return stats
 
 
-def compute_dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
+def compute_dataset_statistics(
+    dataset: Dataset, n_value_per_image: int = 1000, n_samples: int = None
+) -> Tuple[Dict[str, np.array], Dict[str, Stats]]:
+    """Compute statistics over an entire dataset.
 
+    Args:
+        dataset: dataset to compute statistics over
+        n_value_per_image: number of values to consider per image
+        n_sample: number of samples
+
+    Returns:
+        band values and computed band statistics
+    """
     accumulator = defaultdict(list)
     if n_samples is not None and n_samples < len(dataset):
         indices = np.random.choice(len(dataset), n_samples, replace=False)
@@ -1188,6 +1548,17 @@ def compute_dataset_statistics(dataset, n_value_per_image=1000, n_samples=None):
 
 
 def _format_date(date: Union[datetime.date, datetime.datetime]):
+    """Format date.
+
+    Args:
+        date in datetime or date format
+
+    Return:
+        datetime date
+
+    Raises:
+        ValueError if date is of wrong type
+    """
     if isinstance(date, datetime.date):
         return date.strftime("%Y-%m-%d")
     elif isinstance(date, datetime.datetime):
@@ -1199,6 +1570,11 @@ def _format_date(date: Union[datetime.date, datetime.datetime]):
 
 
 def _date_from_str(date_str):
+    """Create a datetime object from string.
+
+    Args:
+        date_str: string to be converted to date
+    """
     if date_str == "NoDate":
         return None
     elif len(date_str) <= 12:
@@ -1207,8 +1583,17 @@ def _date_from_str(date_str):
         return datetime.datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S-%Z")
 
 
-def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Sample] = None, assert_dense=True):
-    """Verify the intergrity, coherence and consistancy of a list of a dataset."""
+def check_dataset_integrity(
+    dataset: Dataset, max_count: int = None, samples: List[Sample] = None, assert_dense: bool = True
+) -> None:
+    """Verify the intergrity, coherence and consistancy of a list of a dataset.
+
+    Args:
+        dataset: dataset to check
+        max_count: max count of samples
+        sample: list of samples
+        assert_dense: whether or not to check that there are no None values
+    """
 
     for partition_name in dataset._partition_path_dict.keys():
         print(f"check integrity of {partition_name}")
@@ -1240,7 +1625,13 @@ def check_dataset_integrity(dataset: Dataset, max_count=None, samples: List[Samp
             assert np.all(sample.band_array is not None)
 
 
-def check_partition_integrity(partition: Partition, partition_name: str):
+def check_partition_integrity(partition: Partition, partition_name: str) -> None:
+    """Check the integretiy of a partition.
+
+    Args:
+        partition: partition to check
+        partition_name: name of the partition
+    """
     all_names = []
     for split, names in partition.partition_dict.items():
         if len(names) == 0:

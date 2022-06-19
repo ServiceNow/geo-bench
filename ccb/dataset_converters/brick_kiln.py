@@ -1,3 +1,4 @@
+"""BrickKiln dataset."""
 # Downloaded from "https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg13/brick_kiln.html"
 # Try this command for downloading on headless server:
 #   wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1aOWHRY72LlHNv7nwbAcPEHWcuuYnaEtx" -O brick_kiln_v1.0.tar.gz && rm -rf /tmp/cookies.txt
@@ -22,7 +23,14 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
 
 
 def load_examples_bloc(file_path):
-    """Load a .h5py bloc of images with their labels."""
+    """Load a .h5py bloc of images with their labels.
+
+    Args:
+        file_path: path to bloc of images
+
+    Returns:
+        images, labels, bounds, and file id
+    """
     file_id = file_path.stem.split("_")[1]
 
     with h5py.File(file_path) as data:
@@ -35,7 +43,16 @@ def load_examples_bloc(file_path):
 
 
 def read_list_eval_partition(csv_file):
-    "The CSV file contains redundant information and the information for the original partition."
+    """Read List eval partition.
+
+    The CSV file contains redundant information and the information for the original partition.
+
+    Args:
+        csv_file: path to csv file
+
+    Returns:
+        information
+    """
     with open(csv_file) as fd:
         reader = csv.reader(fd, delimiter=",")
         data = []
@@ -60,9 +77,20 @@ def read_list_eval_partition(csv_file):
     return y, partition, hdf5_file, hdf5_idx, gps, indices, id_map
 
 
-def make_sample(src_bands, label, coord_box, sample_name):
-    """Converts the data in src_bands. Instantiate each Band separately and combine them into Sample"""
+def make_sample(src_bands, label, coord_box, sample_name) -> io.Sample:
+    """Create a sample.
 
+    Convert the data in src_bands. Instantiate each Band separately and combine them into Sample
+
+    Args:
+        src_bands:
+        label:
+        coord_box:
+        sample_name: name of sample
+
+    Returns:
+        sample
+    """
     lon_top_left, lat_top_left, lon_bottom_right, lat_bottom_right = coord_box
     transform = rasterio.transform.from_bounds(
         west=lon_top_left,
@@ -83,7 +111,13 @@ def make_sample(src_bands, label, coord_box, sample_name):
     return io.Sample(bands, label=int(label), sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert BrickKiln dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     task_specs = io.TaskSpecifications(

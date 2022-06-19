@@ -1,3 +1,4 @@
+"""Sequential dispatcher."""
 import argparse
 import subprocess
 from pathlib import Path
@@ -5,7 +6,13 @@ from pathlib import Path
 from ccb.experiment.experiment import Job
 
 
-def sequential_dispatcher(exp_dir, prompt=True):
+def sequential_dispatcher(exp_dir: str, prompt: bool = True) -> None:
+    """Dispatch a series of jobs in sequential manner.
+
+    Args:
+        exp_dir: path to experiment dir containing job directories
+        prompt: whether or not to prompt the user for execution of scripts
+    """
     exp_dir = Path(exp_dir)
 
     print(f"Scanning {exp_dir}.")
@@ -29,6 +36,7 @@ def sequential_dispatcher(exp_dir, prompt=True):
 
 
 def start():
+    """Start sequential dispatcher."""
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="sequential_dispatcher.py", description="Sequentially dispatch all run.sh in the experiment directory."
