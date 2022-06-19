@@ -1,11 +1,6 @@
 #!/usr/bin/env python
-"""
-Trains the model using job information contained in the current directory.
-Intented to be used for wandb sweeps where agents execute training
-with a given set of hyperparameters.
-Expects to find files "hparams.json" and "task_specs.json".
-Usage: sweep-trainer.py --model-generator path/to/my/model/generator.py --job-dir path/to/job/dir
-"""
+"""Wandb sweep the model using job information contained in the current directory."""
+
 import argparse
 import os
 
@@ -99,6 +94,7 @@ def train(model_gen, job_dir) -> None:
 
 
 def start():
+    """Start sweeping."""
     # Command line arguments
     parser = argparse.ArgumentParser(
         prog="sweep_trainer.py",
