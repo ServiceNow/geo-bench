@@ -1,3 +1,4 @@
+"""So2Sat dataset."""
 # So2Sat will be automatically downloaded by TorchGeo (https://github.com/microsoft/torchgeo)
 
 import os
@@ -8,13 +9,26 @@ from torchgeo.datasets import So2Sat
 from tqdm import tqdm
 
 from ccb import io
+from ccb.io.dataset import Sample
+from ccb.io.task import TaskSpecifications
 
 DATASET_NAME = "so2sat"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 
-def make_sample(images, label, sample_name, task_specs):
+def make_sample(images: np.array, label: np.array, sample_name: str, task_specs: TaskSpecifications) -> Sample:
+    """Create a sample from images and label.
+
+    Args:
+        images: image array to be contained in sample
+        label: label to be contained in sample
+        sample_name: name of sample
+        task_specs: task specifications of this datasets
+
+    Returns:
+        sample
+    """
     n_bands, _height, _width = images.shape
 
     transform = None  # TODO can't find the GPS coordinates from torch geo.
@@ -39,7 +53,13 @@ def make_sample(images, label, sample_name, task_specs):
     return io.Sample(bands, label=label, sample_name=sample_name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
+    """Convert So2Sat dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
     partition = io.dataset.Partition()
 
