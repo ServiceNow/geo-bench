@@ -894,35 +894,6 @@ antlr4-python3-runtime = ">=4.9.0,<4.10.0"
 PyYAML = ">=5.1.0"
 
 [[package]]
-name = "onnx"
-version = "1.9.0"
-description = "Open Neural Network Exchange"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-numpy = ">=1.16.6"
-protobuf = "*"
-six = "*"
-typing-extensions = ">=3.6.2.1"
-
-[package.extras]
-mypy = ["mypy (==0.600)"]
-
-[[package]]
-name = "onnx2pytorch"
-version = "0.3.0"
-description = "Library to transform onnx model to pytorch."
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-onnx = ">=1.6.0"
-torch = ">=1.4.0"
-
-[[package]]
 name = "packaging"
 version = "21.3"
 description = "Core utilities for Python packages"
@@ -1887,7 +1858,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<4"
-content-hash = "58809692c6ca008a8de4ac37d1e446c251f19e2ef3f23ac0e3d326accf6f8a93"
+content-hash = "145bb59e6823a92f04033ace7bdab40b10bce47133ce0fdfb1ea158cc008b1b2"
 
 [metadata.files]
 absl-py = [
@@ -2664,33 +2635,6 @@ oauthlib = [
 omegaconf = [
     {file = "omegaconf-2.2.2-py3-none-any.whl", hash = "sha256:556917181487fb66fe832d3c7b324f51b2f4c8adc373dd5091be921501b7d420"},
     {file = "omegaconf-2.2.2.tar.gz", hash = "sha256:65c85b2a84669a570c70f2df00de3cebcd9b47a8587d3c53b1aa5766bb096f77"},
-]
-onnx = [
-    {file = "onnx-1.9.0-cp36-cp36m-macosx_10_12_x86_64.whl", hash = "sha256:0377f223ad45944fd51992384af2ca464e5c5f22b3caa76abc24d8cf17d4f2b8"},
-    {file = "onnx-1.9.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:71576e5088bd0e93f749a8a849b971b338f4f69a4d4895d0424730d1dac76a54"},
-    {file = "onnx-1.9.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:685b670336ab23bc03c6112d164cfcc58bd4e27e7aa2bd73c917e1a3b973f609"},
-    {file = "onnx-1.9.0-cp36-cp36m-win32.whl", hash = "sha256:0c3082f038642479076dd4887055007049cf18b1f5752c4a5839da056982ec79"},
-    {file = "onnx-1.9.0-cp36-cp36m-win_amd64.whl", hash = "sha256:6f4b1e37c1ff5f3e16480a458d07d26c6c798deedd20fa258627505ec8646d26"},
-    {file = "onnx-1.9.0-cp37-cp37m-macosx_10_12_x86_64.whl", hash = "sha256:34062d0fde8c49fba96c8c0c02a087533f8e943c2459f2893c540ddc6a11aaf6"},
-    {file = "onnx-1.9.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:5e70148cd4d9ed97eeef3690ec0a78ebfed585184f3e286a6f7d2526c3a7bd34"},
-    {file = "onnx-1.9.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:a5fe019aa33098727d04f4598ebe6edca26a1008092761225acd732b2f62354b"},
-    {file = "onnx-1.9.0-cp37-cp37m-win32.whl", hash = "sha256:154301728c91aa475ad8d8eb901216eef2a48ef9ed414ee13bfe4b82a38326c6"},
-    {file = "onnx-1.9.0-cp37-cp37m-win_amd64.whl", hash = "sha256:1dc523a34ca9746c5d43a50efd4f71e04f36d548dcf05ef4bd7ca91f834bb3ad"},
-    {file = "onnx-1.9.0-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:c74bb7068653ac7ecac3aa674d40652d65bce47090e8d0eb6a988f40dd5f0f78"},
-    {file = "onnx-1.9.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:b5ba35be377c19792d0b710e7f50f81c5d99971718414f6f95648c80d49e5449"},
-    {file = "onnx-1.9.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:9e8026d49340eb7b5eb8bee25028a4a4b6c4b1c55f9fee72ad3ab964f1dc62d6"},
-    {file = "onnx-1.9.0-cp38-cp38-win32.whl", hash = "sha256:aef24defef248625aeb37c24f1b014b5f6fc2acdda0c4f52f6c9bdad02a17ccb"},
-    {file = "onnx-1.9.0-cp38-cp38-win_amd64.whl", hash = "sha256:7bd6ad02f63ce4226a1ea30a4aa80e6ac5c555ad52e0dd61a80b0a39052f1994"},
-    {file = "onnx-1.9.0-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:60fea75e9147dec520f2231dd3549ac0d429f976c2b0c429e32c98ae7e548a11"},
-    {file = "onnx-1.9.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:43f63a78aff55ee732a7cb4d333b9db85601e14418d041c17671059f9596e5e1"},
-    {file = "onnx-1.9.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:348c7968cfd03916d703d52c6f63a946a33197ad2195142be1a6789162bcb614"},
-    {file = "onnx-1.9.0-cp39-cp39-win32.whl", hash = "sha256:2380520f71bd76be02f0e4e65a58dba0b59e2229a30a54fa80d6407bb3775e5b"},
-    {file = "onnx-1.9.0-cp39-cp39-win_amd64.whl", hash = "sha256:abd9ab9b7c90f6885d417b979a4c94d6046ad7ce8d058fd0f469d5c50d5c1908"},
-    {file = "onnx-1.9.0.tar.gz", hash = "sha256:a9055a654c4dd87b45ce59f1e08371686937cad554471eadf6826df1bb125b7a"},
-]
-onnx2pytorch = [
-    {file = "onnx2pytorch-0.3.0-py3-none-any.whl", hash = "sha256:4cea984add602b341357559582f18446ede4e648ca09834df5ebde93beb3002f"},
-    {file = "onnx2pytorch-0.3.0.tar.gz", hash = "sha256:ad478b007cefccefb91a9b74bd95865f8b77cb2103b900469e5dcca81e93a894"},
 ]
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
