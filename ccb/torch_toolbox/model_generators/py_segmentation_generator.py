@@ -1,3 +1,5 @@
+"""Segmentation Model Generator."""
+
 import logging
 from typing import Any, Dict, List
 
@@ -6,6 +8,7 @@ import timm
 import torch
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
+from torch import Tensor
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
@@ -24,13 +27,21 @@ from ccb.torch_toolbox.model import (
 
 
 class SegmentationGenerator(ModelGenerator):
-    """SegmentationGenerator
-    This ModelGenerator uses segmentation_models.pytorch as backbone
-    See its documentation: https://github.com/qubvel/segmentation_models.pytorch
-    It supports TIMM encoders! https://smp.readthedocs.io/en/latest/encoders_timm.html
+    """SegmentationGenerator.
+
+    This ModelGenerator uses
+    `segmentation_models.pytorch <https://github.com/qubvel/segmentation_models.pytorch>`_
+    as an architecture choice and allows any of these
+    `TIMM encoders <https://smp.readthedocs.io/en/latest/encoders_timm.html>`_
     """
 
     def __init__(self, hparams=None) -> None:
+        """Initialize a new instance of segmentation generator.
+
+        Args:
+            hparams: set of hyperparameters
+
+        """
         super().__init__()
         # These params are for unit tests, please set proper ones for real optimization
         self.base_hparams = {
@@ -63,17 +74,19 @@ class SegmentationGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hyperparameters: dict):
-        """Returns a ccb.torch_toolbox.model.Model instance from task specs
-           and hyperparameters
+    def generate(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+        """Return model instance from task specs and hyperparameters.
 
         Args:
-            task_specs (TaskSpecifications): object with task specs
-            hyperparameters (dict): dictionary containing hyperparameters
+            task_specs: object with task specs
+            hyperparams: dictionary containing hyperparameters
+
+        Returns:
+            model specified by task specs and hyperparameters
         """
-        encoder_type = hyperparameters["encoder_type"]
-        decoder_type = hyperparameters["decoder_type"]
-        encoder_weights = hyperparameters.get("encoder_weights", None)
+        encoder_type = hyperparams["encoder_type"]
+        decoder_type = hyperparams["decoder_type"]
+        encoder_weights = hyperparams.get("encoder_weights", None)
         # in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
 
@@ -81,19 +94,17 @@ class SegmentationGenerator(ModelGenerator):
         backbone = getattr(smp, decoder_type)(
             encoder_name=encoder_type,  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
             encoder_weights=encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
-            in_channels=hyperparameters["input_size"][
-                0
-            ],  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+            in_channels=hyperparams["input_size"][0],  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=out_ch,
         )  # model output channels (number of classes in your dataset))
 
         # For timm models, we can extract the mean and std of the pre-trained backbone
-        # hyperparameters.update({"mean": backbone.default_cfg["mean"]})
-        # hyperparameters.update({"std": backbone.default_cfg["std"]})
+        # hyperparams.update({"mean": backbone.default_cfg["mean"]})
+        # hyperparams.update({"std": backbone.default_cfg["std"]})
 
         with torch.no_grad():
             backbone.eval()
-            features = torch.zeros(hyperparameters["input_size"]).unsqueeze(0)
+            features = torch.zeros(hyperparams["input_size"]).unsqueeze(0)
             features = backbone.encoder(features)
 
         class Noop(torch.nn.Module):
@@ -101,38 +112,60 @@ class SegmentationGenerator(ModelGenerator):
                 return x
 
         head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
-        # head = head_generator(task_specs, shapes, hyperparameters)
-        loss = train_loss_generator(task_specs, hyperparameters)
-        train_metrics = train_metrics_generator(task_specs, hyperparameters)
-        eval_metrics = eval_metrics_generator(task_specs, hyperparameters)
-        return Model(backbone, head, loss, hyperparameters, train_metrics, eval_metrics)
+        # head = head_generator(task_specs, shapes, hyperparams)
+        loss = train_loss_generator(task_specs, hyperparams)
+        train_metrics = train_metrics_generator(task_specs, hyperparams)
+        eval_metrics = eval_metrics_generator(task_specs, hyperparams)
+        return Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+        """Define a collate function to batch input tensors.
+
+        Args:
+            task_specs: task specs to retrieve dataset
+            hyperparams: model hyperparameters
+
+        Returns:
+            collate function
+        """
         return default_collate
 
     def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
+        """Define data transformations specific to the models generated.
+
+        Args:
+            task_specs: task specs to retrieve dataset
+            hyperparams: model hyperparameters
+            train: train mode true or false
+            scale: define image scale
+            ratio: define image ratio range
+
+        Returns:
+            callable function that applies transformations on input data
+        """
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = hyperparams["input_size"]
         mean, std = task_specs.get_dataset(split="train").rgb_stats()
 
         class SegTransform:
-            """
-            This is a helper class that helps applying the same transformation
+            """Segmentation Transform.
+
+            This is a helper class for applying the same transformation
             to input images and segmentation masks.
             """
 
-            def __call__(self, x, resample=True, train=True):
-                """Applies data augmentation to input and segmentation mask
+            def __call__(self, x: Tensor, resample: bool = True, train: bool = True):
+                """Apply data augmentation to input and segmentation mask.
 
                 Args:
-                    x (torch.Tensor): input image or segmentation mask
-                    resample (bool, optional): whether to resample (True) or reuse (False) previous transforms.
+                    x: input image or segmentation mask
+                    resample: whether to resample (True) or reuse (False) previous transforms.
                                                Defaults to True.
-                    train (bool, optional): whether in training mode. No aug during validation. Defaults to True.
+                    train: whether in training mode. No aug during validation. Defaults to True.
 
                 Returns:
-                    _type_: _description_
+                    transformed input image or segmentation mask
                 """
                 if train:
                     if resample:
@@ -167,5 +200,13 @@ class SegmentationGenerator(ModelGenerator):
 
 
 def model_generator(hparams: Dict[str, Any] = {}) -> SegmentationGenerator:
+    """Generate segmentation model with a defined set of hparams.
+
+    Args:
+        hparams: hyperparameters
+
+    Returns:
+        segmentation model generator
+    """
     model_generator = SegmentationGenerator(hparams=hparams)
     return model_generator

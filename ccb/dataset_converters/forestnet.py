@@ -1,3 +1,4 @@
+"""Foresnet dataset."""
 # Download the dataset using this link: http://download.cs.stanford.edu/deep/ForestNetDataset.zip
 # (Available at this webpage: https://stanfordmlgroup.github.io/projects/forestnet/)
 # Unzip the directory, then either place contents in dataset/forestnet_v1.0
@@ -35,7 +36,22 @@ LABELS = [
 ]
 
 
-def get_band_data(img, channel_index, band_idx, date, resolution, transform, crs, meta_info):
+def get_band_data(img, channel_index, band_idx, date, resolution, transform, crs, meta_info) -> io.Band:
+    """Create a Band.
+
+    Args:
+        img:
+        channel_index:
+        band_idx:
+        date:
+        resolution:
+        transform:
+        crs:
+        meta_info:
+
+    Returns:
+        Band
+    """
     band_data = io.Band(
         data=img[:, :, channel_index],
         band_info=io.landsat8_9_bands[band_idx],
@@ -48,7 +64,14 @@ def get_band_data(img, channel_index, band_idx, date, resolution, transform, crs
     return band_data
 
 
-def draw_img_roi(draw, shape, label: int):
+def draw_img_roi(draw, shape, label: int) -> None:
+    """Draw image region of interest.
+
+    Args:
+        draw:
+        shape:
+        label:
+    """
     shape_type = shape.geom_type
     if shape_type == "Polygon":
         coords = np.array(shape.exterior.coords)
@@ -60,6 +83,12 @@ def draw_img_roi(draw, shape, label: int):
 
 
 def overlay_mask(img, mask):
+    """Overlay mask on top of image.
+
+    Args:
+        img:
+        mask:
+    """
     faded_img = img.copy()
     faded_img.putalpha(192)
     overlaid_img = Image.new("RGB", img.size, (255, 255, 255))
@@ -70,7 +99,17 @@ def overlay_mask(img, mask):
     return overlaid_img
 
 
-def load_sample(example_dir: Path, label: str, year: int):
+def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
+    """Create a sample.
+
+    Args:
+        example_dir: directory to raw data
+        label: label
+        year: year
+
+    Returns:
+        sample
+    """
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, example_dir.name.split("_"))
 
@@ -162,7 +201,13 @@ def load_sample(example_dir: Path, label: str, year: int):
     return io.Sample(bands, label=label_int, sample_name=example_dir.name)
 
 
-def convert(max_count=None, dataset_dir=DATASET_DIR):
+def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
+    """Convert Forestnet dataset.
+
+    Args:
+        max_count: maximum number of samples
+        dataset_dir: path to dataset directory
+    """
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     bands_info = io.landsat8_9_bands[3:0:-1] + io.landsat8_9_bands[4:7]
