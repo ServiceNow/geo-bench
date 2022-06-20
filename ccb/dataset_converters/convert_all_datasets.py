@@ -1,3 +1,4 @@
+"""Convert all datasets."""
 # TODO the tqdm process bars will not work properly. Perhaps, we should revert to simple logging instead of tqdm + prints.
 
 import multiprocessing
@@ -21,7 +22,12 @@ CONVERTERS = [
 MAX_COUNT = 1000
 
 
-def convert(module_name):
+def convert(module_name: str) -> None:
+    """Convert dataset given converter module name.
+
+    Args:
+        module_name: name of dataset converter
+    """
     converter = import_module("ccb.dataset_converters." + module_name)
     assert Path(converter.DATASET_DIR).parent == Path(
         io.datasets_dir

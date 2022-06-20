@@ -1,3 +1,4 @@
+"""Crop Type South Africa dataset."""
 import os
 import re
 from pathlib import Path

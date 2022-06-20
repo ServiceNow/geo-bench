@@ -1,3 +1,5 @@
+"""Experiment."""
+
 import csv
 import glob
 import json
@@ -10,7 +12,7 @@ from importlib import import_module
 from itertools import chain
 from os import mkdir
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from ruamel.yaml import YAML
 
@@ -19,33 +21,48 @@ from ccb.torch_toolbox.model import ModelGenerator
 
 
 def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:
-    """
-    Parameters:
-    -----------
-    module_name: str
-        The module_name of the model generator module.
-    hparams:
-        hparameter dict to overwrite the default base values
+    """Return the model generator module based on name with a set of hyperparameters.
+
+    Args:
+        module_name: The module_name of the model generator module.
+        hparams: hparameter dict to overwrite the default base values
 
     Returns:
-    --------
-    model_generator: a model_generator function loaded from the module.
+        a model_generator function loaded from the module with hparams
     """
-
     return import_module(module_name).model_generator(hparams)
 
 
 class Job:
-    def __init__(self, dir) -> None:
+    """Job.
+
+    Helper class to organize running of experiments.
+    """
+
+    def __init__(self, dir: str) -> None:
+        """Initialize new instance of Job.
+
+        Args:
+            dir: path to directory where job should be created
+        """
         self.dir = Path(dir)
         self.dir.mkdir(parents=True, exist_ok=True)
 
     @cached_property
     def hparams(self):
+        """Return hyperparameters."""
         with open(self.dir / "hparams.json") as fd:
             return json.load(fd)
 
-    def save_hparams(self, hparams, overwrite=False):
+    def save_hparams(
+        self, hparams: Dict[str, Union[str, float, int, List[int], List[str]]], overwrite: bool = False
+    ) -> None:
+        """Save hyperparameters in job directory.
+
+        Args:
+            hparams: set of hyperparameters to save
+            overwrite: whether to overwrite existing hparams
+        """
         hparams_path = self.dir / "hparams.json"
         if hparams_path.exists() and not overwrite:
             raise Exception("hparams alread exists and overwrite is set to False.")
@@ -55,10 +72,12 @@ class Job:
 
     @cached_property
     def task_specs(self):
+        """Return task specifications."""
         with open(self.dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
 
     def get_metrics(self):
+        """Retrieve the metrics after training from job directory."""
         if self.hparams.get("logger", "") == "wandb":
             import wandb
 
@@ -82,11 +101,18 @@ class Job:
                 else:
                     raise e
 
-    def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite=False):
+    def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite: bool = False) -> None:
+        """Save task specifications in job directory.
+
+        Args:
+            task_specs: task specifications
+            overwrite: whether to overwrite existing task specs
+        """
         task_specs.save(self.dir, overwrite=overwrite)
 
-    def write_script(self, model_generator_module_name: str, job_dir: str):
+    def write_script(self, model_generator_module_name: str, job_dir: str) -> None:
         """Write bash scrip that can be executed to run job.
+
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
@@ -100,8 +126,11 @@ class Job:
             )
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
-    def write_wandb_sweep_cl_script(self, model_generator_module_name: str, job_dir: str, base_sweep_config: str):
+    def write_wandb_sweep_cl_script(
+        self, model_generator_module_name: str, job_dir: str, base_sweep_config: str
+    ) -> None:
         """Write final sweep_config.yaml that can be used to initialize sweep.
+
         Args:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
@@ -133,13 +162,15 @@ class Job:
         with open(save_path, "w") as yamlfile:
             yaml.dump(base_yaml, yamlfile)
 
-    def get_stderr(self):
+    def get_stderr(self) -> Union[str, None]:
+        """Return error output from executing script."""
         try:
             with open(self.dir / "err.out", "r") as fd:
                 return fd.read()
         except FileNotFoundError:
             return None
 
-    def get_stdout(self):
+    def get_stdout(self) -> str:
+        """Return log output from executing script."""
         with open(self.dir / "log.out", "r") as fd:
             return fd.read()
