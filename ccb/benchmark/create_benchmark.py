@@ -254,7 +254,8 @@ def make_segmentation_benchmark():
         # "xview2": (resampler_from_stats, None),
         # # "forestnet_v1.0": (resampler_from_stats, None),
         # "cvpr_chesapeake_landcover": (resampler_from_stats, None),
-        "smallholder_cashew": (resampler_from_stats, None)
+        # "smallholder_cashew": (resampler_from_stats, None)
+        "southAfricaCropType": (resampler_from_stats, None)
         # "nz_cattle_segmentation": (resampler_from_stats, None),
         # "NeonTree_segmentation": (resampler_from_stats, None),
     }
@@ -262,8 +263,8 @@ def make_segmentation_benchmark():
 
 
 if __name__ == "__main__":
-    make_classification_benchmark()
-    # make_segmentation_benchmark()
+    # make_classification_benchmark()
+    make_segmentation_benchmark()
 
 
 # procedure
