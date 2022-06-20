@@ -4,7 +4,7 @@ import json
 import pickle
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, Generator, List, Sequence, Union
 
 import numpy as np
 
@@ -75,7 +75,7 @@ class TaskSpecifications:
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
-    ):
+    ) -> Dataset:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
@@ -179,7 +179,9 @@ class TaskSpecifications:
             return None
 
 
-def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
+def task_iterator(
+    benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR
+) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
