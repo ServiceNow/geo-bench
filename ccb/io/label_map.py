@@ -163,9 +163,10 @@ def view_label_map_count(benchmark_name="converted"):
 
 
 def task_filter(task: TaskSpecifications):
-    return isinstance(task.label_type, io.SegmentationClasses)
+    return task.dataset_name.startswith("southAfricaCropType")
+    # return isinstance(task.label_type, io.SegmentationClasses)
 
 
 if __name__ == "__main__":
-    write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=False, task_filter=task_filter)
+    write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True, task_filter=task_filter)
     # view_label_map_count()
