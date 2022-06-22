@@ -5,7 +5,7 @@ import os
 import pickle
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, List, Sequence, Union, Tuple, Generator
 
 import numpy as np
 
@@ -20,9 +20,9 @@ class TaskSpecifications:
         self,
         dataset_name: str = None,
         benchmark_name: str = None,
-        patch_size: int = None,
+        patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_info: BandInfo = None,
+        bands_info: List[BandInfo] = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
@@ -71,7 +71,7 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        split: str,
+        split: Union[str, None],
         partition: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
@@ -198,11 +198,11 @@ def get_benchmark_dir(benchmark_name: str) -> Path:
     if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
         ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
     else:
-        ccb_dir = CCB_DIR
+        ccb_dir: Path = CCB_DIR
     return ccb_dir / benchmark_name
 
 
-def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
+def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
@@ -252,7 +252,7 @@ class Loss(object):
     Define a general loss object that is library agnostic.
     """
 
-    def __call__(self, label, prediction):
+    def __call__(self, label, prediction) -> float:
         """Define computation when Loss is called.
 
         Args:
@@ -278,7 +278,7 @@ class Accuracy(Loss):
     Define Accuracy computations
     """
 
-    def __call__(self, prediction, label) -> float:
+    def __call__(self, label, prediction) -> float:
         """Define computation when Accuracy is called.
 
         Args:
