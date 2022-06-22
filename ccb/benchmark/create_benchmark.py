@@ -1,3 +1,4 @@
+"""Create benchmark."""
 import shutil
 from collections import defaultdict
 from math import floor
@@ -11,6 +12,15 @@ from ccb import io
 
 
 def make_subsampler(max_sizes):
+    """Create a subsampler.
+
+    Args:
+        max_sizes:
+
+    Returns:
+        callable subsampler
+    """
+
     def _subsample(partition, task_specs, rng=np.random):
         return subsample(partition=partition, max_sizes=max_sizes, rng=rng)
 
@@ -18,7 +28,16 @@ def make_subsampler(max_sizes):
 
 
 def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random) -> io.Partition:
-    """Randomly subsample `partition` to satisfy `max_sizes`."""
+    """Randomly subsample `partition` to satisfy `max_sizes`.
+
+    Args:
+        partition:
+        max_sizes:
+        rng:
+
+    Returns:
+        subsampled partition
+    """
     new_partition = io.Partition()
 
     for split_name, sample_names in partition.partition_dict.items():
@@ -31,7 +50,15 @@ def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random)
 
 
 def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict[str, List[str]]):
-    """Organize label map into 'train', 'valid' and 'test'."""
+    """Organize label map into 'train', 'valid' and 'test'.
+
+    Args:
+        label_map:
+        partition_dict:
+
+    Retruns:
+        split label map
+    """
     split_label_maps = {}
     reverse_label_map = {}
     for label, sample_names in label_map.items():
@@ -46,7 +73,12 @@ def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict
 
 
 def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
-    """Makes sure each class has statisfies `min_class_sizes`."""
+    """Make sure each class has statisfies `min_class_sizes`.
+
+    Args:
+        split_label_maps:
+        min_class_sizes:
+    """
     new_split_label_maps = defaultdict(dict)
     for label in split_label_maps["train"].keys():
 
@@ -61,8 +93,12 @@ def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
     return new_split_label_maps
 
 
-def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]):
-    """Asser that label map is a partition and that no sample are common across splits."""
+def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]) -> None:
+    """Asser that label map is a partition and that no sample are common across splits.
+
+    Args:
+        split_label_maps:
+    """
     sample_set = set()
     total_count = 0
     for label_map in split_label_maps.values():
@@ -73,8 +109,16 @@ def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]):
     assert len(sample_set) == total_count
 
 
-def make_resampler(max_sizes, min_class_sizes={"train": 10, "valid": 1, "test": 1}):
-    """Matrialize a resampler with the required interface."""
+def make_resampler(max_sizes, min_class_sizes: Dict[str, int] = {"train": 10, "valid": 1, "test": 1}):
+    """Matrialize a resampler with the required interface.
+
+    Args:
+        max_sizes:
+        min_class_sizes:
+
+    Returns:
+        callable resampling function
+    """
 
     def _resample(partition, task_specs, rng=np.random):
         label_map = task_specs.get_label_map()
@@ -90,11 +134,22 @@ def resample(
     label_map: Dict[int, List[str]],
     max_sizes: Dict[str, int],
     min_class_sizes: Dict[str, int],
-    verbose=True,
+    verbose: bool = True,
     rng=np.random,
 ) -> io.Partition:
+    """Reduce class imbalance in `partition` based on information in `label_map`.
 
-    """Reduce class imbalance in `partition` based on information in `label_map`."""
+    Args:
+        partition:
+        label_map:
+        max_sizes:
+        min_class_sizes:
+        verbose:
+        rng:
+
+    Returns:
+        resampled partition
+    """
     split_label_maps = _make_split_label_maps(label_map, partition_dict=partition.partition_dict)
     assert_no_overlap(split_label_maps)
     new_split_label_maps = _filter_for_min_size(split_label_maps, min_class_sizes)
@@ -137,11 +192,23 @@ def resample_from_stats(
     partition: io.Partition,
     label_stats: Dict[str, List[float]],
     max_sizes: Dict[str, int],
-    verbose=True,
+    verbose: bool = True,
     rng=np.random,
-    return_prob=False,
+    return_prob: bool = False,
 ) -> io.Partition:
+    """Resample based on statistics.
 
+    Args:
+        partition:
+        label_stats:
+        max_sizes:
+        verbose:
+        rng:
+        return_prob:
+
+    Returns:
+        resampled partition
+    """
     partition_dict = defaultdict(list)
     prob_dict = {}
     for split, sample_names in partition.partition_dict.items():
@@ -175,10 +242,20 @@ def transform_dataset(
     partition_name: str,
     resampler=None,
     sample_converter=None,
-    delete_existing=False,
-    hdf5=True,
-):
+    delete_existing: bool = False,
+    hdf5: bool = True,
+) -> None:
+    """Transform dataset.
 
+    Args:
+        dataset_dir:
+        new_benchmark_dir:
+        partition_name:
+        resample:
+        sample_converter:
+        delete_existing:
+        hdf5:
+    """
     dataset = io.Dataset(dataset_dir, partition_name=partition_name)
     task_specs = dataset.task_specs
     task_specs.benchmark_name = dataset_dir.parent.name
@@ -215,7 +292,7 @@ def transform_dataset(
 
 
 def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
-
+    """Create benchmark."""
     for dataset_name, (resampler, sample_converter) in specs.items():
         print(f"Transforming {dataset_name}.")
         transform_dataset(
@@ -229,6 +306,7 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
 
 
 def make_classification_benchmark():
+    """Create classification benchmark."""
     # max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
     max_sizes = {"train": 10, "valid": 100, "test": 100}
 
@@ -246,6 +324,7 @@ def make_classification_benchmark():
 
 
 def make_segmentation_benchmark():
+    """Create segmentation benchmark."""
     max_sizes = {"train": 3000, "valid": 1000, "test": 1000}
     # default_resampler = make_subsampler(max_sizes=max_sizes)
     resampler_from_stats = make_resampler_from_stats(max_sizes=max_sizes)

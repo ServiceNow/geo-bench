@@ -1,10 +1,11 @@
 """Task."""
 
 import json
+import os
 import pickle
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -19,9 +20,9 @@ class TaskSpecifications:
         self,
         dataset_name: str = None,
         benchmark_name: str = None,
-        patch_size: int = None,
+        patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_info: BandInfo = None,
+        bands_info: List[BandInfo] = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
@@ -70,7 +71,7 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        split: str,
+        split: Union[str, None],
         partition: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
@@ -97,7 +98,12 @@ class TaskSpecifications:
                     x, y = super().__getitem__(item)
                     return {"input": x, "label": y}
 
-            return MNISTDict("/tmp/mnist", train=split == "train", transform=transform, download=True)
+            return MNISTDict(
+                os.path.abspath(os.path.join("tests", "data")),
+                train=split == "train",
+                transform=transform,
+                download=True,
+            )
 
         elif self.benchmark_name == "imagenet":
             if split == "test":
@@ -141,7 +147,8 @@ class TaskSpecifications:
     def get_dataset_dir(self):
         """Retrieve directory where dataset is stored."""
         benchmark_name = self.benchmark_name or "default"
-        return CCB_DIR / benchmark_name / self.dataset_name
+        benchmark_dir = get_benchmark_dir(benchmark_name)
+        return benchmark_dir / self.dataset_name
 
     # for backward compatibility (we'll remove soon)
     @cached_property
@@ -179,7 +186,23 @@ class TaskSpecifications:
             return None
 
 
-def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR) -> TaskSpecifications:
+def get_benchmark_dir(benchmark_name: str) -> Path:
+    """Retrieve benchmark directory depending on experiment or testing case.
+
+    Args:
+        benchmark_name: name of the benchmark
+
+    Returns:
+        path to benchmark directory
+    """
+    if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
+        ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
+    else:
+        ccb_dir: Path = CCB_DIR
+    return ccb_dir / benchmark_name
+
+
+def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
@@ -195,7 +218,7 @@ def task_iterator(benchmark_name: str = "default", benchmark_dir: Path = CCB_DIR
         yield imagenet_task_specs
         return
 
-    benchmark_dir = benchmark_dir / benchmark_name
+    benchmark_dir = get_benchmark_dir(benchmark_name)
 
     for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
@@ -229,7 +252,7 @@ class Loss(object):
     Define a general loss object that is library agnostic.
     """
 
-    def __call__(self, label, prediction):
+    def __call__(self, label, prediction) -> float:
         """Define computation when Loss is called.
 
         Args:
@@ -255,7 +278,7 @@ class Accuracy(Loss):
     Define Accuracy computations
     """
 
-    def __call__(self, prediction, label) -> float:
+    def __call__(self, label, prediction) -> float:
         """Define computation when Accuracy is called.
 
         Args:

@@ -1,9 +1,19 @@
+"""Rasterize detection."""
 import numpy as np
 from PIL import Image, ImageDraw
 
 
-def rasterize_box(boxes, img_shape, scale=1):
+def rasterize_box(boxes, img_shape, scale=1) -> np.array:
+    """Rasterize box.
 
+    Args:
+        boxes:
+        img_shape:
+        scale:
+
+    Returns:
+        rasterized boxes
+    """
     im = Image.new(mode="L", size=img_shape)
 
     ctxt = ImageDraw.Draw(im)
@@ -23,6 +33,15 @@ def rasterize_box(boxes, img_shape, scale=1):
 
 
 def point_to_boxes(points, radius):
+    """Convert point to boxes.
+
+    Args:
+        points:
+        radius:
+
+    Returns:
+        bounding boxes
+    """
     boxes = []
     for point in points:
         boxes.append(
