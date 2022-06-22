@@ -52,14 +52,14 @@ class SegmentationGenerator(ModelGenerator):
             "optimizer": "adamw",
             "head_type": "linear",
             "loss_type": "crossentropy",
-            "batch_size": 4,
-            "num_workers": 4,
-            "max_epochs": 500,
-            "n_gpus": 1,
-            "logger": "wandb",  # Set to wandb for wandb tracking
-            "encoder_type": "resnet101",
+            "batch_size": 1,
+            "num_workers": 0,
+            "max_epochs": 1,
+            "n_gpus": 0,
+            "logger": "csv",  # Set to wandb for wandb tracking
+            "encoder_type": "resnet18",
             "accumulate_grad_batches": 2,
-            "decoder_type": "DeepLabV3",
+            "decoder_type": "Unet",
             "decoder_weights": "imagenet",
             "enable_progress_bar": False,
             "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb

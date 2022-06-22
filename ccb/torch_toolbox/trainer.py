@@ -30,7 +30,6 @@ def train(model_gen, job_dir) -> None:
         pl.seed_everything(seed, workers=True)
 
     model = model_gen.generate(job.task_specs, hparams)
-
     datamodule = DataModule(
         job.task_specs,
         batch_size=hparams["batch_size"],
