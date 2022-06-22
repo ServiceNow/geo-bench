@@ -106,38 +106,25 @@ class Conv4Generator(ModelGenerator):
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
 
-        if task_specs.dataset_name == "imagenet":
-            mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
-            t = []
-            t.append(tt.ToTensor())
-            t.append(tt.Normalize(mean=mean, std=std))
-            if train:
-                t.append(tt.RandomHorizontalFlip())
-                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
-            transform = tt.Compose(t)
-        elif task_specs.dataset_name.lower() == "mnist":
-            t = []
-            t.append(tt.ToTensor())
-            transform = tt.Compose(t)
-        else:
-            mean, std = task_specs.get_dataset(
-                split="train", format=hyperparams["format"], band_names=tuple(hyperparams["band_names"])
-            ).normalization_stats()
-            t = []
-            t.append(tt.ToTensor())
-            t.append(tt.Normalize(mean=mean, std=std))
-            if train:
-                t.append(tt.RandomHorizontalFlip())
-                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
-            t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
+        mean, std = task_specs.get_dataset(
+            split="train", format=hyperparams["format"], band_names=tuple(hyperparams["band_names"])
+        ).normalization_stats()
+        t = []
+        t.append(tt.ToTensor())
+        t.append(tt.Normalize(mean=mean, std=std))
+        if train:
+            t.append(tt.RandomHorizontalFlip())
+            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
-            t = tt.Compose(t)
+        t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
 
-            def transform(sample: io.Sample):
-                x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
-                x = t(x)
-                return {"input": x, "label": sample.label}
+        t = tt.Compose(t)
+
+        def transform(sample: io.Sample):
+            x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
+            x = t(x)
+            return {"input": x, "label": sample.label}
 
         return transform
 
