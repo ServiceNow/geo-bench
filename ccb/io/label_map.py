@@ -6,7 +6,7 @@ import json
 import pickle
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 from warnings import warn
 
 import numpy as np
@@ -42,8 +42,8 @@ def clean_partition(partition: io.Partition):
     Args:
         partition: partition to clean
     """
-    all_samples = set()
-    squeezed_out = []
+    all_samples: Set[str] = set()
+    squeezed_out: List[str] = []
     original_count = 0
     for split in ("train", "valid", "test"):
         samples = partition.partition_dict[split]
@@ -151,7 +151,7 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    for task in io.task_iterator(benchmark_name=benchmark_name):
+    for task in io.task.task_iterator(benchmark_name=benchmark_name):
 
         if task_filter is not None and task_filter(task):
 
@@ -219,7 +219,7 @@ def view_label_map_count(benchmark_name="converted") -> None:
     """
     for task in io.task_iterator(benchmark_name=benchmark_name):
 
-        label_map = task.label_map
+        label_map = task.get_label_map
         print(f"Label map for dataset {task.dataset_name} of type {task.label_type.__class__.__name__}.")
         if label_map is not None:
             print_label_map(label_map)

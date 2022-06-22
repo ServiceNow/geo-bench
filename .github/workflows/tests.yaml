@@ -1,0 +1,47 @@
+name: tests
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+env:
+  CCB_DIR: "tests/data/"
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ${{ matrix.os }}
+    env:
+      MPLBACKEND: Agg
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.8', '3.9']
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install apt dependencies (Linux)
+      run: sudo apt-get install unrar
+      if: ${{ runner.os == 'Linux' }}
+    - name: Install brew dependencies (macOS)
+      run: brew install rar
+      if: ${{ runner.os == 'macOS' }}
+    - name: Install poetry (ubuntu and macOS)
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+    - name: Install dependencies (ubuntu and macOS)
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+    - name: Run pytest checks
+      run: |
+        poetry run python -m pytest -v tests --cov=ccb --cov-report=xml

@@ -47,8 +47,8 @@ class Conv4Generator(ModelGenerator):
             "batch_size": 32,
             "num_workers": 0,
             "max_epochs": 1,
-            "n_gpus": 1,
-            "logger": "wandb",
+            "n_gpus": 0,
+            "logger": "csv",
             "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml",
             "num_seeds": 3,
             "num_agents": 4,
@@ -105,6 +105,7 @@ class Conv4Generator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
+
         if task_specs.dataset_name == "imagenet":
             mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
             t = []
