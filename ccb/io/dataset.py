@@ -9,7 +9,7 @@ import pickle
 from collections import OrderedDict, defaultdict
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union, Optional
 from warnings import warn
 
 import h5py
@@ -20,20 +20,20 @@ from tqdm import tqdm
 
 from ccb.io.label import LabelType
 
-CCB_DIR = os.environ.get("CCB_DIR", None)
+check_ccb_dir = os.environ.get("CCB_DIR", None)
 
-if CCB_DIR is None:
+if check_ccb_dir is None:
     # Deprecated, use CCB_DIR instead
     src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
     datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
 
     # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
-    CCB_DIR = Path(datasets_dir).parent
+    CCB_DIR: Path = Path(datasets_dir).parent
 
 else:
-    CCB_DIR = Path(CCB_DIR)
-    src_datasets_dir = CCB_DIR / "source"
-    datasets_dir = CCB_DIR / "converted"
+    CCB_DIR = Path(check_ccb_dir)
+    src_datasets_dir: Path = CCB_DIR / "source"
+    datasets_dir: Path = CCB_DIR / "converted"
 
 
 class BandInfo(object):
@@ -123,7 +123,7 @@ class SpectralBand(BandInfo):
         super().__init__(name, alt_names, spatial_resolution)
         self.wavelength = wavelength
 
-    def __key(self) -> Tuple[str, float]:
+    def __key(self) -> Tuple[Optional[str], Optional[float]]:
         """Return spectral band key."""
         return (self.name, self.wavelength)
 
@@ -265,12 +265,14 @@ class SegmentationClasses(BandInfo, LabelType):
         return stats / np.sum(stats)
 
     @property
-    def class_names(self) -> List[str]:
+    def class_names(self) -> Optional[List[str]]:
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        else:
+        elif hasattr(self, "class_name"):
             return self.class_name  # for backward compatibility with saved pickles with a typo
+        else:
+            return None
 
     def __repr__(self) -> str:
         """Return representation of segmentation classes."""
@@ -385,7 +387,7 @@ class Band:
 
     def get_descriptor(self) -> str:
         """Get description of band."""
-        descriptor = self.band_info.name
+        descriptor: str = self.band_info.name
         if self.date is not None:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
@@ -491,7 +493,7 @@ def load_band_tif(file_path) -> Band:
     return band
 
 
-def _make_map(elements) -> Tuple[Any]:
+def _make_map(elements) -> Tuple[Any, Any]:
     """Make a enumerated map.
 
     Args:
@@ -506,7 +508,7 @@ def _make_map(elements) -> Tuple[Any]:
     return element_map, elements
 
 
-def _map_bands(band_info_set) -> Tuple[Any]:
+def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[str]]:
     """Map a set of band info objects.
 
     Args:
