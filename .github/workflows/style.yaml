@@ -76,7 +76,10 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run isort checks
-      run: poetry run python -m isort ccb/ --check --diff
+      run: |
+        pip show isort
+        poetry show isort
+        poetry run python -m isort ccb/ --check --diff
   pydocstyle:
     name: pydocstyle
     runs-on: ubuntu-latest
