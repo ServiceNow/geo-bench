@@ -1,6 +1,6 @@
 """Modules."""
 
-from typing import Any
+from typing import Any, List, Union
 
 import torch
 from torch import Tensor
@@ -25,7 +25,7 @@ class ClassificationHead(torch.nn.Module):
             torch.nn.Linear(in_ch, hidden_size), torch.nn.Linear(hidden_size, num_classes)
         )
 
-    def forward(self, x: Any) -> Tensor:
+    def forward(self, x: Union[Tensor, List[Tensor]]) -> Tensor:
         """Forward input through classification head.
 
         Args:
