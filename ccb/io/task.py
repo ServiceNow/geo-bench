@@ -5,7 +5,7 @@ import os
 import pickle
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, List, Sequence, Union, Tuple, Generator
+from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
 

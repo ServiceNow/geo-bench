@@ -9,7 +9,7 @@ import pickle
 from collections import OrderedDict, defaultdict
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import h5py
