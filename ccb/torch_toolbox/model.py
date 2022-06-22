@@ -342,52 +342,6 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
-def vit_head_generator(task_specs: TaskSpecifications, hyperparams: Dict[str, Any], input_shape: int):
-    """Generate head for VIT.
-
-    ViT architectures may require different type of heads.
-    In which case, we should provide this to the users as well. TO BE DISCUSSED.
-
-    Args:
-        task_specs: an object describing the task to be performed
-        hyperparams: dictionary containing hyperparameters of the experiment
-        input_shape: input shape to transformer
-
-    """
-    pass
-
-
-def compute_accuracy(
-    output: Tensor, target: Tensor, prefix: str, topk: Tuple[int] = (1,), *args, **kwargs
-) -> Dict[str, float]:
-    """Compute the accuracy over the k top predictions for the specified values of k.
-
-    Args:
-        output: model output
-        target: target to compute accuracy on
-        pefix: prefix for k
-        topk: define k values for which to compute accuracy
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-        computed accuracy values for each k
-    """
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = {}
-        for k in topk:
-            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res[f"{prefix}_accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
-        return res
-
-
 METRIC_MAP = {}
 
 
