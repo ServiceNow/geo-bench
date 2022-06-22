@@ -77,7 +77,6 @@ jobs:
         python -m poetry install
     - name: Run isort checks
       run: |
-        poetry show isort
         poetry run python -m isort ccb/ --check --diff
   pydocstyle:
     name: pydocstyle
