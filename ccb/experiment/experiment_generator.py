@@ -75,7 +75,7 @@ def experiment_generator(
             # base_hparams = model_generator.base_hparams
 
             # use wandb sweep for hyperparameter search
-            model = model_generator.generate(task_specs, hparams, config)
+            model = model_generator.generate_model(task_specs, hparams, config)
 
             # there might be other params added during the generate process,
             # continue with hyperparameters from initialized model
@@ -137,7 +137,7 @@ def experiment_generator(
             model_generator = get_model_generator(model_generator_module_name)
 
             # use wandb sweep for hyperparameter search
-            model = model_generator.generate(task_specs, hparams, config)
+            model = model_generator.generate_model(task_specs, hparams, config)
             hparams = model.hyperparameters
 
             config["experiment"]["dataset_name"] = task_specs.dataset_name
