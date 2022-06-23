@@ -164,7 +164,6 @@ def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, Non
     Returns:
         task specifications for the desired benchmark dataset
     """
-
     benchmark_dir = Path(benchmark_dir)
 
     for dataset_dir in benchmark_dir.iterdir():
