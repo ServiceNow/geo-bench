@@ -154,7 +154,7 @@ class Job:
             # fd.write(
             #     f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
             # )
-            fd.write(f"ccb-trainer --job-dir {job_dir} >log.out 2>err.out")
+            fd.write(f"ccb-trainer --job_dir {job_dir} >log.out 2>err.out")
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(
@@ -175,7 +175,7 @@ class Job:
             "${program}",
             # "--model-generator",
             # model_generator_module_name,
-            "--job-dir",
+            "--job_dir",
             str(job_dir),
         ]
 

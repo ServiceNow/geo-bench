@@ -15,14 +15,8 @@ from ccb.experiment.experiment import Job, get_model_generator
 
 
 def experiment_generator(
-    # model_generator_module_name: str,
-    # experiment_dir: str,
-    # task_filter: Callable = None,
-    # benchmark_name: str = "default",
-    # experiment_name: str = None,
-    # experiment_type: str = "standard",
-    config_filepath: Path,
-    hparam_filepath: Path,
+    config_filepath: str,
+    hparam_filepath: str,
 ):
     """Generate the directory structure for every tasks.
 
@@ -42,6 +36,8 @@ def experiment_generator(
     Raises:
         FileNotFoundError if path to config file or hparam file does not exist
     """
+    config_filepath = Path(config_filepath)
+    hparam_filepath = Path(hparam_filepath)
     # check that specified paths exists
     if config_filepath.is_file():
         with config_filepath.open() as f:
@@ -59,7 +55,7 @@ def experiment_generator(
 
     experiment_prefix = f"{config['experiment']['experiment_name'] or 'experiment'}_{os.path.basename(benchmark_dir)}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
     if config["experiment"]["experiment_name"] is not None:
-        experiment_dir = Path(config["experiment"]["experiment_dir"]) / experiment_prefix
+        experiment_dir = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
 
     print(
         f"Generating experiments for {config['model']['model_generator_module_name']} on {os.path.basename(benchmark_dir)} benchmark."
@@ -173,35 +169,19 @@ def start() -> None:
         description="Generate experiment directory structure based on user-defined model generator",
     )
     parser.add_argument(
-        "--model-generator",
-        help="Path to a Python file that defines a model generator (expects a model_generator variable to exist).",
+        "--config_filepath",
+        help="The path to the configuration file.",
         required=True,
     )
     parser.add_argument(
-        "--experiment-dir",
-        help="The based directory in which experiment-related files should be created.",
+        "--hparam_filepath",
+        help="The path to model hparam file.",
         required=True,
-    )
-
-    parser.add_argument(
-        "--benchmark",
-        help="The set of dataset that will be used for evaluating. 'ccb' | 'mnist' ",
-        required=False,
-        default="default",
-    )
-
-    parser.add_argument(
-        "--experiment-name",
-        help="An optional name to give to the experiment. Will be used as a prefix to the results directory.",
-        required=False,
-        default=None,
     )
 
     args = parser.parse_args()
 
-    experiment_generator(
-        args.model_generator, args.experiment_dir, benchmark_name=args.benchmark, experiment_name=args.experiment_name
-    )
+    experiment_generator(config_filepath=args.config_filepath, hparam_filepath=args.hparam_filepath)
 
 
 if __name__ == "__main__":
