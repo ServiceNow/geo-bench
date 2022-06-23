@@ -1,8 +1,8 @@
 experiment:
-  generate_experiment_dir: /home/nils/projects/climate-change-benchmark/experiments
+  generate_experiment_dir: climate-change-benchmark/experiments
   experiment_name: testing # prefix
   experiment_type: standard # standard, seeded_runs, sweep
-  benchmark_dir: /home/nils/projects/climate-change-benchmark/tests/data/ccb-test-segmentation
+  benchmark_dir: tests/data/ccb-test-segmentation
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   head_type: linear # classification
@@ -18,7 +18,7 @@ wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
   sweep:
-    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml # or maybe define the entire sweep here?
+    sweep_config_path: path # or maybe define the entire sweep here?
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
     num_trials_per_agent: 5 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 pl: # all flags for pytorch lightning Trainer module, see https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
