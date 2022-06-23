@@ -60,7 +60,7 @@ def make_sample(observation_id, label, lat, lng) -> io.Sample:
     subfolder1 = observation_id[-2:]
     subfolder2 = observation_id[-4:-2]
 
-    filename = Path(SRC_DATASET_DIR) / "data" / f'patches-{region}' / subfolder1 / subfolder2 / observation_id
+    filename = Path(SRC_DATASET_DIR) / "data" / f"patches-{region}" / subfolder1 / subfolder2 / observation_id
 
     transform_center = rasterio.transform.from_origin(lng, lat, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
