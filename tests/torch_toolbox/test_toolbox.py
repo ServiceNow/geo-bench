@@ -3,10 +3,9 @@ import pickle
 import tempfile
 from datetime import datetime
 
-
 import pytest
-
 from ruamel.yaml import YAML
+
 from ccb import io
 from ccb.experiment.experiment import Job
 from ccb.torch_toolbox import trainer
