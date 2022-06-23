@@ -262,7 +262,8 @@ class TIMMGenerator(ModelGenerator):
         mean, std = task_specs.get_dataset(
             split="train",
             format=config["dataset"]["format"],
-            band_names=tuple(config["dataset"]["band_names"], benchmark_dir=config["experiment"]["benchmark_dir"]),
+            band_names=tuple(config["dataset"]["band_names"]),
+            benchmark_dir=config["experiment"]["benchmark_dir"],
         ).normalization_stats()
         t = []
         t.append(tt.ToTensor())

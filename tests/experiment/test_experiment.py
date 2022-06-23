@@ -5,12 +5,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from ruamel.yaml import YAML
 
 import ccb
 from ccb.experiment.experiment import Job, get_model_generator
-from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
-from ccb.torch_toolbox import trainer
 
 
 def test_load_module():
@@ -36,37 +35,47 @@ def test_unexisting_path():
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "model_gen, benchmark_name",
+    "config_filepath, hparam_filepath",
     [
-        ("ccb.torch_toolbox.model_generators.conv4", "ccb-test-classification"),
-        ("ccb.torch_toolbox.model_generators.py_segmentation_generator", "ccb-test-segmentation"),
+        ("tests/configs/base_classification.yaml", "tests/configs/classification_hparams.yaml"),
+        ("tests/configs/base_segmentation.yaml", "tests/configs/segmentation_hparams.yaml"),
     ],
 )
-def test_experiment_generator_on_benchmark(model_gen, benchmark_name):
+def test_experiment_generator_on_benchmark(config_filepath, hparam_filepath):
 
     experiment_generator_dir = Path(ccb.experiment.__file__).absolute().parent
 
-    experiment_dir = tempfile.mkdtemp(prefix="exp_gen_test_on_benchmark")
+    with tempfile.TemporaryDirectory(prefix="test") as generate_experiment_dir:
+        # change experiment dir to tmp path
+        yaml = YAML()
+        with open(config_filepath, "r") as yamlfile:
+            config = yaml.load(yamlfile)
 
-    print(f"Generating experiments in {experiment_dir}.")
-    cmd = [
-        sys.executable,
-        str(experiment_generator_dir / "experiment_generator.py"),
-        "--model-generator",
-        model_gen,
-        "--experiment-dir",
-        str(experiment_dir),
-        "--benchmark",
-        benchmark_name,
-    ]
+        config["experiment"]["generate_experiment_dir"] = generate_experiment_dir
 
-    subprocess.check_call(cmd)
-    sequential_dispatcher(exp_dir=experiment_dir, prompt=False)
-    for ds_dir in Path(experiment_dir).iterdir():
-        job = Job(ds_dir)
-        print(ds_dir)
-        metrics = job.get_metrics()
-        print(metrics)
+        new_config_filepath = os.path.join(generate_experiment_dir, "config.yaml")
+        with open(new_config_filepath, "w") as fd:
+            yaml.dump(config, fd)
+
+        print(f"Generating experiments in {generate_experiment_dir}.")
+        cmd = [
+            sys.executable,
+            str(experiment_generator_dir / "experiment_generator.py"),
+            "--config_filepath",
+            new_config_filepath,
+            "--hparam_filepath",
+            hparam_filepath,
+        ]
+
+        subprocess.check_call(cmd)
+        os.remove(new_config_filepath)
+        exp_dir = os.path.join(generate_experiment_dir, os.listdir(generate_experiment_dir)[0])
+        sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+        for ds_dir in Path(exp_dir).iterdir():
+            job = Job(ds_dir)
+            print(ds_dir)
+            metrics = job.get_metrics()
+            print(metrics)
 
 
 if __name__ == "__main__":

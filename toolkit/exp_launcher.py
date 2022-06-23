@@ -9,8 +9,8 @@ from ccb.experiment.experiment_generator import experiment_generator
 from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
-    config_filepath=Path("/home/nils/projects/climate-change-benchmark/ccb/configs/base_config.yaml"),
-    hparam_filepath=Path("/home/nils/projects/climate-change-benchmark/ccb/configs/segmentation_hparams.yaml")
+    config_filepath="/home/nils/projects/climate-change-benchmark/ccb/configs/base_config.yaml",
+    hparam_filepath="/home/nils/projects/climate-change-benchmark/ccb/configs/segmentation_hparams.yaml"
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)
