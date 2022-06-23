@@ -12,14 +12,16 @@ from ccb.experiment.experiment import Job, get_model_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
-def test_load_module():
-    """
-    Test loading an existing model generator from a user-specified path.
-
-    """
-
+def test_load_model():
+    """Test loading an existing model generator from a user-specified path."""
     model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
-    assert hasattr(model_generator, "generate")
+    assert hasattr(model_generator, "generate_model")
+
+
+def test_load_trainer():
+    """Test loading an existing model generator from a user-specified path."""
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
+    assert hasattr(model_generator, "generate_trainer")
 
 
 def test_unexisting_path():
