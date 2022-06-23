@@ -34,7 +34,7 @@ def train(job_dir) -> None:
 
     model = model_gen.generate(task_specs=job.task_specs, hparams=hparams, config=config)
     datamodule = DataModule(
-        task_specs,
+        task_specs=task_specs,
         benchmark_dir=config["experiment"]["benchmark_dir"],
         batch_size=hparams["batch_size"],
         num_workers=config["dataloader"]["num_workers"],
@@ -47,19 +47,21 @@ def train(job_dir) -> None:
 
     run_id = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8))
     config["wandb"]["wandb_run_id"] = run_id
+
     loggers = [
         pl.loggers.CSVLogger(str(job.dir), name="lightning_logs"),
         pl.loggers.WandbLogger(
+            save_dir=str(job.dir),
             project=config["wandb"]["project"],
             entity=config["wandb"]["entity"],
             id=run_id,
             group=config["wandb"].get("wandb_group", None),
             name=config["wandb"].get("name", None),
-            save_dir=str(job.dir),
             resume="allow",
             config=hparams,
         ),
     ]
+
     job.save_config(config, overwrite=True)
 
     ckpt_dir = os.path.join(job_dir, "checkpoint")
