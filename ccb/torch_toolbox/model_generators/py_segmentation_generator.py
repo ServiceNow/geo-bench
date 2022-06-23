@@ -162,7 +162,9 @@ class SegmentationGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = config["model"]["input_size"]
-        mean, std = task_specs.get_dataset(benchmark_dir=config["experiment"]["benchmark_dir"], split="train").rgb_stats()
+        mean, std = task_specs.get_dataset(
+            benchmark_dir=config["experiment"]["benchmark_dir"], split="train"
+        ).rgb_stats()
         band_names = tuple(config["dataset"]["band_names"])
 
         class SegTransform:

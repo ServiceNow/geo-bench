@@ -31,8 +31,13 @@ def train(job_dir) -> None:
     # Load the user-specified model generator
     model_gen = get_model_generator(config["model"]["model_generator_module_name"])
 
-    with wandb.init(dir=job_dir, project=config["wandb"]["project"],
-            entity=config["wandb"]["entity"], group=config["wandb"].get("wandb_group", None), allow_val_change=True) as run:
+    with wandb.init(
+        dir=job_dir,
+        project=config["wandb"]["project"],
+        entity=config["wandb"]["entity"],
+        group=config["wandb"].get("wandb_group", None),
+        allow_val_change=True,
+    ) as run:
 
         wandb_config = run.config
         # set up W&B logger
@@ -82,7 +87,8 @@ def train(job_dir) -> None:
 
         trainer.fit(model, datamodule, ckpt_path=ckpt_path)
         trainer.test(model, datamodule)
-                
+
+
 def start():
     """Start sweeping."""
     # Command line arguments
