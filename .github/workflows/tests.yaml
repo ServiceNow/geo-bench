@@ -43,5 +43,7 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run pytest checks
+      env: # wandb api key
+        super_secret: ${{ secrets.WANDB_API_KEY }}
       run: |
         poetry run python -m pytest -v tests --cov=ccb --cov-report=xml
