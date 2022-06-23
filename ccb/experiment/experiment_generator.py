@@ -2,13 +2,14 @@
 
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 """
-import os
 import argparse
 import json
-import yaml
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
+
+import yaml
 
 from ccb import io
 from ccb.experiment.experiment import Job, get_model_generator
