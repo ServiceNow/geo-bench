@@ -71,6 +71,7 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
+        benchmark_dir: Path,
         split: Union[str, None],
         partition: str = "default",
         transform=None,
@@ -80,81 +81,33 @@ class TaskSpecifications:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
+            benchmark_dir: path to benchmark directory where dataset can be found
             split: dataset split to choose
             partition: name of partition
             transform: dataset transforms
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
-        if self.benchmark_name == "test":
-            import torchvision
-            import torchvision.transforms as tt
+        return Dataset(
+            dataset_dir=self.get_dataset_dir(benchmark_dir),
+            split=split,
+            partition_name=partition,
+            transform=transform,
+            format=format,
+            band_names=band_names,
+        )
 
-            if transform is None:
-                transform = tt.ToTensor()
+    def get_dataset_dir(self, benchmark_dir: str):
+        """Retrieve directory where dataset is read."""
+        # benchmark_name = self.benchmark_name or "default"
+        # benchmark_dir = get_benchmark_dir(benchmark_name)
+        return Path(benchmark_dir) / self.dataset_name
 
-            class MNISTDict(torchvision.datasets.MNIST):
-                def __getitem__(self, item):
-                    x, y = super().__getitem__(item)
-                    return {"input": x, "label": y}
-
-            return MNISTDict(
-                os.path.abspath(os.path.join("tests", "data")),
-                train=split == "train",
-                transform=transform,
-                download=True,
-            )
-
-        elif self.benchmark_name == "imagenet":
-            if split == "test":
-                split = "val"  # ugly fix
-            assert split in ["train", "val", "valid"], "Only train and val supported"
-            import PIL
-            import torchvision
-            import torchvision.transforms as tt
-
-            imagenet_mean = [0.485, 0.456, 0.406]
-            imagenet_std = [0.229, 0.224, 0.225]
-            transform = tt.Compose(
-                [
-                    tt.Resize(256, interpolation=PIL.Image.BICUBIC),  # to maintain same ratio w.r.t. 224 images
-                    tt.CenterCrop(224),
-                    tt.ToTensor(),
-                    tt.Normalize(imagenet_mean, imagenet_std),
-                ]
-            )
-
-            class ImageNetDict(torchvision.datasets.ImageNet):
-                def __getitem__(self, item):
-                    x, y = super().__getitem__(item)
-                    return {"input": x, "label": y}
-
-            dataset = ImageNetDict(
-                "/mnt/public/datasets/imagenet/raw", split="train" if split == "train" else "val", transform=transform
-            )
-            return dataset
-
-        else:
-            return Dataset(
-                dataset_dir=self.get_dataset_dir(),
-                split=split,
-                partition_name=partition,
-                transform=transform,
-                format=format,
-                band_names=band_names,
-            )
-
-    def get_dataset_dir(self):
-        """Retrieve directory where dataset is stored."""
-        benchmark_name = self.benchmark_name or "default"
-        benchmark_dir = get_benchmark_dir(benchmark_name)
-        return benchmark_dir / self.dataset_name
-
-    # for backward compatibility (we'll remove soon)
-    @cached_property
-    def benchmark_name(self):
-        """Return benchmark name."""
-        return "default"
+    # # for backward compatibility (we'll remove soon)
+    # @cached_property
+    # def benchmark_name(self):
+    #     """Return benchmark name."""
+    #     return "default"
 
     def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
@@ -186,23 +139,23 @@ class TaskSpecifications:
             return None
 
 
-def get_benchmark_dir(benchmark_name: str) -> Path:
-    """Retrieve benchmark directory depending on experiment or testing case.
+# def get_benchmark_dir(benchmark_name: str) -> Path:
+#     """Retrieve benchmark directory depending on experiment or testing case.
 
-    Args:
-        benchmark_name: name of the benchmark
+#     Args:
+#         benchmark_name: name of the benchmark
 
-    Returns:
-        path to benchmark directory
-    """
-    if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
-        ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
-    else:
-        ccb_dir: Path = CCB_DIR
-    return ccb_dir / benchmark_name
+#     Returns:
+#         path to benchmark directory
+#     """
+#     if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
+#         ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
+#     else:
+#         ccb_dir: Path = CCB_DIR
+#     return ccb_dir / benchmark_name
 
 
-def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecifications, None, None]:
+def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
@@ -211,14 +164,8 @@ def task_iterator(benchmark_name: str = "default") -> Generator[TaskSpecificatio
     Returns:
         task specifications for the desired benchmark dataset
     """
-    if benchmark_name == "test":
-        yield mnist_task_specs
-        return
-    elif benchmark_name == "imagenet":
-        yield imagenet_task_specs
-        return
 
-    benchmark_dir = get_benchmark_dir(benchmark_name)
+    benchmark_dir = Path(benchmark_dir)
 
     for dataset_dir in benchmark_dir.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
@@ -231,7 +178,7 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     """Load task specifications from a path.
 
     Args:
-        dataset_dir: path to directory of task_specifications
+        dataset_dir: path to dataset directory of task_specifications
         rename_benchmark: whether or not to rename benchmark with with benchmark directory name
 
     Returns:
