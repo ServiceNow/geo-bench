@@ -60,7 +60,7 @@ class Conv4Generator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
         """Return a model instance from task specs and hyperparameters.
 
         Args:

@@ -74,7 +74,7 @@ class SegmentationGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
         """Return model instance from task specs and hyperparameters.
 
         Args:
@@ -219,7 +219,7 @@ class SegmentationGenerator(ModelGenerator):
 
 
 def model_generator() -> SegmentationGenerator:
-    """Initialized Segmentation Generator.
+    """Initialize Segmentation Generator.
 
     Returns:
         segmentation model generator

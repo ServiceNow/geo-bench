@@ -1,15 +1,20 @@
 """Timm Model Generator."""
 
-import logging
+import os
 import random
+import string
 from typing import Any, Callable, Dict
 
+import pytorch_lightning as pl
 import timm
 import torch
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
 from ccb import io
+from ccb.experiment.experiment import Job
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     Model,
@@ -62,7 +67,7 @@ class TIMMGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
         """Return a ccb.torch_toolbox.model.Model instance from task specs and hparams.
 
         Args:
@@ -285,7 +290,7 @@ class TIMMGenerator(ModelGenerator):
 
 
 def model_generator() -> TIMMGenerator:
-    """Initialized Timm Generator.
+    """Initializ Timm Generator.
 
     Returns:
         segmentation model generator

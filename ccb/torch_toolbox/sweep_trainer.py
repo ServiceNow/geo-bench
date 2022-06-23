@@ -6,8 +6,6 @@ import os
 
 import pytorch_lightning as pl
 import wandb
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
@@ -41,21 +39,27 @@ def train(job_dir) -> None:
 
         wandb_config = run.config
         # set up W&B logger
-        wandb_logger = pl.loggers.WandbLogger(
-            project="ccb",
-            entity="climate-benchmark",
-            id=None,
-            group=wandb_config.get("wandb_group", None),
-            name=wandb_config.get("name", None),
-            save_dir=str(job.dir),
-            resume=True,
-        )
+        # wandb_logger = pl.loggers.WandbLogger(
+        #     project="ccb",
+        #     entity="climate-benchmark",
+        #     id=None,
+        #     group=wandb_config.get("wandb_group", None),
+        #     name=wandb_config.get("name", None),
+        #     save_dir=str(job.dir),
+        #     resume=True,
+        # )
 
-        loggers = [pl.loggers.CSVLogger(str(job.dir), name="csv_logs"), wandb_logger]
+        # loggers = [pl.loggers.CSVLogger(str(job.dir), name="csv_logs"), wandb_logger]
 
         print(wandb.config)
         # instantiate model - need to used wandb config hparams here that the sweep overwrites
-        model = model_gen.generate(task_specs=job.task_specs, hparams=wandb_config, config=config)
+        model = model_gen.generate_model(task_specs=job.task_specs, hparams=wandb_config, config=config)
+
+        trainer = model_gen.generate_model(config=config, hparams=wandb_config, job=job)
+
+        # reload config
+        config = job.config
+
         datamodule = DataModule(
             task_specs,
             benchmark_dir=config["experiment"]["benchmark_dir"],
@@ -66,21 +70,6 @@ def train(job_dir) -> None:
             collate_fn=model_gen.get_collate_fn(task_specs, hparams),
             band_names=config["dataset"]["band_names"],
             format=config["dataset"]["format"],
-        )
-
-        ckpt_dir = os.path.join(job_dir, "checkpoint")
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
-        )
-
-        trainer = pl.Trainer(
-            **config["pl"],
-            default_root_dir=job_dir,
-            callbacks=[
-                EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 30), min_delta=1e-5),
-                checkpoint_callback,
-            ],
-            logger=loggers,
         )
 
         ckpt_path = config["model"].get("ckpt_path", None)
