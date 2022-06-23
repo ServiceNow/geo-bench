@@ -2,7 +2,6 @@
 """Train the model using job information contained in the current directory."""
 
 import argparse
-import json
 import os
 import random
 import string
@@ -59,7 +58,7 @@ def train(job_dir) -> None:
             save_dir=str(job.dir),
             resume="allow",
             config=hparams,
-        )
+        ),
     ]
     job.save_config(config, overwrite=True)
 
