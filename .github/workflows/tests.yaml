@@ -43,6 +43,7 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run pytest checks
+      shell: bash
       env: # wandb api key
         WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       run: |
