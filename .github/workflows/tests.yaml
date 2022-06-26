@@ -6,9 +6,7 @@ on:
   pull_request:
     branches:
     - main
-env:
-  CCB_DIR: "tests/data/"
-  WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+  
 jobs:
   pytest:
     name: pytest
@@ -45,4 +43,8 @@ jobs:
         python -m poetry install
     - name: Run pytest checks
       shell: bash
-      run: poetry run python -m pytest -v tests
+      env: # wandb api key
+        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      run: |
+        poetry run wandb login "$WANDB_API_KEY"
+        poetry run python -m pytest -v tests
