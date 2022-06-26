@@ -1,12 +1,18 @@
 """Model."""
 
+import os
+import random
+import string
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 import torchmetrics
 from pytorch_lightning import LightningModule
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from torch import Tensor
 
 from ccb import io
@@ -253,7 +259,7 @@ class ModelGenerator:
         """
         self.model_path = model_path
 
-    def generate(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
         """Generate a Model to train.
 
         Args:
@@ -270,6 +276,53 @@ class ModelGenerator:
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
         """
         raise NotImplementedError()
+
+    def generate_trainer(self, config: dict, hparams: dict, job) -> pl.Trainer:
+        """Configure a pytroch lightning Trainer.
+
+        Args:
+            config: dictionary containing config
+            hparams: hparams to pass to track with logger
+            job: job being executed to let logger know directory
+
+        Returns:
+            lightning Trainer with configurations from config file.
+        """
+        run_id = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(8))
+        config["wandb"]["wandb_run_id"] = run_id
+
+        loggers = [
+            pl.loggers.CSVLogger(str(job.dir), name="lightning_logs"),
+            pl.loggers.WandbLogger(
+                save_dir=str(job.dir),
+                project=config["wandb"]["project"],
+                entity=config["wandb"]["entity"],
+                id=run_id,
+                group=config["wandb"].get("wandb_group", None),
+                name=config["wandb"].get("name", None),
+                resume="allow",
+                config=hparams,
+            ),
+        ]
+
+        job.save_config(config, overwrite=True)
+
+        ckpt_dir = os.path.join(job.dir, "checkpoint")
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
+        )
+
+        trainer = pl.Trainer(
+            **config["pl"],
+            default_root_dir=job.dir,
+            callbacks=[
+                EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 30), min_delta=1e-5),
+                checkpoint_callback,
+            ],
+            logger=loggers,
+        )
+
+        return trainer
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
         """Generate the collate functions for stacking the mini-batch.
@@ -288,7 +341,7 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise None
+        raise NotImplementedError()
 
     def get_transform(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], train: bool = True):
         """Generate the collate functions for stacking the mini-batch.
@@ -301,7 +354,7 @@ class ModelGenerator:
         Returns:
             A callable taking an object of type Sample as input. The return will be fed to the collate_fn
         """
-        return None
+        raise NotImplementedError()
 
 
 def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: Dict[str, Any]):
