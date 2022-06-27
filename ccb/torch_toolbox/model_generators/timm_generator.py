@@ -190,7 +190,10 @@ class TIMMGenerator(ModelGenerator):
         method = config["model"]["new_channel_init_method"]
 
         dataset = task_specs.get_dataset(
-            split="train", band_names=config["dataset"]["band_names"], format=config["dataset"]["format"]
+            split="train",
+            band_names=config["dataset"]["band_names"],
+            format=config["dataset"]["format"],
+            partition_name=config["experiment"]["partition_name"],
         )
         alt_band_names = dataset.alt_band_names
         band_names = dataset.band_names
@@ -269,6 +272,7 @@ class TIMMGenerator(ModelGenerator):
             format=config["dataset"]["format"],
             band_names=tuple(config["dataset"]["band_names"]),
             benchmark_dir=config["experiment"]["benchmark_dir"],
+            partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
         t = []
         t.append(tt.ToTensor())

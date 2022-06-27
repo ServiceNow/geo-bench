@@ -89,12 +89,15 @@ class Conv4Generator(ModelGenerator):
         """
         return default_collate
 
-    def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
+    def get_transform(
+        self, task_specs, hyperparams: Dict[str, Any], config: Dict[str, Any], train=True, scale=None, ratio=None
+    ):
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
             hyperparams: model hyperparameters
+            config: config file
             train: train mode true or false
             scale: define image scale
             ratio: define image ratio range
@@ -106,38 +109,28 @@ class Conv4Generator(ModelGenerator):
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
 
-        if task_specs.dataset_name == "imagenet":
-            mean, std = task_specs.get_dataset(split="train", format=hyperparams["format"]).rgb_stats()
-            t = []
-            t.append(tt.ToTensor())
-            t.append(tt.Normalize(mean=mean, std=std))
-            if train:
-                t.append(tt.RandomHorizontalFlip())
-                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
-            transform = tt.Compose(t)
-        elif task_specs.dataset_name.lower() == "mnist":
-            t = []
-            t.append(tt.ToTensor())
-            transform = tt.Compose(t)
-        else:
-            mean, std = task_specs.get_dataset(
-                split="train", format=hyperparams["format"], band_names=tuple(hyperparams["band_names"])
-            ).normalization_stats()
-            t = []
-            t.append(tt.ToTensor())
-            t.append(tt.Normalize(mean=mean, std=std))
-            if train:
-                t.append(tt.RandomHorizontalFlip())
-                t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+        mean, std = task_specs.get_dataset(
+            split="train",
+            format=config["dataset"]["format"],
+            band_names=tuple(config["dataset"]["band_names"]),
+            benchmark_dir=config["experiment"]["benchmark_dir"],
+            partition_name=config["experiment"]["partition_name"],
+        ).normalization_stats()
+        t = []
+        t.append(tt.ToTensor())
+        t.append(tt.Normalize(mean=mean, std=std))
+        if train:
+            t.append(tt.RandomHorizontalFlip())
+            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
-            t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
+        t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
 
-            t = tt.Compose(t)
+        t = tt.Compose(t)
 
-            def transform(sample: io.Sample):
-                x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
-                x = t(x)
-                return {"input": x, "label": sample.label}
+        def transform(sample: io.Sample):
+            x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
+            x = t(x)
+            return {"input": x, "label": sample.label}
 
         return transform
 

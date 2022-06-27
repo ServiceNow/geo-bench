@@ -9,7 +9,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
 
-from ccb.io.dataset import CCB_DIR, BandInfo, Dataset
+from ccb.io.dataset import BandInfo, Dataset
 from ccb.io.label import Classification
 
 
@@ -73,7 +73,7 @@ class TaskSpecifications:
         self,
         benchmark_dir: Path,
         split: Union[str, None],
-        partition: str = "default",
+        partition_name: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
@@ -83,7 +83,7 @@ class TaskSpecifications:
         Args:
             benchmark_dir: path to benchmark directory where dataset can be found
             split: dataset split to choose
-            partition: name of partition
+            partition_name: name of partition
             transform: dataset transforms
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
@@ -91,7 +91,7 @@ class TaskSpecifications:
         return Dataset(
             dataset_dir=self.get_dataset_dir(benchmark_dir),
             split=split,
-            partition_name=partition,
+            partition_name=partition_name,
             transform=transform,
             format=format,
             band_names=band_names,
