@@ -1,8 +1,9 @@
 import argparse
-from pathlib import Path
 import subprocess
-
+from pathlib import Path
 from subprocess import PIPE
+
+from ruamel.yaml import YAML
 
 
 # XXX: This needs to appear before the constants since it is used to extract user toolkit info
@@ -14,7 +15,8 @@ def _run_shell_cmd(cmd: str, hide_stderr=False):
 
 # Toolkit user identity (extracted automatically)
 TOOLKIT_USER_ORG = _run_shell_cmd("eai organization get --field name")
-TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
+# TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
+TOOLKIT_USER_ACCOUNT = "snow.rg_climate_benchmark.nilslehmann"
 TOOLKIT_USER = f"{TOOLKIT_USER_ORG}.{TOOLKIT_USER_ACCOUNT}"
 
 # Get current git branch (used to tag code by user+branch)
@@ -43,10 +45,14 @@ def _load_envs():
     return [env.strip() for env in open(".envs", "r")]
 
 
-def toolkit_job(script: Path, env_vars=()):
-    """Launch a job on toolkit along with a specific script (assumed runnable with sh)"""
+def toolkit_job(script_path: Path, env_vars=()):
+    """Launch a job on toolkit along with a specific script (assumed runnable with sh).
+
+    Args:
+        script_path: path to .sh script to exectute on toolkit
+    """
     job_name = (
-        script.parent.name.lower()
+        script_path.parent.name.lower()
     )  # TODO actually job_name needs to be unique across all jobs? maybe we need to rethink that.
     for char in (".", "="):  # TODO replace all non alpha numeric chars by '_'.
         job_name = job_name.replace(char, "_")
@@ -73,7 +79,7 @@ def toolkit_job(script: Path, env_vars=()):
     # TODO: faire poetry install on boot
     cmd += [
         "--",
-        f"sh -c '{TOOLKIT_BOOTSTRAP_CMD} && cd /mnt/code/ && sh {str(script)}'",
+        f"sh -c '{TOOLKIT_BOOTSTRAP_CMD} && cd /mnt/code/ && sh {str(script_path)}'",
     ]  # TODO do we have to put absolute path? Could we use relative path of script?
 
     # Launch the job
@@ -82,24 +88,89 @@ def toolkit_job(script: Path, env_vars=()):
     print("Launched.")
 
 
-def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()):
+def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
     """Scans the exp_dir for experiments to launch"""
     exp_dir = Path(exp_dir)
 
     print(f"Scanning {exp_dir}.")
+    # this is how standard/old version expirements are found
     script_list = list(exp_dir.glob("**/run.sh"))
-    if prompt:
-        print("Will launch all of these jobs on toolkit:")
-        for script in script_list:
-            print(str(script))
-        ans = input("Ready to proceed? y/n.")
-        if ans != "y":
-            return
+    if script_list:
+        if prompt:
+            print("Will launch all of these jobs on toolkit:")
+            for script in script_list:
+                print(str(script))
+            ans = input("Ready to proceed? y/n.")
+            if ans != "y":
+                return
 
-    for script in script_list:
-        toolkit_job(script, env_vars)
+        for script_path in script_list:
+            toolkit_job(script_path, env_vars)
+        return
 
-    print("Done.")
+    # script list for seeded_runs
+    script_list = list(exp_dir.glob("**/**/run.sh"))
+    if script_list:
+        return
+
+    config_list = list(exp_dir.glob("**/**/config.yaml"))
+    if config_list:
+        # need to decide between seeded runs and sweeps
+        config_list = list(exp_dir.glob("**/**/config.yaml"))
+
+        for config_path in config_list:
+            yaml = YAML()
+            with open(config_path, "r") as yamlfile:
+                config = yaml.load(yamlfile)
+            with open(config_path.parents[0] / "hparams.yaml", "r") as yamlfile:
+                hparams = yaml.load(yamlfile)
+
+            ans = input(f"Launch {hparams['backbone']} on {config_path.parents[0].name} y/n.")
+            if ans != "y":
+                continue
+
+            assert "sweep_config_path" in config["wandb"]["sweep"]
+
+            sweep_name = config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + hparams["backbone"]
+            sweep_path = config_path.parents[0] / "sweep_config.yaml"
+
+            cmd = ["wandb", "sweep", "--name", sweep_name, str(config_path.parents[0] / "sweep_config.yaml")]
+
+            result = subprocess.run(cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+            output = result.stderr.replace("\n", "")  # wandb sweep over stderr not stdout unexpectedly
+
+            # need to find a proper way to match with regex
+            # sweep_regex = re.compile(r"""
+            #     (?P<sweep_phrase>[Run sweep agent with: ])
+            # """, re.VERBOSE)
+
+            # match = re.search(sweep_regex, output)
+            # if "sweep_id" in match.groupdict():
+            #     sweep_id = match.group("sweep_id")
+            if "Run sweep agent with: " in output:
+                wandb_agent_command = output.split("Run sweep agent with: ")[-1]
+                sweep_id = wandb_agent_command.split(" ")[-1]
+                config["wandb"]["sweep"]["sweep_id"] = sweep_id
+                config["wandb"]["wandb_group"] = sweep_name
+                config["wandb"]["sweep"]["sweep_config_path"] = str(sweep_path)
+            else:
+                raise ValueError(f"Sweep could not be launched successfully, got {output}")
+
+            with open(config_path.parents[0] / "config.yaml", "w") as yamlfile:
+                yaml.dump(config, yamlfile)
+
+            num_agents = config["wandb"]["sweep"]["num_agents"]
+            num_trials = config["wandb"]["sweep"]["num_trials_per_agent"]
+
+            # save a script that can be launched with toolkit
+            script_path = config_path.parents[0] / "run.sh"
+            with open(script_path, "w") as fd:
+                fd.write("#!/bin/bash\n")
+                fd.write(f"{wandb_agent_command} --count {num_trials}")
+
+            # launch agents via toolkit
+            for agent in range(num_agents):
+                toolkit_job(script_path, env_vars)
 
 
 def push_code(dir):
