@@ -163,7 +163,11 @@ class SegmentationGenerator(ModelGenerator):
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = config["model"]["input_size"]
         mean, std = task_specs.get_dataset(
-            benchmark_dir=config["experiment"]["benchmark_dir"], split="train"
+            split="train",
+            format=config["dataset"]["format"],
+            band_names=tuple(config["dataset"]["band_names"]),
+            benchmark_dir=config["experiment"]["benchmark_dir"],
+            partition_name=config["experiment"]["partition_name"],
         ).rgb_stats()
         band_names = tuple(config["dataset"]["band_names"])
 

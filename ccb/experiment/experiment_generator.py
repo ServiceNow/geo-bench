@@ -81,10 +81,6 @@ def experiment_generator(
             # continue with hyperparameters from initialized model
             hparams = model.hyperparameters
 
-            # hparams["dataset_name"] = task_specs.dataset_name
-            # hparams["benchmark_name"] = benchmark_name
-            # hparams["model_generator_name"] = model_generator_module_name
-
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
@@ -95,7 +91,7 @@ def experiment_generator(
             job.write_wandb_sweep_cl_script(
                 config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
-                base_sweep_config=config["wandb"]["sweep"]["sweep_config_yaml_path"],
+                base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
             )
 
         elif experiment_type == "seeded_runs":
