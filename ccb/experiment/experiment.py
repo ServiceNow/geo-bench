@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 import stat
+import sys
 from functools import cached_property
 from importlib import import_module
 from pathlib import Path
@@ -170,8 +171,6 @@ class Job:
 
         base_yaml["command"] = [  # commands needed to run actual training script
             "${program}",
-            # "--model-generator",
-            # model_generator_module_name,
             "--job_dir",
             str(job_dir),
         ]
