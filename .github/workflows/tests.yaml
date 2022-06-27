@@ -46,5 +46,6 @@ jobs:
       env: # wandb api key
         WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       run: |
+        cat ~/.netrc
         poetry run wandb login "$WANDB_API_KEY"
         poetry run python -m pytest -v tests
