@@ -77,13 +77,13 @@ class TaskSpecifications:
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
-    ):
+    ) -> Dataset:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
             benchmark_dir: path to benchmark directory where dataset can be found
             split: dataset split to choose
-            partition_name: name of partition
+            partition_name: name of partition, i.e. 'default' for default_partition.json
             transform: dataset transforms
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
