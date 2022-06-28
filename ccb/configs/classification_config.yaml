@@ -1,9 +1,9 @@
 experiment:
   generate_experiment_dir: /mnt/data/experiments/nils/partition_sweeps_classification
-  experiment_name: 1.00x_train # prefix
+  experiment_name: 0.01x_train # prefix
   experiment_type: sweep # standard, seeded_runs, sweep
   benchmark_dir: /mnt/data/cc_benchmark/classification_v0.5
-  partition_name: 1.00x_train_partition.json
+  partition_name: 0.01x_train
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
   head_type: linear # classification
