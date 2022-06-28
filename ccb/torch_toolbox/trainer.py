@@ -35,7 +35,7 @@ def train(job_dir) -> None:
     datamodule = DataModule(
         task_specs=task_specs,
         benchmark_dir=config["experiment"]["benchmark_dir"],
-        partition=config["experiment"]["partition_name"],
+        partition_name=config["experiment"]["partition_name"],
         batch_size=hparams["batch_size"],
         num_workers=config["dataloader"]["num_workers"],
         train_transform=model_gen.get_transform(task_specs=task_specs, hparams=hparams, config=config, train=True),
@@ -44,6 +44,8 @@ def train(job_dir) -> None:
         band_names=config["dataset"]["band_names"],
         format=config["dataset"]["format"],
     )
+
+    trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])
 
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
