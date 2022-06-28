@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ['3.8', '3.9']
     steps:
     - name: Clone repo
@@ -41,12 +41,10 @@ jobs:
       run: |
         python -m poetry lock --no-update
         python -m poetry install
-    - name: Logging W&B
+    - name: Run pytest checks
       shell: bash
       env:
         WANDB_API: ${{ secrets.WANDB_API_KEY }}
-      run: poetry run wandb login "$WANDB_API"
-    - name: Run pytest checks
-      shell: bash
       run: |
+        poetry run wandb login "$WANDB_API"
         poetry run python -m pytest -v tests --cov=ccb --cov-report=xml
