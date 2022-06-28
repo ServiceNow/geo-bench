@@ -87,18 +87,6 @@ def test_toolbox_getitem():
     test_dirs = [os.path.join("tests", "data", benchmark) for benchmark in benchmarks]
     for benchmark_dir in test_dirs:
         for task in io.task_iterator(benchmark_dir):
-            dataset = task.get_dataset(split="valid", benchmark_dir=benchmark_dir)
+            dataset = task.get_dataset(split="valid", benchmark_dir=benchmark_dir, partition_name="default")
             data = dataset[0]
             assert isinstance(data, io.Sample)
-
-
-if __name__ == "__main__":
-    # test_toolbox_timm()
-    # test_toolbox_brick_kiln()
-    # test_toolbox_wandb()
-    # test_toolbox_mnist()
-    # test_toolbox_getitem()
-    # test_toolbox_seeds()
-    # test_toolbox_segmentation()
-    # test_toolbox_bigearthnet()
-    pass
