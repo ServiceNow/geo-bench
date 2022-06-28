@@ -83,7 +83,7 @@ class TaskSpecifications:
         Args:
             benchmark_dir: path to benchmark directory where dataset can be found
             split: dataset split to choose
-            partition_name: name of partition
+            partition_name: name of partition, i.e. 'default' for default_partition.json
             transform: dataset transforms
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
