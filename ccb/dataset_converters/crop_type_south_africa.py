@@ -236,6 +236,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         dataset_name=DATASET_NAME,
         patch_size=(256, 256),
         # n_time_steps=76,  # this is not the same for all images but the max
+        n_time_steps=1,  # we yield different instance for each time steps.
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,

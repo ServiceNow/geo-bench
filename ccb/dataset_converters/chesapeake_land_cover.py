@@ -131,26 +131,23 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     test_dl = dm.test_dataloader()
 
     n_samples = 0
-    for s_idx, split_dl in enumerate([train_dl, val_dl, test_dl]):
+    for s_idx, split_dl in enumerate([test_dl, val_dl, train_dl]):
         for i, dl_sample in enumerate(tqdm(split_dl)):
             sample_name = f"id_{n_samples:06d}"
             image = np.array(dl_sample["image"])[0]
             label = np.array(dl_sample["mask"])[0]
             crs = dl_sample["crs"][0]
 
-            # if label.shape != (256, 256):
-            #     print(f"Cropping label to 256x256 from shape {label.shape}. ")
-            #     label = label[:256, :256]
+            # I don't know why but sometime this is needed.
+            if label.shape != (256, 256):
+                print(f"Cropping label to 256x256 from shape {label.shape} and image from shape {image.shape}. ")
+                label = label[:256, :256]
+                image = image[..., :256, :256]
 
             sample = make_sample(image, label, sample_name, task_specs, crs)
             sample.write(dataset_dir)
 
-            if s_idx == 0:
-                partition.add("train", sample_name)
-            elif s_idx == 1:
-                partition.add("valid", sample_name)
-            elif s_idx == 2:
-                partition.add("test", sample_name)
+            partition.add(("test", "valid", "train")[s_idx], sample_name)
 
             n_samples += 1
             if max_count is not None and n_samples >= max_count:
