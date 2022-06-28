@@ -41,9 +41,12 @@ jobs:
       run: |
         python -m poetry lock --no-update
         python -m poetry install
+    - name: Logging W&B
+      shell: bash
+      env:
+        WANDB_API: ${{ secrets.WANDB_API_KEY }}
+      run: wandb login "$WANDB_API_KEY"
     - name: Run pytest checks
       shell: bash
-      env: # wandb api key
-        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
       run: |
         poetry run python -m pytest -v tests
