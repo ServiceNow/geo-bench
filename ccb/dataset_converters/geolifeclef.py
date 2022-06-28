@@ -2,11 +2,12 @@
 
 # pip install kaggle
 # set kaggle.json according to https://www.kaggle.com/docs/api
-# accept terms and conditions from: https://www.kaggle.com/c/geolifeclef-2021/data
+# accept terms and conditions from: https://www.kaggle.com/competitions/geolifeclef-2022-lifeclef-2022-fgvc9/data
 # Download dataset using this command
-# `kaggle competitions download -c geolifeclef-2021`
+# `kaggle competitions download -c geolifeclef-2022-lifeclef-2022-fgvc9`
 #
 
+# Note: This converter uses per default "observations_sample.csv", which can be found and copied from geolifeclef-scripts into the observations folder of geolifeclef-2022
 
 from pathlib import Path
 
@@ -19,21 +20,13 @@ from tqdm import tqdm
 
 from ccb import io
 
-DATASET_NAME = "geolifeclef-2021"
+DATASET_NAME = "geolifeclef-2022"
 SPATIAL_RESOLUTION = 1
 PATCH_SIZE = 256
-N_LABELS = 17037
+N_LABELS = 100
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
 DATA_PATH = Path(SRC_DATASET_DIR) / "data"
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
-
-df_suggested_landcover_alignment = pd.read_csv(DATA_PATH / "metadata" / "landcover_suggested_alignment.csv", sep=";")
-landcover_labels = (
-    df_suggested_landcover_alignment[["suggested_landcover_code", "suggested_landcover_label"]]
-    .drop_duplicates()
-    .sort_values("suggested_landcover_code")["suggested_landcover_label"]
-    .values
-)
 
 # US NAIP, FR aerial based (IGN)
 BAND_INFO_LIST = io.make_rgb_bands(spatial_resolution=SPATIAL_RESOLUTION)
@@ -42,7 +35,7 @@ BAND_INFO_LIST.append(NIR_BAND)
 BAND_INFO_LIST.append(io.ElevationBand("Altitude", ("elevation",), spatial_resolution=SPATIAL_RESOLUTION))
 
 
-def make_sample(observation_id, label, lat, lng, kaggle_sample=False) -> io.Sample:
+def make_sample(observation_id, label, lat, lng) -> io.Sample:
     """Create a sample.
 
     Args:
@@ -50,7 +43,6 @@ def make_sample(observation_id, label, lat, lng, kaggle_sample=False) -> io.Samp
         label:
         lat:
         lng:
-        kaggle_sample:
 
     Returns:
         sample
@@ -68,9 +60,7 @@ def make_sample(observation_id, label, lat, lng, kaggle_sample=False) -> io.Samp
     subfolder1 = observation_id[-2:]
     subfolder2 = observation_id[-4:-2]
 
-    # Kaggle Sample Dataset has an extra folder called patches_sample
-    kaggle_folder = "patches_sample" if kaggle_sample else ""
-    filename = Path(SRC_DATASET_DIR) / "data" / kaggle_folder / region / subfolder1 / subfolder2 / observation_id
+    filename = Path(SRC_DATASET_DIR) / "data" / f"patches-{region}" / subfolder1 / subfolder2 / observation_id
 
     transform_center = rasterio.transform.from_origin(lng, lat, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
@@ -133,31 +123,17 @@ def make_sample(observation_id, label, lat, lng, kaggle_sample=False) -> io.Samp
     return io.Sample(bands, label=label, sample_name=observation_id)
 
 
-def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, kaggle_sample: bool = True) -> None:
+def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
     """Convert GeoLifeCLEF dataset.
 
     Args:
         max_count: maximum number of samples
         dataset_dir: path to dataset directory
-        kaggle_sample:
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)
     partition = io.dataset.Partition()
 
-    df_fr = pd.read_csv(DATA_PATH / "observations" / "observations_fr_train.csv", sep=";", index_col="observation_id")
-    df_us = pd.read_csv(DATA_PATH / "observations" / "observations_us_train.csv", sep=";", index_col="observation_id")
-    df = pd.concat((df_fr, df_us))
-
-    # if we set a max count, we assume that the user downloaded the data from kaggle's sample patches (~3 GB)
-    if kaggle_sample is True:
-        # sample patches only contain the subfolder 00 (identified with the last two digits in the observation id)
-        df = df.filter(regex="00$", axis=0)
-
-    # there are no labels for the test data. Should we integrate it as well?
-    # df_fr_test = pd.read_csv(DATA_PATH / "observations" / "observations_fr_test.csv", sep=";", index_col="observation_id")
-    # df_us_test = pd.read_csv(DATA_PATH / "observations" / "observations_us_test.csv", sep=";", index_col="observation_id")
-    # df_test = pd.concat((df_fr_test, df_us_test))
-    # df = pd.concat((df, df_test))
+    df = pd.read_csv(DATA_PATH / "observations" / "observations_sample.csv", sep=";", index_col="observation_id")
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
@@ -166,7 +142,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, kaggle_sampl
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.Classification(N_LABELS),
-        eval_loss=io.AccuracyTop30,
+        eval_loss=io.Accuracy,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
 
@@ -186,7 +162,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, kaggle_sampl
 
         # print(f'name={sample_name} oid={observation_id} y={label} lat={latitude} lng={longitude} split={split_name}')
 
-        sample = make_sample(observation_id, int(label), latitude, longitude, kaggle_sample=kaggle_sample)
+        sample = make_sample(observation_id, int(label), latitude, longitude)
         sample.write(dataset_dir)
         partition.add(split_name, sample_name)
 

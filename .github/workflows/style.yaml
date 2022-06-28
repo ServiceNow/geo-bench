@@ -1,0 +1,103 @@
+name: style
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+jobs:
+  black:
+    name: black
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install poetry
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+
+    - name: Run black checks
+      run: poetry run python -m black . --check --diff
+  flake8:
+    name: flake8
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install poetry
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+    - name: Run flake8 checks
+      run: poetry run python -m flake8 .
+  isort:
+    name: isort
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install poetry
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+    - name: Run isort checks
+      run: |
+        poetry run python -m isort ccb/ --check --diff
+  pydocstyle:
+    name: pydocstyle
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install poetry
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+    - name: Run pydocstyle checks
+      run: poetry run python -m pydocstyle ccb/
