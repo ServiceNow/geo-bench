@@ -1,25 +1,27 @@
+import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
+from ruamel.yaml import YAML
 
 import ccb
-from ccb import io
 from ccb.experiment.experiment import Job, get_model_generator
-from ccb.experiment.experiment_generator import experiment_generator
 from ccb.experiment.sequential_dispatcher import sequential_dispatcher
 
 
-def test_load_module():
-    """
-    Test loading an existing model generator from a user-specified path.
-
-    """
-
+def test_load_model():
+    """Test loading an existing model generator from a user-specified path."""
     model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
-    assert hasattr(model_generator, "generate")
+    assert hasattr(model_generator, "generate_model")
+
+
+def test_load_trainer():
+    """Test loading an existing model generator from a user-specified path."""
+    model_generator = get_model_generator("ccb.torch_toolbox.model_generators.conv4")
+    assert hasattr(model_generator, "generate_trainer")
 
 
 def test_unexisting_path():
@@ -34,47 +36,48 @@ def test_unexisting_path():
 
 
 @pytest.mark.slow
-def test_experiment_generator_on_mnist():
+@pytest.mark.parametrize(
+    "config_filepath, hparam_filepath",
+    [
+        ("tests/configs/base_classification.yaml", "tests/configs/classification_hparams.yaml"),
+        ("tests/configs/base_segmentation.yaml", "tests/configs/segmentation_hparams.yaml"),
+    ],
+)
+def test_experiment_generator_on_benchmark(config_filepath, hparam_filepath):
 
-    with tempfile.TemporaryDirectory() as exp_dir:
-
-        experiment_generator("ccb.torch_toolbox.model_generators.conv4", exp_dir, benchmark_name="test")
-
-        sequential_dispatcher(exp_dir=exp_dir, prompt=False)
-
-        job = Job(Path(exp_dir) / "MNIST")
-        print(Path(exp_dir) / "MNIST")
-        metrics = job.get_metrics()
-        assert float(metrics["test_Accuracy"]) > 0.05
-
-
-@pytest.mark.slow
-@pytest.mark.skipif(not Path(io.CCB_DIR).exists(), reason="Requires presence of the benchmark.")
-def test_experiment_generator_on_benchmark():
     experiment_generator_dir = Path(ccb.experiment.__file__).absolute().parent
 
-    experiment_dir = tempfile.mkdtemp(prefix="exp_gen_test_on_benchmark")
-    # experiment_dir.mkdir(parents=True, exist_ok=True)
-    print(f"Generating experiments in {experiment_dir}.")
-    cmd = [
-        sys.executable,
-        str(experiment_generator_dir / "experiment_generator.py"),
-        "--model-generator",
-        "ccb.torch_toolbox.model_generators.conv4",
-        "--experiment-dir",
-        str(experiment_dir),
-        "--benchmark",
-        "ccb-test",
-    ]
+    with tempfile.TemporaryDirectory(prefix="test") as generate_experiment_dir:
+        # change experiment dir to tmp path
+        yaml = YAML()
+        with open(config_filepath, "r") as yamlfile:
+            config = yaml.load(yamlfile)
 
-    subprocess.check_call(cmd)
+        config["experiment"]["generate_experiment_dir"] = generate_experiment_dir
 
-    sequential_dispatcher(exp_dir=experiment_dir, prompt=False)
-    for ds_dir in Path(experiment_dir).iterdir():
-        job = Job(ds_dir)
-        print(ds_dir)
-        metrics = job.get_metrics()
-        print(metrics)
+        new_config_filepath = os.path.join(generate_experiment_dir, "config.yaml")
+        with open(new_config_filepath, "w") as fd:
+            yaml.dump(config, fd)
+
+        print(f"Generating experiments in {generate_experiment_dir}.")
+        cmd = [
+            sys.executable,
+            str(experiment_generator_dir / "experiment_generator.py"),
+            "--config_filepath",
+            new_config_filepath,
+            "--hparam_filepath",
+            hparam_filepath,
+        ]
+
+        subprocess.check_call(cmd)
+        os.remove(new_config_filepath)
+        exp_dir = os.path.join(generate_experiment_dir, os.listdir(generate_experiment_dir)[0])
+        sequential_dispatcher(exp_dir=exp_dir, prompt=False)
+        for ds_dir in Path(exp_dir).iterdir():
+            job = Job(ds_dir)
+            print(ds_dir)
+            metrics = job.get_metrics()
+            print(metrics)
 
 
 if __name__ == "__main__":

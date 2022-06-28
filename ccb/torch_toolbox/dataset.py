@@ -19,6 +19,8 @@ class DataModule(pl.LightningDataModule):
     def __init__(
         self,
         task_specs: io.TaskSpecifications,
+        benchmark_dir: str,
+        partition_name: str,
         batch_size: int,
         num_workers: int,
         val_batch_size: int = None,
@@ -32,6 +34,8 @@ class DataModule(pl.LightningDataModule):
 
         Args:
             task_specs: TaskSpecifications object to call get_dataset.
+            benchmark_dir: path to benchmark directory that contains datasets
+            partition_name: name of partition to load
             batch_size: The size of the mini-batch.
             num_workers: The number of parallel workers for loading samples from the hard-drive.
             val_batch_size: Tes size of the batch for the validation set and test set. If None, will use batch_size.
@@ -42,6 +46,8 @@ class DataModule(pl.LightningDataModule):
         """
         super().__init__()
         self.task_specs = task_specs
+        self.benchmark_dir = benchmark_dir
+        self.partition_name = partition_name
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size or batch_size
         self.num_workers = num_workers
@@ -55,7 +61,12 @@ class DataModule(pl.LightningDataModule):
         """Create the train dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
-                split="train", transform=self.train_transform, band_names=self.band_names, format=self.format
+                split="train",
+                partition_name=self.partition_name,
+                transform=self.train_transform,
+                band_names=self.band_names,
+                format=self.format,
+                benchmark_dir=self.benchmark_dir,
             ),
             batch_size=self.batch_size,
             shuffle=True,
@@ -67,7 +78,12 @@ class DataModule(pl.LightningDataModule):
         """Create the validation dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
-                split="valid", transform=self.eval_transform, band_names=self.band_names, format=self.format
+                split="valid",
+                partition_name=self.partition_name,
+                transform=self.eval_transform,
+                band_names=self.band_names,
+                format=self.format,
+                benchmark_dir=self.benchmark_dir,
             ),
             batch_size=self.val_batch_size,
             shuffle=False,
@@ -79,7 +95,12 @@ class DataModule(pl.LightningDataModule):
         """Create the test dataloader."""
         return DataLoader(
             self.task_specs.get_dataset(
-                split="test", transform=self.eval_transform, band_names=self.band_names, format=self.format
+                split="test",
+                partition_name=self.partition_name,
+                transform=self.eval_transform,
+                band_names=self.band_names,
+                format=self.format,
+                benchmark_dir=self.benchmark_dir,
             ),
             batch_size=self.val_batch_size,
             shuffle=False,
