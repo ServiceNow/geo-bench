@@ -135,7 +135,7 @@ def load_label_stats(task_specs: TaskSpecifications, max_count: int = None):
     for sample_path in tqdm(sample_paths, desc="Loading labels."):
         label = load_label(sample_path)
 
-        label_stats[sample_path.stem] = list(task_specs.label_type.label_stats(label))
+        label_stats[sample_path.stem] = task_specs.label_type.label_stats(label).tolist()
 
     return label_stats
 
@@ -234,10 +234,13 @@ def task_filter(task: TaskSpecifications):
     Args:
         task: task specifications
     """
-    return task.dataset_name.startswith("southAfricaCropType")
+    return True
+    return task.dataset_name.startswith("big")
     # return isinstance(task.label_type, io.SegmentationClasses)
 
 
 if __name__ == "__main__":
-    write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True, task_filter=task_filter)
+    write_all_label_map(
+        benchmark_name="classification_v0.5", max_count=None, compute_band_stats=True, task_filter=task_filter
+    )
     # view_label_map_count()
