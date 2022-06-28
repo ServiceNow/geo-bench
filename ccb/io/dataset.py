@@ -1126,7 +1126,7 @@ class Dataset:
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
-            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
+            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition. without _partition.json
             band_names: Sequence of band names to select
             split: Specify split to use or None for all
             transform: dataset transforms
@@ -1184,21 +1184,13 @@ class Dataset:
         """
         self._partition_path_dict = {}
         for p in self.dataset_dir.glob("*_partition.json"):
-            self._partition_path_dict[p.name] = p
+            partition_name = p.name.split("_partition.json")[0]
+            self._partition_path_dict[partition_name] = p
 
         self.set_partition(active_partition_name)
         self._sample_name_list = []
         for sample_names in self.active_partition.partition_dict.values():
             self._sample_name_list.extend(sample_names)
-        # self._sample_name_list = []
-        # for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
-        #     if p.name.endswith("_partition.json"):
-        #         partition_name = p.name.split("_partition.json")[0]
-        #         self._partition_path_dict[partition_name] = p
-        #     elif p.name == "task_specs.pkl":
-        #         self._task_specs_path = p
-        #     elif p.is_dir():
-        #         self._sample_name_list.append(p.name)
 
     ### Task specifications
     @cached_property

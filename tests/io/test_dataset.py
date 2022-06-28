@@ -81,7 +81,7 @@ def test_write_read():
         partition = io.Partition()
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
-        ds = io.Dataset(dataset_dir, band_names=band_names)
+        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
@@ -137,7 +137,7 @@ def test_dataset_partition():
         partition.save(directory=dataset_dir, partition_name="funky")
 
         # Test 1: load partition default, no split
-        ds = io.Dataset(dataset_dir, band_names=band_names)
+        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "default"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -209,7 +209,7 @@ def test_dataset_withnopartition():
         band_names = [band.band_info.name for band in sample1.bands]
 
         with pytest.raises(ValueError):  # raise ValueError because not partition exists
-            _ = io.Dataset(dataset_dir, band_names=band_names)
+            _ = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
 
 
 def custom_band(value, shape=(4, 4), band_name="test_band"):
@@ -261,11 +261,14 @@ def test_dataset_statistics():
 
         # Compute statistics : this will create all_bandstats.json
         produce_band_stats(
-            io.Dataset(dataset_dir, band_names=band_names), use_splits=False, values_per_image=None, samples=None
+            io.Dataset(dataset_dir, band_names=band_names, partition_name="default"),
+            use_splits=False,
+            values_per_image=None,
+            samples=None,
         )
 
         # Reload dataset with statistics
-        ds2 = io.Dataset(dataset_dir, band_names=band_names)
+        ds2 = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
 
         statistics = ds2.band_stats
 
