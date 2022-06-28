@@ -35,7 +35,7 @@ def train(job_dir) -> None:
     datamodule = DataModule(
         task_specs=task_specs,
         benchmark_dir=config["experiment"]["benchmark_dir"],
-        partition=config["experiment"]["partition_name"],
+        partition_name=config["experiment"]["partition_name"],
         batch_size=hparams["batch_size"],
         num_workers=config["dataloader"]["num_workers"],
         train_transform=model_gen.get_transform(task_specs=task_specs, hparams=hparams, config=config, train=True),
