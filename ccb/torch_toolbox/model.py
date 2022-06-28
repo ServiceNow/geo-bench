@@ -3,6 +3,7 @@
 import os
 import random
 import string
+import time
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -97,6 +98,7 @@ class Model(LightningModule):
         """
         # update and log
         self.log("train_loss", outputs["loss"], logger=True)
+        self.log("current_time", time.time(), logger=True)
         self.train_metrics.update(outputs["output"], outputs["target"])
 
     def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:
