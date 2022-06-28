@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-18.04, macos-latest]
         python-version: ['3.8', '3.9']
     steps:
     - name: Clone repo
@@ -49,4 +49,4 @@ jobs:
     - name: Run pytest checks
       shell: bash
       run: |
-        poetry run python -m pytest -v tests
+        poetry run python -m pytest -v tests --cov=ccb --cov-report=xml
