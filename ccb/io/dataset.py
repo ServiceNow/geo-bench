@@ -1,3 +1,4 @@
+"""Dataset."""
 import ast
 import datetime
 import errno
@@ -8,7 +9,7 @@ import pickle
 from collections import OrderedDict, defaultdict
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, Generator, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import h5py
@@ -19,12 +20,20 @@ from tqdm import tqdm
 
 from ccb.io.label import LabelType
 
-# Deprecated, use CCB_DIR instead
-src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
-datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+check_ccb_dir = os.environ.get("CCB_DIR", None)
 
-# src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
-CCB_DIR = Path(datasets_dir).parent
+if check_ccb_dir is None:
+    # Deprecated, use CCB_DIR instead
+    src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
+    datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+
+    # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
+    CCB_DIR: Path = Path(datasets_dir).parent
+
+else:
+    CCB_DIR = Path(check_ccb_dir)
+    src_datasets_dir: Path = CCB_DIR / "source"
+    datasets_dir: Path = CCB_DIR / "converted"
 
 
 class BandInfo(object):
@@ -93,7 +102,7 @@ class BandInfo(object):
         return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels."""
+        """Return the name of the band repated with the numbe or channels."""
         return [self.name]
 
 
@@ -114,7 +123,7 @@ class SpectralBand(BandInfo):
         super().__init__(name, alt_names, spatial_resolution)
         self.wavelength = wavelength
 
-    def __key(self) -> Tuple[str, float]:
+    def __key(self) -> Tuple[Optional[str], Optional[float]]:
         """Return spectral band key."""
         return (self.name, self.wavelength)
 
@@ -136,7 +145,7 @@ class Sentinel2(SpectralBand):
 
 
 class Landsat8(SpectralBand):
-    "Spectral band of type Landsat 8"
+    """Spectral band of type Landsat 8."""
 
     def __repr__(self):
         """Return representation of spectral band."""
@@ -175,7 +184,7 @@ class MultiBand(BandInfo):
         self.n_bands = n_bands
 
     def expand_name(self):
-        """The name of the band repated with the numbef or channels."""
+        """Expand the name of the band repated with the numbef or channels."""
         return [self.name] * self.n_bands
 
 
@@ -256,12 +265,14 @@ class SegmentationClasses(BandInfo, LabelType):
         return stats / np.sum(stats)
 
     @property
-    def class_names(self) -> List[str]:
+    def class_names(self) -> Optional[List[str]]:
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        else:
+        elif hasattr(self, "class_name"):
             return self.class_name  # for backward compatibility with saved pickles with a typo
+        else:
+            return None
 
     def __repr__(self) -> str:
         """Return representation of segmentation classes."""
@@ -340,7 +351,8 @@ class Band:
         meta_info=None,
         convert_to_int16: bool = True,
     ) -> None:
-        """
+        """Initialize new instance of Band.
+
         Args:
             data: 2d or 3d array of data containing the pixels of the band. shape=(height, width) or shape=(height, width, bands)
             band_info: Object of type Band_Info containing the band name, wavelength, spatial_resolution original spatial resolution.
@@ -375,7 +387,7 @@ class Band:
 
     def get_descriptor(self) -> str:
         """Get description of band."""
-        descriptor = self.band_info.name
+        descriptor: str = self.band_info.name
         if self.date is not None:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
@@ -481,7 +493,7 @@ def load_band_tif(file_path) -> Band:
     return band
 
 
-def _make_map(elements) -> Tuple[Any]:
+def _make_map(elements) -> Tuple[Any, Any]:
     """Make a enumerated map.
 
     Args:
@@ -496,7 +508,7 @@ def _make_map(elements) -> Tuple[Any]:
     return element_map, elements
 
 
-def _map_bands(band_info_set) -> Tuple[Any]:
+def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[str]]:
     """Map a set of band info objects.
 
     Args:
@@ -932,7 +944,7 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
 
 
 def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[str, List[str]], Sample]:
-    """Helper function to decide what sample loader to use.
+    """Create helper function to decide what sample loader to use.
 
     Args:
         sample_path: path to sample
@@ -1087,7 +1099,7 @@ class GeneratorWithLength(object):
         self.length = length
 
     def __len__(self):
-        """Return length of Generator with length"""
+        """Return length of Generator with length."""
         return self.length
 
     def __iter__(self):
@@ -1101,21 +1113,22 @@ class Dataset:
     def __init__(
         self,
         dataset_dir,
+        partition_name: str,
         band_names: Sequence[str] = None,
         split=None,
-        partition_name="default",
         transform=None,
         format="hdf5",
     ) -> None:
         """Initialize new CCB dataset.
+
         CCB datasets can have different split partitions (e.g. for few-shot learning).
         The default partition is
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
+            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
             band_names: Sequence of band names to select
             split: Specify split to use or None for all
-            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
             transform: dataset transforms
             format: 'hdf5' or 'tif'
         """
@@ -1171,14 +1184,12 @@ class Dataset:
         """
         self._partition_path_dict = {}
         for p in self.dataset_dir.glob("*_partition.json"):
-            partition_name = p.name.split("_partition.json")[0]
-            self._partition_path_dict[partition_name] = p
+            self._partition_path_dict[p.name] = p
 
         self.set_partition(active_partition_name)
         self._sample_name_list = []
         for sample_names in self.active_partition.partition_dict.values():
             self._sample_name_list.extend(sample_names)
-
         # self._sample_name_list = []
         # for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
         #     if p.name.endswith("_partition.json"):
@@ -1215,8 +1226,7 @@ class Dataset:
         return list(self.active_partition.partition_dict.keys())
 
     #### Partitions ####
-
-    def set_partition(self, partition_name="default") -> None:
+    def set_partition(self, partition_name: str) -> None:
         """Select active partition by name.
 
         Args:
@@ -1224,7 +1234,7 @@ class Dataset:
         """
         if partition_name not in self._partition_path_dict:
             raise ValueError(
-                f"Unknown partition {partition_name}. Maybe the dataset is missing a default_partition.json?"
+                f"Unknown partition {partition_name}. Maybe the dataset in {self.dataset_dir} is missing a default_partition.json?"
             )
         self.active_partition_name = partition_name
         self.active_partition = self.load_partition(partition_name)
@@ -1234,7 +1244,7 @@ class Dataset:
         return list(self._partition_path_dict.keys())
 
     @lru_cache(maxsize=3)
-    def load_partition(self, partition_name="default") -> Partition:
+    def load_partition(self, partition_name: str) -> Partition:
         """Load and return partition content from json file.
 
         Args:
@@ -1245,6 +1255,7 @@ class Dataset:
 
     def _load_partition(self, partition_name) -> None:
         """Load a partition.
+
         Maybe this logic can be improved???
 
         Current:
@@ -1392,7 +1403,7 @@ class Dataset:
 
     #### len and printing utils ####
     def get_available_stats_str(self):
-        """String for visualizing which stats are available (used for __repr__ and __str__)."""
+        """Return string for visualizing which stats are available (used for __repr__ and __str__)."""
         which_stats = []
         for partition in self.stats:
             if partition == "all":
@@ -1588,7 +1599,6 @@ def check_dataset_integrity(
         sample: list of samples
         assert_dense: whether or not to check that there are no None values
     """
-
     for partition_name in dataset._partition_path_dict.keys():
         print(f"check integrity of {partition_name}")
         partition = dataset.load_partition(partition_name)

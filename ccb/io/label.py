@@ -1,7 +1,7 @@
 """Label."""
 
 from types import new_class
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -11,7 +11,7 @@ class LabelType(object):
 
     pass
 
-    def assert_valid(self):
+    def assert_valid(self, value) -> None:
         """Check if label type is valid."""
         raise NotImplementedError()
 
@@ -33,12 +33,14 @@ class Classification(LabelType):
         self._class_names = class_names
 
     @property
-    def class_names(self) -> List[str]:
+    def class_names(self) -> Optional[List[str]]:
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        else:
+        elif hasattr(self, "class_name"):
             return self.class_name  # for backward compatibility with saved pickles with a typo
+        else:
+            return None
 
     def assert_valid(self, value) -> None:
         """Check if classification label is valid.
