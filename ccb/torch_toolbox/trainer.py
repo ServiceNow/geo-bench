@@ -45,6 +45,8 @@ def train(job_dir) -> None:
         format=config["dataset"]["format"],
     )
 
+    trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])
+
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
     trainer.test(model, datamodule)
