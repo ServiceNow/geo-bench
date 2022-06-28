@@ -45,7 +45,7 @@ jobs:
       shell: bash
       env:
         WANDB_API: ${{ secrets.WANDB_API_KEY }}
-      run: wandb login "$WANDB_API_KEY"
+      run: poetry run wandb login "$WANDB_API_KEY"
     - name: Run pytest checks
       shell: bash
       run: |
