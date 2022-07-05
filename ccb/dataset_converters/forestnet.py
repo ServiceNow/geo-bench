@@ -5,6 +5,7 @@
 # or create a symlink.
 import datetime
 import pickle
+from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
@@ -215,7 +216,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
         patch_size=(PATCH_SIZE, PATCH_SIZE),
-        n_time_steps=4,  # Variable number of time steps, max 23 across the dataset
+        n_time_steps=1,  # multiple time steps are decomposed into multiple samples
         bands_info=bands_info,
         bands_stats=None,  # Will be automatically written with inspect script
         label_type=io.Classification(len(LABELS), LABELS),
@@ -226,6 +227,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     task_specs.save(dataset_dir, overwrite=True)
 
     partition = io.Partition()
+    convert_all(partition, dataset_dir, max_count)
+
+    partition.save(dataset_dir, "original", as_default=True)
+
+
+def convert_all(partition, dataset_dir, max_count):
+    """Enclosing code to breaking 3 for loops with a single return statement."""
     sample_count = 0
     for split in ["train", "val", "test"]:
         df = pd.read_csv(SRC_DATASET_DIR / f"{split}.csv")
@@ -234,17 +242,24 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         for _, row in tqdm(df.iterrows(), total=df.shape[0]):
             example_dir = SRC_DATASET_DIR / row["example_path"]
             sample = load_sample(example_dir, row["label"], row["year"])
-            sample_name = example_dir.name
-            partition.add(split, sample_name)
-            sample.write(dataset_dir)
-            sample_count += 1
+            for sample in decompose_time(sample):
+                partition.add(split, sample.sample_name)
+                sample.write(dataset_dir)
+                sample_count += 1
 
-            if max_count is not None and sample_count >= max_count:
-                break
+                if max_count is not None and sample_count >= max_count:
+                    return
 
-        if max_count is not None and sample_count >= max_count:
-            break
-    partition.save(dataset_dir, "original", as_default=True)
+
+def decompose_time(sample: io.Sample):
+    """Split time of one sample into different samples through a generator."""
+    band_dict = defaultdict(list)
+    for band in sample.bands:
+        band_dict[band.date].append(band)
+
+    for date, bands in band_dict.items():
+        sample_name = f"{sample.sample_name}_{date.strftime('%Y_%m_%d')}"
+        yield io.Sample(bands, label=sample.label, sample_name=sample_name)
 
 
 if __name__ == "__main__":
