@@ -1113,9 +1113,9 @@ class Dataset:
     def __init__(
         self,
         dataset_dir,
+        partition_name: str = "default",
         band_names: Sequence[str] = None,
         split=None,
-        partition_name="default",
         transform=None,
         format="hdf5",
     ) -> None:
@@ -1126,9 +1126,9 @@ class Dataset:
 
         Args:
             dataset_dir: the path containing the samples of the dataset.
+            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition. without _partition.json
             band_names: Sequence of band names to select
             split: Specify split to use or None for all
-            partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition.
             transform: dataset transforms
             format: 'hdf5' or 'tif'
         """
@@ -1191,15 +1191,6 @@ class Dataset:
         self._sample_name_list = []
         for sample_names in self.active_partition.partition_dict.values():
             self._sample_name_list.extend(sample_names)
-        # self._sample_name_list = []
-        # for p in self.dataset_dir.glob("*"):  # self.dataset_dir.iterdir():
-        #     if p.name.endswith("_partition.json"):
-        #         partition_name = p.name.split("_partition.json")[0]
-        #         self._partition_path_dict[partition_name] = p
-        #     elif p.name == "task_specs.pkl":
-        #         self._task_specs_path = p
-        #     elif p.is_dir():
-        #         self._sample_name_list.append(p.name)
 
     ### Task specifications
     @cached_property
@@ -1227,7 +1218,7 @@ class Dataset:
         return list(self.active_partition.partition_dict.keys())
 
     #### Partitions ####
-    def set_partition(self, partition_name="default") -> None:
+    def set_partition(self, partition_name: str) -> None:
         """Select active partition by name.
 
         Args:
@@ -1245,7 +1236,7 @@ class Dataset:
         return list(self._partition_path_dict.keys())
 
     @lru_cache(maxsize=3)
-    def load_partition(self, partition_name="default") -> Partition:
+    def load_partition(self, partition_name: str) -> Partition:
         """Load and return partition content from json file.
 
         Args:

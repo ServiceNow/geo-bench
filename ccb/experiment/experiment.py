@@ -9,8 +9,6 @@ import stat
 import sys
 from functools import cached_property
 from importlib import import_module
-from itertools import chain
-from os import mkdir
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
@@ -20,17 +18,16 @@ from ccb import io
 from ccb.torch_toolbox.model import ModelGenerator
 
 
-def get_model_generator(module_name: str, hparams: Dict[str, Any] = {}) -> ModelGenerator:
+def get_model_generator(module_name: str) -> ModelGenerator:
     """Return the model generator module based on name with a set of hyperparameters.
 
     Args:
         module_name: The module_name of the model generator module.
-        hparams: hparameter dict to overwrite the default base values
 
     Returns:
         a model_generator function loaded from the module with hparams
     """
-    return import_module(module_name).model_generator(hparams)
+    return import_module(module_name).model_generator()
 
 
 class Job:
@@ -51,8 +48,9 @@ class Job:
     @cached_property
     def hparams(self):
         """Return hyperparameters."""
-        with open(self.dir / "hparams.json") as fd:
-            return json.load(fd)
+        yaml = YAML()
+        with open(self.dir / "hparams.yaml", "r") as yamlfile:
+            return yaml.load(yamlfile)
 
     def save_hparams(
         self, hparams: Dict[str, Union[str, float, int, List[int], List[str]]], overwrite: bool = False
@@ -63,11 +61,19 @@ class Job:
             hparams: set of hyperparameters to save
             overwrite: whether to overwrite existing hparams
         """
-        hparams_path = self.dir / "hparams.json"
-        if hparams_path.exists() and not overwrite:
+        # hparams_path = self.dir / "hparams.json"
+        # if hparams_path.exists() and not overwrite:
+        #     raise Exception("hparams alread exists and overwrite is set to False.")
+        # with open(hparams_path, "w") as fd:
+        #     json.dump(hparams, fd, indent=4, sort_keys=True)
+        #     self.hparams = hparams
+
+        hparam_path = self.dir / "hparams.yaml"
+        if hparam_path.exists() and not overwrite:
             raise Exception("hparams alread exists and overwrite is set to False.")
-        with open(hparams_path, "w") as fd:
-            json.dump(hparams, fd, indent=4, sort_keys=True)
+        yaml = YAML()
+        with open(hparam_path, "w") as fd:
+            yaml.dump(hparams, fd)
             self.hparams = hparams
 
     @cached_property
@@ -75,6 +81,37 @@ class Job:
         """Return task specifications."""
         with open(self.dir / "task_specs.pkl", "rb") as fd:
             return pickle.load(fd)
+
+    def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite: bool = False) -> None:
+        """Save task specifications in job directory.
+
+        Args:
+            task_specs: task specifications
+            overwrite: whether to overwrite existing task specs
+        """
+        task_specs.save(self.dir, overwrite=overwrite)
+
+    @cached_property
+    def config(self):
+        """Return config file."""
+        yaml = YAML()
+        with open(self.dir / "config.yaml", "r") as yamlfile:
+            return yaml.load(yamlfile)
+
+    def save_config(self, config: Dict[str, Any], overwrite: bool = False) -> None:
+        """Save config file in job directory.
+
+        Args:
+             config: config file for experiment logistics and training
+             overwrite: whether to overwrite existing config file
+        """
+        config_path = self.dir / "config.yaml"
+        if config_path.exists() and not overwrite:
+            raise Exception("hparams alread exists and overwrite is set to False.")
+        yaml = YAML()
+        with open(config_path, "w") as fd:
+            yaml.dump(config, fd)
+            self.config = config
 
     def get_metrics(self):
         """Retrieve the metrics after training from job directory."""
@@ -101,15 +138,6 @@ class Job:
                 else:
                     raise e
 
-    def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite: bool = False) -> None:
-        """Save task specifications in job directory.
-
-        Args:
-            task_specs: task specifications
-            overwrite: whether to overwrite existing task specs
-        """
-        task_specs.save(self.dir, overwrite=overwrite)
-
     def write_script(self, model_generator_module_name: str, job_dir: str) -> None:
         """Write bash scrip that can be executed to run job.
 
@@ -121,9 +149,10 @@ class Job:
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-            fd.write(
-                f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
-            )
+            # fd.write(
+            #     f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
+            # )
+            fd.write(f"ccb-trainer --job_dir {job_dir} >log.out 2>err.out")
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(
@@ -138,13 +167,11 @@ class Job:
         """
         yaml = YAML()
         with open(base_sweep_config, "r") as yamlfile:
-            base_yaml = yaml.load(yamlfile)  # Note the safe_load
+            base_yaml = yaml.load(yamlfile)
 
         base_yaml["command"] = [  # commands needed to run actual training script
             "${program}",
-            "--model-generator",
-            model_generator_module_name,
-            "--job-dir",
+            "--job_dir",
             str(job_dir),
         ]
 
