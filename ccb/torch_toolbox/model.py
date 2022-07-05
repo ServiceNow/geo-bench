@@ -3,7 +3,7 @@
 import os
 import random
 import string
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import pytorch_lightning as pl
@@ -302,6 +302,7 @@ class ModelGenerator:
                 name=config["wandb"].get("name", None),
                 resume="allow",
                 config=hparams,
+                mode=config["wandb"].get("mode", "online"),
             ),
         ]
 
