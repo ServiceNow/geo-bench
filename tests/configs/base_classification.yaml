@@ -17,6 +17,7 @@ dataloader:
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
+  mode: offline
   sweep:
     sweep_config_path: path # or maybe define the entire sweep here?
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
