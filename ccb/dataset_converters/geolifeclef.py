@@ -132,7 +132,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         dataset_dir: path to dataset directory
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)
-    partition = io.dataset.Partition()
+    partition = io.Partition()
 
     observations_sample_path = Path(__file__).parent / "geolifeclef_scripts" / "observations_sample.csv"
     df = pd.read_csv(observations_sample_path, sep=";", index_col="observation_id")
@@ -172,6 +172,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         if max_count is not None and i + 1 >= max_count:
             break
 
+    partition.resplit_iid(split_names=("valid", "test"), ratios=(0.5, 0.5))
     partition.save(dataset_dir, "original", as_default=True)
 
 
