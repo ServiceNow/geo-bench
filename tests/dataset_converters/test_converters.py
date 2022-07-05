@@ -13,7 +13,7 @@ def converter_tester(converter):
     with tempfile.TemporaryDirectory() as datasets_dir:
         dataset_dir = Path(datasets_dir, converter.DATASET_NAME)
         converter.convert(max_count=5, dataset_dir=Path(dataset_dir))
-        dataset = io.Dataset(dataset_dir, band_names=["red", "green", "blue"])
+        dataset = io.Dataset(dataset_dir, band_names=["red", "green", "blue"], partition_name="default")
         assert len(dataset) == 5, f"returned dataset of length {len(dataset)}"
         io.check_dataset_integrity(dataset)
 

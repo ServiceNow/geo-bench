@@ -151,11 +151,11 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    for task in io.task.task_iterator(benchmark_name=benchmark_name):
+    for task in io.task.task_iterator(benchmark_dir=io.CCB_DIR / benchmark_name):
 
         if task_filter is not None and task_filter(task):
 
-            dataset_dir = task.get_dataset_dir()
+            dataset_dir = task.get_dataset_dir(benchmark_dir=io.CCB_DIR / benchmark_name)
 
             print(f"Working with {dataset_dir}.")
             if compute_band_stats:
@@ -234,13 +234,10 @@ def task_filter(task: TaskSpecifications):
     Args:
         task: task specifications
     """
-    return True
-    return task.dataset_name.startswith("big")
+    return task.dataset_name.startswith("geolife")
     # return isinstance(task.label_type, io.SegmentationClasses)
 
 
 if __name__ == "__main__":
-    write_all_label_map(
-        benchmark_name="classification_v0.5", max_count=None, compute_band_stats=True, task_filter=task_filter
-    )
+    write_all_label_map(benchmark_name="converted", max_count=None, compute_band_stats=True, task_filter=task_filter)
     # view_label_map_count()
