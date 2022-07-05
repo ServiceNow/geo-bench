@@ -60,29 +60,29 @@ class Conv4Generator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
         """Return a model instance from task specs and hyperparameters.
 
         Args:
             task_specs: object with task specs
-            hyperparams: dictionary containing hyperparameters
-
+            hparams: dictionary containing hyperparameters
+            config: dictionary containing configs
         Returns:
             model instance from task_specs and hyperparameters
         """
-        backbone = Conv4(self.model_path, task_specs, hyperparams)
-        head = head_generator(task_specs, [(64,)], hyperparams)
-        loss = train_loss_generator(task_specs, hyperparams)
-        train_metrics = train_metrics_generator(task_specs, hyperparams)
-        eval_metrics = eval_metrics_generator(task_specs, hyperparams)
-        return Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
+        backbone = Conv4(self.model_path, task_specs, hparams)
+        head = head_generator(task_specs, [(64,)], hparams)
+        loss = train_loss_generator(task_specs, hparams)
+        train_metrics = train_metrics_generator(task_specs, hparams)
+        eval_metrics = eval_metrics_generator(task_specs, hparams)
+        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         """Define a collate function to batch input tensors.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
 
         Returns:
             collate function
@@ -90,13 +90,13 @@ class Conv4Generator(ModelGenerator):
         return default_collate
 
     def get_transform(
-        self, task_specs, hyperparams: Dict[str, Any], config: Dict[str, Any], train=True, scale=None, ratio=None
+        self, task_specs, hparams: Dict[str, Any], config: Dict[str, Any], train=True, scale=None, ratio=None
     ):
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
             config: config file
             train: train mode true or false
             scale: define image scale
@@ -107,7 +107,7 @@ class Conv4Generator(ModelGenerator):
         """
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
-        _, h, w = (len(hyperparams["band_names"]), hyperparams["image_size"], hyperparams["image_size"])
+        _, h, w = (len(config["dataset"]["band_names"]), hparams["image_size"], hparams["image_size"])
 
         mean, std = task_specs.get_dataset(
             split="train",
@@ -123,12 +123,12 @@ class Conv4Generator(ModelGenerator):
             t.append(tt.RandomHorizontalFlip())
             t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
-        t.append(tt.Resize((hyperparams["image_size"], hyperparams["image_size"])))
+        t.append(tt.Resize((hparams["image_size"], hparams["image_size"])))
 
         t = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
+            x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
             x = t(x)
             return {"input": x, "label": sample.label}
 
@@ -154,16 +154,16 @@ class Conv4(BackBone):
     Simple convolutional neural net with 4 layers.
     """
 
-    def __init__(self, model_path: str, task_specs: io.TaskSpecifications, hyperparams) -> None:
+    def __init__(self, model_path: str, task_specs: io.TaskSpecifications, hparams) -> None:
         """Initialize a new instance of Conv4 model.
 
         Args:
             model_path: path to model
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
 
         """
-        super().__init__(model_path, task_specs, hyperparams)
+        super().__init__(model_path, task_specs, hparams)
         n_bands = min(3, len(task_specs.bands_info))
         self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
