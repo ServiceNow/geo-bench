@@ -23,9 +23,10 @@ from ccb import io
 DATASET_NAME = "geolifeclef-2022"
 SPATIAL_RESOLUTION = 1
 PATCH_SIZE = 256
+
 N_LABELS = 100
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATA_PATH = Path(SRC_DATASET_DIR) / "data"
+DATA_PATH = Path(SRC_DATASET_DIR)
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 # US NAIP, FR aerial based (IGN)
@@ -60,7 +61,7 @@ def make_sample(observation_id, label, lat, lng) -> io.Sample:
     subfolder1 = observation_id[-2:]
     subfolder2 = observation_id[-4:-2]
 
-    filename = Path(SRC_DATASET_DIR) / "data" / f"patches-{region}" / subfolder1 / subfolder2 / observation_id
+    filename = Path(SRC_DATASET_DIR) / f"patches-{region}" / subfolder1 / subfolder2 / observation_id
 
     transform_center = rasterio.transform.from_origin(lng, lat, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
     lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
@@ -133,7 +134,8 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
     dataset_dir.mkdir(exist_ok=True, parents=True)
     partition = io.dataset.Partition()
 
-    df = pd.read_csv(DATA_PATH / "observations" / "observations_sample.csv", sep=";", index_col="observation_id")
+    observations_sample_path = Path(__file__).parent / "geolifeclef_scripts" / "observations_sample.csv"
+    df = pd.read_csv(observations_sample_path, sep=";", index_col="observation_id")
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
