@@ -290,6 +290,7 @@ def transform_dataset(
                 raise NotImplementedError()
 
     new_partition.save(new_dataset_dir, "default")
+    return new_dataset_dir
 
 
 def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
@@ -297,7 +298,7 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
     for dataset_name, (resampler, sample_converter) in specs.items():
         print(f"Transforming {dataset_name}.")
         dataset_dir = io.CCB_DIR / src_benchmark_name / dataset_name
-        transform_dataset(
+        new_dataset_dir = transform_dataset(
             dataset_dir=dataset_dir,
             new_benchmark_dir=io.CCB_DIR / new_benchmark_name,
             partition_name="default",
@@ -306,7 +307,7 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
             delete_existing=True,
         )
         print(f"  Producing band stats for {dataset_name}.")
-        bandstats.produce_band_stats(io.Dataset(dataset_dir))
+        bandstats.produce_band_stats(io.Dataset(new_dataset_dir))
         print()
 
 
@@ -317,13 +318,14 @@ def make_classification_benchmark():
 
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
-        # # "forestnet_v1.0": (default_resampler, None),
-        "eurosat": (default_resampler, None),
+        # "forestnet_v1.0": (default_resampler, None),
+        # "eurosat": (default_resampler, None),
         # "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
         # "pv4ger_classification": (default_resampler, None),
-        # # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
-        "bigearthnet": (make_resampler_from_stats(max_sizes), None),
+        # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
+        "geolifeclef-2022": (default_resampler, None),
+        # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
     }
     _make_benchmark("classification_v0.5", specs)
 
