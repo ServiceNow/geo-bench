@@ -26,7 +26,7 @@ class MaeGenerator(model.ModelGenerator):
 
     """
 
-    def generate(self, task_specs: TaskSpecifications, hyperparams: dict):
+    def generate_model(self, task_specs: TaskSpecifications, hyperparams: dict):
         """Return a model instance from task specs and hyperparameters.
 
         Args:

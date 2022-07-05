@@ -135,7 +135,7 @@ def load_label_stats(task_specs: TaskSpecifications, max_count: int = None):
     for sample_path in tqdm(sample_paths, desc="Loading labels."):
         label = load_label(sample_path)
 
-        label_stats[sample_path.stem] = list(task_specs.label_type.label_stats(label))
+        label_stats[sample_path.stem] = task_specs.label_type.label_stats(label).tolist()
 
     return label_stats
 
@@ -151,11 +151,11 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    for task in io.task.task_iterator(benchmark_name=benchmark_name):
+    for task in io.task.task_iterator(benchmark_dir=io.CCB_DIR / benchmark_name):
 
         if task_filter is not None and task_filter(task):
 
-            dataset_dir = task.get_dataset_dir()
+            dataset_dir = task.get_dataset_dir(benchmark_dir=io.CCB_DIR / benchmark_name)
 
             print(f"Working with {dataset_dir}.")
             if compute_band_stats:
@@ -234,7 +234,7 @@ def task_filter(task: TaskSpecifications):
     Args:
         task: task specifications
     """
-    return task.dataset_name.startswith("southAfricaCropType")
+    return task.dataset_name.startswith("geolife")
     # return isinstance(task.label_type, io.SegmentationClasses)
 
 
