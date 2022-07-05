@@ -6,8 +6,7 @@ on:
   pull_request:
     branches:
     - main
-env:
-  CCB_DIR: "tests/data/"
+  
 jobs:
   pytest:
     name: pytest
@@ -43,5 +42,9 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run pytest checks
+      shell: bash
+      env:
+        WANDB_API: ${{ secrets.WANDB_API_KEY }}
       run: |
+        poetry run wandb login "$WANDB_API"
         poetry run python -m pytest -v tests --cov=ccb --cov-report=xml

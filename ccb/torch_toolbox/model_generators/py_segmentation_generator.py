@@ -74,19 +74,20 @@ class SegmentationGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
         """Return model instance from task specs and hyperparameters.
 
         Args:
             task_specs: object with task specs
-            hyperparams: dictionary containing hyperparameters
+            hparams: dictionary containing hyperparameters
+            config: config: dictionary containing config
 
         Returns:
             model specified by task specs and hyperparameters
         """
-        encoder_type = hyperparams["encoder_type"]
-        decoder_type = hyperparams["decoder_type"]
-        encoder_weights = hyperparams.get("encoder_weights", None)
+        encoder_type = hparams["encoder_type"]
+        decoder_type = hparams["decoder_type"]
+        encoder_weights = hparams.get("encoder_weights", None)
         # in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
 
@@ -94,17 +95,24 @@ class SegmentationGenerator(ModelGenerator):
         backbone = getattr(smp, decoder_type)(
             encoder_name=encoder_type,  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
             encoder_weights=encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
-            in_channels=hyperparams["input_size"][0],  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+            in_channels=len(
+                config["dataset"]["band_names"]
+            ),  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
             classes=out_ch,
         )  # model output channels (number of classes in your dataset))
 
         # For timm models, we can extract the mean and std of the pre-trained backbone
-        # hyperparams.update({"mean": backbone.default_cfg["mean"]})
-        # hyperparams.update({"std": backbone.default_cfg["std"]})
+        # hparams.update({"mean": backbone.default_cfg["mean"]})
+        # hparams.update({"std": backbone.default_cfg["std"]})
+        config["model"]["input_size"] = (
+            len(config["dataset"]["band_names"]),
+            hparams["image_size"],
+            hparams["image_size"],
+        )
 
         with torch.no_grad():
             backbone.eval()
-            features = torch.zeros(hyperparams["input_size"]).unsqueeze(0)
+            features = torch.zeros(config["model"]["input_size"]).unsqueeze(0)
             features = backbone.encoder(features)
 
         class Noop(torch.nn.Module):
@@ -112,30 +120,38 @@ class SegmentationGenerator(ModelGenerator):
                 return x
 
         head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
-        # head = head_generator(task_specs, shapes, hyperparams)
-        loss = train_loss_generator(task_specs, hyperparams)
-        train_metrics = train_metrics_generator(task_specs, hyperparams)
-        eval_metrics = eval_metrics_generator(task_specs, hyperparams)
-        return Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
+        # head = head_generator(task_specs, shapes, hparams)
+        loss = train_loss_generator(task_specs, hparams)
+        train_metrics = train_metrics_generator(task_specs, hparams)
+        eval_metrics = eval_metrics_generator(task_specs, hparams)
+        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
 
     def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
         """Define a collate function to batch input tensors.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
 
         Returns:
             collate function
         """
         return default_collate
 
-    def get_transform(self, task_specs, hyperparams, train=True, scale=None, ratio=None):
+    def get_transform(
+        self,
+        task_specs: TaskSpecifications,
+        hparams: Dict[str, Any],
+        config: Dict[str, Any],
+        train=True,
+        scale=None,
+        ratio=None,
+    ):
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
             train: train mode true or false
             scale: define image scale
             ratio: define image ratio range
@@ -145,8 +161,15 @@ class SegmentationGenerator(ModelGenerator):
         """
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
-        c, h, w = hyperparams["input_size"]
-        mean, std = task_specs.get_dataset(split="train").rgb_stats()
+        c, h, w = config["model"]["input_size"]
+        mean, std = task_specs.get_dataset(
+            split="train",
+            format=config["dataset"]["format"],
+            band_names=tuple(config["dataset"]["band_names"]),
+            benchmark_dir=config["experiment"]["benchmark_dir"],
+            partition_name=config["experiment"]["partition_name"],
+        ).rgb_stats()
+        band_names = tuple(config["dataset"]["band_names"])
 
         class SegTransform:
             """Segmentation Transform.
@@ -192,21 +215,17 @@ class SegmentationGenerator(ModelGenerator):
             t_y.append(lambda x: st(x, resample=False, train=train))
             t_y = tt.Compose(t_y)
 
-            x = sample.pack_to_3d(band_names=("red", "green", "blue"))[0].astype("float32")
+            x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
             x, y = t_x(x), t_y(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 
         return transform
 
 
-def model_generator(hparams: Dict[str, Any] = {}) -> SegmentationGenerator:
-    """Generate segmentation model with a defined set of hparams.
-
-    Args:
-        hparams: hyperparameters
+def model_generator() -> SegmentationGenerator:
+    """Initialize Segmentation Generator.
 
     Returns:
         segmentation model generator
     """
-    model_generator = SegmentationGenerator(hparams=hparams)
-    return model_generator
+    return SegmentationGenerator()
