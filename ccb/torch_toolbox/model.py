@@ -259,12 +259,12 @@ class ModelGenerator:
         """
         self.model_path = model_path
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def generate_model(self, task_specs: TaskSpecifications, hparams: Dict[str, Any]):
         """Generate a Model to train.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
 
         Raises:
             NotImplementedError
@@ -275,7 +275,7 @@ class ModelGenerator:
             loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement their own
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to specify this function that returns model.")
 
     def generate_trainer(self, config: dict, hparams: dict, job) -> pl.Trainer:
         """Configure a pytroch lightning Trainer.
@@ -325,12 +325,12 @@ class ModelGenerator:
 
         return trainer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: Dict[str, Any]):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
 
         Returns:
             A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
@@ -342,10 +342,10 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define collate function.")
 
-    def get_transform(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], train: bool = True):
-        """Generate the collate functions for stacking the mini-batch.
+    def get_transform(self, task_specs: TaskSpecifications, hparams: Dict[str, Any], train: bool = True):
+        """Generate the transfomr functions for transforming input data.
 
         Args:
             task_specs: an object describing the task to be performed
@@ -355,7 +355,7 @@ class ModelGenerator:
         Returns:
             A callable taking an object of type Sample as input. The return will be fed to the collate_fn
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define a transform function.")
 
 
 def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: Dict[str, Any]):
@@ -373,25 +373,17 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         hyperparams: dict of hyperparameters.
 
     """
+    assert hyperparams["head_type"] == "linear", "Currently only support linear head type."
     if isinstance(task_specs.label_type, io.Classification):
         if hyperparams["head_type"] == "linear":
             in_ch, *other_dims = features_shape[-1]
             out_ch = task_specs.label_type.n_classes
             return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     elif isinstance(task_specs.label_type, io.MultiLabelClassification):
         if hyperparams["head_type"] == "linear":
             in_ch, *other_dims = features_shape[-1]
             out_ch = task_specs.label_type.n_classes
             return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
-    elif isinstance(task_specs.label_type, io.SemanticSegmentation):
-        if hyperparams["head_type"].split("-")[0] == "smp":  # smp: segmentation-models-pytorch
-            return lambda *args: args
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
     else:
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
@@ -421,8 +413,8 @@ def train_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, A
         io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
-    for metric_name in hparams.get("train_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("train_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
 
     return torchmetrics.MetricCollection(metrics)
 
@@ -446,8 +438,8 @@ def eval_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, An
         io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
-    for metric_name in hparams.get("eval_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("eval_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
 
     return torchmetrics.MetricCollection(metrics)
 
@@ -516,37 +508,3 @@ class BackBone(torch.nn.Module):
         Returns:
             the encoded representation or a list of representations for
         """
-
-
-def collate_rgb(samples: List[io.Sample]) -> Dict[str, Tensor]:
-    """Collate function for RGB images.
-
-    Args:
-        samples: list of samples
-
-    Returns:
-        collated version of samples
-    """
-    x_list = []
-    label_list = []
-    for sample in samples:
-        rgb_image, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
-        x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
-        label_list.append(sample.label)
-
-    return {"input": torch.stack(x_list), "label": stack_labels(label_list)}
-
-
-def stack_labels(label_list: List[Tensor]) -> Tensor:
-    """Stack labels for collate function.
-
-    Args:
-        label_list: list of labels to be stacked
-
-    Returns:
-        stacked labels
-    """
-    if isinstance(label_list[0], int):
-        return torch.tensor(label_list)
-    else:
-        raise NotImplementedError()
