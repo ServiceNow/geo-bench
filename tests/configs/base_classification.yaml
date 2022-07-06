@@ -19,7 +19,7 @@ wandb:
   entity: climate-benchmark # user or team entity that hosts a project
   mode: offline
   sweep:
-    sweep_config_path: path # or maybe define the entire sweep here?
+    sweep_config_path: tests/configs/sweep_config.yaml
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
     num_trials_per_agent: 5 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 pl: # all flags for pytorch lightning Trainer module, see https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
