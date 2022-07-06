@@ -259,12 +259,13 @@ class ModelGenerator:
         """
         self.model_path = model_path
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], config: Dict[str, Any]):
         """Generate a Model to train.
 
         Args:
             task_specs: an object describing the task to be performed
             hyperparams: dictionary containing hyperparameters of the experiment
+            config: config file
 
         Raises:
             NotImplementedError

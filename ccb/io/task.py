@@ -19,8 +19,8 @@ class TaskSpecifications:
 
     def __init__(
         self,
-        dataset_name: str = None,
-        benchmark_name: str = None,
+        dataset_name: str,
+        benchmark_name: str,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
         bands_info: List[BandInfo] = None,

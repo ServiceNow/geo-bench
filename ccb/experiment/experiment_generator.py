@@ -7,7 +7,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
@@ -37,20 +36,20 @@ def experiment_generator(
     Raises:
         FileNotFoundError if path to config file or hparam file does not exist
     """
-    config_filepath = Path(config_filepath)
-    hparam_filepath = Path(hparam_filepath)
+    config_file_path: Path = Path(config_filepath)
+    hparam_file_path: Path = Path(hparam_filepath)
     # check that specified paths exists
-    if config_filepath.is_file():
-        with config_filepath.open() as f:
+    if config_file_path.is_file():
+        with config_file_path.open() as f:
             config = yaml.safe_load(f)
     else:
-        raise FileNotFoundError(f"Config file at path {config_filepath} does not exist.")
+        raise FileNotFoundError(f"Config file at path {config_file_path} does not exist.")
 
-    if hparam_filepath.is_file():
-        with hparam_filepath.open() as f:
+    if hparam_file_path.is_file():
+        with hparam_file_path.open() as f:
             hparams = yaml.safe_load(f)
     else:
-        raise FileNotFoundError(f"Config file at path {config_filepath} does not exist.")
+        raise FileNotFoundError(f"Config file at path {config_file_path} does not exist.")
 
     benchmark_dir = config["experiment"]["benchmark_dir"]
 
@@ -63,16 +62,10 @@ def experiment_generator(
     )
 
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
-        # if task_filter is not None:
-        #     if not task_filter(task_specs):
-        #         continue
-
         print(task_specs.dataset_name)
         experiment_type = config["experiment"]["experiment_type"]
         if experiment_type == "sweep":
             model_generator = get_model_generator(config["model"]["model_generator_module_name"])
-
-            # base_hparams = model_generator.base_hparams
 
             # use wandb sweep for hyperparameter search
             model = model_generator.generate_model(task_specs, hparams, config)
@@ -88,10 +81,20 @@ def experiment_generator(
             job.save_config(config)
             job.save_task_specs(task_specs)
 
+            # sweep name that will be seen on wandb
+            if (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + hparams["backbone"]
+            else:
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + hparams["encoder"] + "_" + hparams["decoder"]
+
             job.write_wandb_sweep_cl_script(
                 config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
                 base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
+                name=name,
             )
 
         elif experiment_type == "seeded_runs":
@@ -110,8 +113,6 @@ def experiment_generator(
                 backbone_config = best_params[benchmark_name][task_specs.dataset_name][back_name]
 
                 model_generator_name = backbone_config["model_generator_name"]
-
-                model_generator = get_model_generator(model_generator_name, hparams=backbone_config)
 
                 backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
                 backbone_config["benchmark_name"] = benchmark_name
