@@ -3,9 +3,9 @@
 import os
 import random
 import string
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, List
 
-import pytorch_lightning as pl
+import numpy as np
 import timm
 import torch
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -67,7 +67,7 @@ class TIMMGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: Dict[str, Any], config: Dict[str, Any]) -> Model:
         """Return a ccb.torch_toolbox.model.Model instance from task specs and hparams.
 
         Args:
@@ -235,7 +235,7 @@ class TIMMGenerator(ModelGenerator):
 
         return new_layer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: Dict[str, Any]):
         """Define a collate function to batch input tensors.
 
         Args:
@@ -248,7 +248,13 @@ class TIMMGenerator(ModelGenerator):
         return default_collate
 
     def get_transform(
-        self, task_specs, config: Dict[str, Any], hparams: Dict[str, Any], train=True, scale=None, ratio=None
+        self,
+        task_specs: TaskSpecifications,
+        hparams: Dict[str, Any],
+        config: Dict[str, Any],
+        train: bool = True,
+        scale=None,
+        ratio=None,
     ) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
@@ -286,7 +292,7 @@ class TIMMGenerator(ModelGenerator):
         t = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
+            x: np.Array = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"])).astype("float32")
             x = t(x)
             return {"input": x, "label": sample.label}
 
