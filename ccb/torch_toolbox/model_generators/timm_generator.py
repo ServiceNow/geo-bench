@@ -289,11 +289,11 @@ class TIMMGenerator(ModelGenerator):
 
         t.append(tt.Resize((hparams["image_size"], hparams["image_size"])))
 
-        t = tt.Compose(t)
+        transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
             x: np.Array = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"])).astype("float32")
-            x = t(x)
+            x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
         return transform
