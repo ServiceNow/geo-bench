@@ -259,12 +259,13 @@ class ModelGenerator:
         """
         self.model_path = model_path
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def generate_model(self, task_specs: TaskSpecifications, hparams: Dict[str, Any], config: Dict[str, Any]):
         """Generate a Model to train.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
+            config: configuration file
 
         Raises:
             NotImplementedError
@@ -324,12 +325,12 @@ class ModelGenerator:
 
         return trainer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: Dict[str, Any]):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
 
         Returns:
             A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
@@ -343,12 +344,15 @@ class ModelGenerator:
         """
         raise NotImplementedError()
 
-    def get_transform(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], train: bool = True):
+    def get_transform(
+        self, task_specs: TaskSpecifications, hparams: Dict[str, Any], config: Dict[str, Any], train: bool = True
+    ):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
+            config: config file
             train: whether to return train or evaluation transforms
 
         Returns:
@@ -441,7 +445,7 @@ def compute_accuracy(
         return res
 
 
-METRIC_MAP = {}
+METRIC_MAP: Dict[str, Any] = {}
 
 
 def train_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> torchmetrics.MetricCollection:
