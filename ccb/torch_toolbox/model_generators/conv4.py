@@ -2,6 +2,7 @@
 
 from typing import Any, Dict
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
@@ -60,7 +61,7 @@ class Conv4Generator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, hparams: Dict[str, Any], config: Dict[str, Any]) -> Model:
         """Return a model instance from task specs and hyperparameters.
 
         Args:
@@ -70,14 +71,14 @@ class Conv4Generator(ModelGenerator):
         Returns:
             model instance from task_specs and hyperparameters
         """
-        backbone = Conv4(self.model_path, task_specs, hyperparams)
-        head = head_generator(task_specs, [(64,)], hyperparams)
-        loss = train_loss_generator(task_specs, hyperparams)
-        train_metrics = train_metrics_generator(task_specs, hyperparams)
-        eval_metrics = eval_metrics_generator(task_specs, hyperparams)
-        return Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
+        backbone = Conv4(self.model_path, task_specs, hparams)
+        head = head_generator(task_specs, [(64,)], hparams)
+        loss = train_loss_generator(task_specs, hparams)
+        train_metrics = train_metrics_generator(task_specs, hparams)
+        eval_metrics = eval_metrics_generator(task_specs, hparams)
+        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: Dict[str, Any]):
         """Define a collate function to batch input tensors.
 
         Args:
@@ -128,7 +129,7 @@ class Conv4Generator(ModelGenerator):
         t = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(hyperparams["band_names"]))[0].astype("float32")
+            x: np.Array = sample.pack_to_3d(band_names=hyperparams["band_names"]).astype("float32")
             x = t(x)
             return {"input": x, "label": sample.label}
 
@@ -164,7 +165,10 @@ class Conv4(BackBone):
 
         """
         super().__init__(model_path, task_specs, hyperparams)
-        n_bands = min(3, len(task_specs.bands_info))
+        if task_specs.bands_info is not None:
+            n_bands = min(3, len(task_specs.bands_info))
+        else:
+            raise ValueError("Bands info not defined.")
         self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)
