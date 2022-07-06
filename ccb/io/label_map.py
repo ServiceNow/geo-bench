@@ -115,17 +115,18 @@ def load_label_map(dataset_dir: str, max_count: int = None) -> Dict[str, List[st
     return label_map
 
 
-def load_label_stats(task_specs: TaskSpecifications, max_count: int = None):
+def load_label_stats(task_specs: TaskSpecifications, benchmark_dir: str, max_count: int = None):
     """Load label statistics.
 
     Args:
         task_specs: task specifications
+        benchmark_dir: path to benchmark directory to retrieve datasets
         max_count: max count
 
     Returns:
         label statistics
     """
-    dataset_dir = task_specs.get_dataset_dir()
+    dataset_dir = task_specs.get_dataset_dir(benchmark_dir=benchmark_dir)
     sample_paths = get_samples_and_verify_partition(dataset_dir, max_count=max_count)
 
     # label_stats = np.zeros((len(sample_paths), task_specs.label_type.n_classes))
@@ -151,17 +152,18 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    for task in io.task.task_iterator(benchmark_dir=io.CCB_DIR / benchmark_name):
+    benchmark_dir = str(io.CCB_DIR / benchmark_name)
+    for task in io.task.task_iterator(benchmark_dir=benchmark_dir):
 
         if task_filter is not None and task_filter(task):
 
-            dataset_dir = task.get_dataset_dir(benchmark_dir=io.CCB_DIR / benchmark_name)
+            dataset_dir = task.get_dataset_dir(benchmark_dir=benchmark_dir)
 
             print(f"Working with {dataset_dir}.")
             if compute_band_stats:
                 try:
                     print(f"Producing Band Stats for {task.dataset_name}.")
-                    bandstats.produce_band_stats(task.get_dataset(split=None))
+                    bandstats.produce_band_stats(task.get_dataset(benchmark_dir=benchmark_dir, split=None))
                 except Exception as e:
                     print(e)
 
@@ -175,7 +177,7 @@ def write_all_label_map(
                     json.dump(label_map, fp, indent=4, sort_keys=True)
 
             else:
-                label_stats = load_label_stats(task, max_count=max_count)
+                label_stats = load_label_stats(task, benchmark_dir=benchmark_dir, max_count=max_count)
                 print_label_stats(label_stats)
                 with open(dataset_dir / "label_stats.json", "w") as fp:
                     json.dump(label_stats, fp, indent=4, sort_keys=True)
@@ -211,13 +213,13 @@ def print_label_map(label_map, prefix: str = "  ", max_count: int = 200) -> None
         print(f"{i:3d} {prefix}class {key}: {len(label_map[key])} samples.")
 
 
-def view_label_map_count(benchmark_name="converted") -> None:
+def view_label_map_count(benchmark_dir: str = "/mnt/data/cc_benchmark/converted") -> None:
     """Print counts of label maps.
 
     Args:
         benchmark_name: name of benchmark
     """
-    for task in io.task_iterator(benchmark_name=benchmark_name):
+    for task in io.task_iterator(benchmark_dir=benchmark_dir):
 
         label_map = task.get_label_map
         print(f"Label map for dataset {task.dataset_name} of type {task.label_type.__class__.__name__}.")
