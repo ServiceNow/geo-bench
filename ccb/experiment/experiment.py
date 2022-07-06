@@ -36,7 +36,7 @@ class Job:
     Helper class to organize running of experiments.
     """
 
-    def __init__(self, dir: str) -> None:
+    def __init__(self, dir: Union[str, Path]) -> None:
         """Initialize new instance of Job.
 
         Args:
@@ -89,7 +89,7 @@ class Job:
             task_specs: task specifications
             overwrite: whether to overwrite existing task specs
         """
-        task_specs.save(self.dir, overwrite=overwrite)
+        task_specs.save(str(self.dir), overwrite=overwrite)
 
     @cached_property
     def config(self):
@@ -138,7 +138,7 @@ class Job:
                 else:
                     raise e
 
-    def write_script(self, model_generator_module_name: str, job_dir: str) -> None:
+    def write_script(self, model_generator_module_name: str, job_dir: Union[str, Path]) -> None:
         """Write bash scrip that can be executed to run job.
 
         Args:
@@ -149,14 +149,11 @@ class Job:
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-            # fd.write(
-            #     f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
-            # )
-            fd.write(f"ccb-trainer --job_dir {job_dir} >log.out 2>err.out")
+            fd.write(f"ccb-trainer --job_dir {str(job_dir)} >log.out 2>err.out")
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(
-        self, model_generator_module_name: str, job_dir: str, base_sweep_config: str
+        self, model_generator_module_name: str, job_dir: Union[str, Path], base_sweep_config: str, name: str
     ) -> None:
         """Write final sweep_config.yaml that can be used to initialize sweep.
 
@@ -164,6 +161,7 @@ class Job:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
             base_sweep_config: path to base sweep config yaml file for wandb
+            name: wandb sweep experiment name
         """
         yaml = YAML()
         with open(base_sweep_config, "r") as yamlfile:
@@ -175,14 +173,7 @@ class Job:
             str(job_dir),
         ]
 
-        # sweep name that will be seen on wandb
-        if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
-            backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
-            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
-        else:
-            encoder = get_model_generator(model_generator_module_name).base_hparams["encoder_type"]
-            decoder = get_model_generator(model_generator_module_name).base_hparams["decoder_type"]
-            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder + "_" + decoder
+        base_yaml["name"] = name
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
