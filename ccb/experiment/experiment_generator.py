@@ -58,10 +58,6 @@ def experiment_generator(
     if config["experiment"]["experiment_name"] is not None:
         experiment_dir = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
 
-    print(
-        f"Generating experiments for {config['model']['model_generator_module_name']} on {os.path.basename(benchmark_dir)} benchmark."
-    )
-
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
         # if task_filter is not None:
         #     if not task_filter(task_specs):
@@ -98,34 +94,37 @@ def experiment_generator(
             NUM_SEEDS = 3
 
             # use wandb sweep for hyperparameter search
-            with open(
-                "/mnt/home/climate-change-benchmark/analysis_tool/results/seeded_runs_best_hparams.json", "r"
-            ) as f:
-                best_params = json.load(f)
+            with open("/mnt/data/experiments/nils/classification_results/seeded_runs.json", "r") as f:
+                seed_run_dict = json.load(f)
 
-            benchmark_name = os.path.basename(config["experiment"]["benchmark_dir"])
-            backbone_names = list(best_params[benchmark_name][task_specs.dataset_name].keys())
+            back_name = hparams["backbone"]
 
-            for back_name in backbone_names:
-                backbone_config = best_params[benchmark_name][task_specs.dataset_name][back_name]
+            part_name = config["experiment"]["partition_name"].split("_partition.json")[0]
+            ds_dict = seed_run_dict[back_name][part_name]
 
-                model_generator_name = backbone_config["model_generator_name"]
+            # for ds_name in list(ds_dict.keys()):
+            try:
+                exp_dir = ds_dict[task_specs.dataset_name]
+            except KeyError:
+                continue
+            # load the config and hparam file from the best run directory
+            with open(os.path.join(exp_dir, "hparams.yaml")) as f:
+                best_hparams = yaml.safe_load(f)
+            with open(os.path.join(exp_dir, "config.yaml")) as f:
+                best_config = yaml.safe_load(f)
 
-                model_generator = get_model_generator(model_generator_name, hparams=backbone_config)
+            best_config["wandb"]["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
 
-                backbone_config["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
-                backbone_config["benchmark_name"] = benchmark_name
+            for i in range(NUM_SEEDS):
+                # set seed to be used in experiment
+                best_config["experiment"]["seed"] = i
 
-                for i in range(NUM_SEEDS):
-                    # set seed to be used in experiment
-                    backbone_config["seed"] = i
-
-                    job_dir = experiment_dir / task_specs.dataset_name / back_name / f"seed_{i}"
-                    job = Job(job_dir)
-                    job.save_hparams(backbone_config)
-                    job.save_config(config)
-                    job.save_task_specs(task_specs)
-                    job.write_script(model_generator_name, job_dir=job_dir)
+                job_dir = experiment_dir / task_specs.dataset_name / f"seed_{i}"
+                job = Job(job_dir)
+                job.save_hparams(best_hparams)
+                job.save_config(best_config)
+                job.save_task_specs(task_specs)
+                job.write_script(best_config["model"]["model_generator_module_name"], job_dir=job_dir)
 
         else:
             # single run of a model
