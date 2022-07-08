@@ -1,3 +1,5 @@
+"""Script to generate growing train size partitions."""
+
 from typing import List
 
 import numpy as np
@@ -8,6 +10,7 @@ from ccb import io
 def generate_train_size_sweep(
     partition: io.Partition, train_fractions: List[float], dataset_dir=None, rng=np.random, verbose=True
 ):
+    """Generate growing train size partition for the dataset specified by `dataset_dir`."""
     train_set = partition.partition_dict["train"][:]
     for fraction in train_fractions:
         new_size = int(len(train_set) * fraction)
@@ -21,7 +24,10 @@ def generate_train_size_sweep(
 
 
 def generate_partitions_for_benchmark(benchmark_name, train_fractions):
-    for task in io.task_iterator(benchmark_name=benchmark_name):
+    """Generate growing train size partition for all dataset in `benchmark_name`."""
+    for task in io.task_iterator(benchmark_dir=io.CCB_DIR / benchmark_name):
+
+        # if not task.dataset_name.startswith("forest"): continue
 
         print(f"Working with task: {task.dataset_name}.")
         dataset = task.get_dataset(split=None)

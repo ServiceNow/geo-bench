@@ -1113,7 +1113,7 @@ class Dataset:
     def __init__(
         self,
         dataset_dir,
-        partition_name: str,
+        partition_name: str = "default",
         band_names: Sequence[str] = None,
         split=None,
         transform=None,
