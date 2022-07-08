@@ -9,6 +9,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
 
+from ccb import io
 from ccb.io.dataset import BandInfo, Dataset
 from ccb.io.label import Classification
 
@@ -71,8 +72,8 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        benchmark_dir: Path,
-        split: Union[str, None],
+        benchmark_dir: Path = None,
+        split: Union[str, None] = None,
         partition_name: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
@@ -88,6 +89,8 @@ class TaskSpecifications:
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
+        if benchmark_dir is None:
+            benchmark_dir = io.CCB_DIR / self.benchmark_name
         return Dataset(
             dataset_dir=self.get_dataset_dir(benchmark_dir),
             split=split,
@@ -97,10 +100,12 @@ class TaskSpecifications:
             band_names=band_names,
         )
 
-    def get_dataset_dir(self, benchmark_dir: str):
+    def get_dataset_dir(self, benchmark_dir: str = None):
         """Retrieve directory where dataset is read."""
         # benchmark_name = self.benchmark_name or "default"
         # benchmark_dir = get_benchmark_dir(benchmark_name)
+        if benchmark_dir is None:
+            benchmark_dir = io.CCB_DIR / self.benchmark_name
         return Path(benchmark_dir) / self.dataset_name
 
     # # for backward compatibility (we'll remove soon)
