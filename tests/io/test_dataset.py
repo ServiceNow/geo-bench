@@ -29,8 +29,8 @@ def test_pack_4d_dense():
         random_band((6, 8), "band_3", ("alt_band_3",)),
     ]
     sample = io.Sample(bands, np.random.randint(2), "test_sample")
-    image, dates, band_names = sample.pack_to_4d(resample=True)
-    image_, _ = sample.pack_to_3d(resample=True)
+    image, dates, band_names = sample.pack_to_4d(resample=True, band_names=("band_1", "band_2", "band_3"))
+    image_, _ = sample.pack_to_3d(resample=True, band_names=("band_1", "band_2", "band_3"))
 
     np.testing.assert_array_equal(image[0], image_)
 
@@ -75,7 +75,9 @@ def test_write_read():
             for band in sample.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         partition = io.Partition()
@@ -119,7 +121,9 @@ def test_dataset_partition():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         # Create default partition
@@ -249,7 +253,9 @@ def test_dataset_statistics():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         # Default partition, only train

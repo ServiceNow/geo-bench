@@ -7,7 +7,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
@@ -17,40 +16,27 @@ from ccb.experiment.experiment import Job, get_model_generator
 
 def experiment_generator(
     config_filepath: str,
-    hparam_filepath: str,
 ):
     """Generate the directory structure for every tasks.
 
     According to model_generator.hp_search.
 
     Args:
-        model_generator_module_name: The generator associated with the current model. Used to get hyperparameter combinations.
-        experiment_dir: The directory in which to create the experiment directories.
-        task_filter: A function that takes as input a task specification instance and returns False if it should be skipped.
-        benchmark_name: The name of the benchmark on which to conduct the experiment (default: "default").
-        experiment_name: The name of the current experiment. Will be used as a prefix to the results directory (default: None).
-        experiment_type: what kind of experiment to dispatch, ["sweep", "seeded_runs", "standard"]
-
+        config_filepath: path to config file that defines experiment
     Returns:
         Name of the experiment directory.
 
     Raises:
         FileNotFoundError if path to config file or hparam file does not exist
     """
-    config_filepath = Path(config_filepath)
-    hparam_filepath = Path(hparam_filepath)
+    config_file_path = Path(config_filepath)
+
     # check that specified paths exists
-    if config_filepath.is_file():
-        with config_filepath.open() as f:
+    if config_file_path.is_file():
+        with config_file_path.open() as f:
             config = yaml.safe_load(f)
     else:
-        raise FileNotFoundError(f"Config file at path {config_filepath} does not exist.")
-
-    if hparam_filepath.is_file():
-        with hparam_filepath.open() as f:
-            hparams = yaml.safe_load(f)
-    else:
-        raise FileNotFoundError(f"Config file at path {config_filepath} does not exist.")
+        raise FileNotFoundError(f"Config file at path {config_file_path} does not exist.")
 
     benchmark_dir = config["experiment"]["benchmark_dir"]
 
@@ -59,57 +45,63 @@ def experiment_generator(
         experiment_dir = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
 
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
-        # if task_filter is not None:
-        #     if not task_filter(task_specs):
-        #         continue
-
         print(task_specs.dataset_name)
         experiment_type = config["experiment"]["experiment_type"]
         if experiment_type == "sweep":
             model_generator = get_model_generator(config["model"]["model_generator_module_name"])
 
-            # base_hparams = model_generator.base_hparams
-
             # use wandb sweep for hyperparameter search
-            model = model_generator.generate_model(task_specs, hparams, config)
+            model = model_generator.generate_model(task_specs, config)
 
             # there might be other params added during the generate process,
             # continue with hyperparameters from initialized model
-            hparams = model.hyperparameters
+            config = model.config
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
-            job.save_hparams(hparams)
             job.save_config(config)
             job.save_task_specs(task_specs)
+
+            # sweep name that will be seen on wandb
+            if (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
+            else:
+                name = (
+                    "_".join(str(job_dir).split("/")[-2:])
+                    + "_"
+                    + config["model"]["encoder_type"]
+                    + "_"
+                    + config["model"]["decoder_type"]
+                )
 
             job.write_wandb_sweep_cl_script(
                 config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
                 base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
+                name=name,
             )
 
         elif experiment_type == "seeded_runs":
             NUM_SEEDS = 3
 
-            # use wandb sweep for hyperparameter search
-            with open("/mnt/data/experiments/nils/classification_results/seeded_runs.json", "r") as f:
+            with open("/mnt/data/experiments/nils/classification_results/test_seeded_runs.json", "r") as f:
                 seed_run_dict = json.load(f)
 
-            back_name = hparams["backbone"]
+            back_name = config["model"]["backbone"]
 
             part_name = config["experiment"]["partition_name"].split("_partition.json")[0]
             ds_dict = seed_run_dict[back_name][part_name]
 
-            # for ds_name in list(ds_dict.keys()):
+            # for datasets that are in classification benchmark dir but not swept yet
             try:
                 exp_dir = ds_dict[task_specs.dataset_name]
             except KeyError:
                 continue
-            # load the config and hparam file from the best run directory
-            with open(os.path.join(exp_dir, "hparams.yaml")) as f:
-                best_hparams = yaml.safe_load(f)
+            # load best config file
             with open(os.path.join(exp_dir, "config.yaml")) as f:
                 best_config = yaml.safe_load(f)
 
@@ -121,38 +113,37 @@ def experiment_generator(
 
                 job_dir = experiment_dir / task_specs.dataset_name / f"seed_{i}"
                 job = Job(job_dir)
-                job.save_hparams(best_hparams)
                 job.save_config(best_config)
                 job.save_task_specs(task_specs)
-                job.write_script(best_config["model"]["model_generator_module_name"], job_dir=job_dir)
+                job.write_script(job_dir=str(job_dir))
 
         else:
             # single run of a model
             model_generator_module_name = config["model"]["model_generator_module_name"]
             model_generator = get_model_generator(model_generator_module_name)
 
-            # use wandb sweep for hyperparameter search
-            model = model_generator.generate_model(task_specs, hparams, config)
-            hparams = model.hyperparameters
+            model = model_generator.generate_model(task_specs, config)
+            config = model.config
 
             config["experiment"]["dataset_name"] = task_specs.dataset_name
             config["experiment"]["benchmark_name"] = os.path.basename(config["experiment"]["benchmark_dir"])
 
             if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
-                config["experiment"]["name"] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['backbone']}"
+                config["experiment"][
+                    "name"
+                ] = f"{experiment_prefix}/{task_specs.dataset_name}/{config['model']['backbone']}"
             else:
                 config["experiment"][
                     "name"
-                ] = f"{experiment_prefix}/{task_specs.dataset_name}/{hparams['encoder_type']}/{hparams['decoder_type']}"
+                ] = f"{experiment_prefix}/{task_specs.dataset_name}/{config['model']['encoder_type']}/{config['model']['decoder_type']}"
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
-            job.save_hparams(hparams)
             job.save_config(config)
             job.save_task_specs(task_specs)
-
-            job.write_script(model_generator_module_name, job_dir=job_dir)
+            print(job_dir)
+            job.write_script(job_dir=str(job_dir))
 
     return experiment_dir
 
@@ -169,15 +160,10 @@ def start() -> None:
         help="The path to the configuration file.",
         required=True,
     )
-    parser.add_argument(
-        "--hparam_filepath",
-        help="The path to model hparam file.",
-        required=True,
-    )
 
     args = parser.parse_args()
 
-    experiment_generator(config_filepath=args.config_filepath, hparam_filepath=args.hparam_filepath)
+    experiment_generator(config_filepath=args.config_filepath)
 
 
 if __name__ == "__main__":

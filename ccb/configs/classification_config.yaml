@@ -1,14 +1,31 @@
 experiment:
   generate_experiment_dir: /mnt/data/experiments/nils/partition_sweeps_classification
+<<<<<<< HEAD
   experiment_name: 0.50x_train # prefix
   experiment_type: sweep # standard, seeded_runs, sweep
   benchmark_dir: /mnt/data/cc_benchmark/classification_v0.5
   partition_name: 0.50x_train
+=======
+  experiment_name: 0.01x_train # prefix
+  experiment_type: sweep # standard, seeded_runs, sweep
+  benchmark_dir: /mnt/data/cc_benchmark/classification_v0.5
+  partition_name: 0.01x_train
+>>>>>>> main
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.conv4
   head_type: linear # classification
   loss_type: crossentropy
   new_channel_init_method: random
+  backbone: resnet18  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+  pretrained: True
+  image_size: 224 # desired image input dimension to model
+  lr_backbone: 1.0e-6
+  lr_head: 1.0e-4
+  optimizer: sgd
+  hidden_size: 512
+  head_type: linear # classification
+  loss_type: crossentropy
+  batch_size: 2
 dataset:
   band_names: ["red", "green", "blue"]
   format: hdf5
