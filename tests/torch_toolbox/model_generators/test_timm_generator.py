@@ -19,14 +19,11 @@ def test_generate_timm_models(backbone):
     with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
-
     model_gen = TIMMGenerator()
-    hparams["backbone"] = backbone
+    config["model"]["backbone"] = backbone
 
-    model = model_gen.generate_model(task_specs=task_specs, hparams=hparams, config=config)
-    assert model.hyperparameters["backbone"] == backbone
+    model = model_gen.generate_model(task_specs=task_specs, config=config)
+    assert model.config["model"]["backbone"] == backbone
 
 
 @pytest.mark.parametrize("init_method", ["random", "clone_random_rgb_channel"])
@@ -40,14 +37,11 @@ def test_new_channel_init(init_method, backbone):
     with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
-
-    hparams["backbone"] = backbone
+    config["model"]["backbone"] = backbone
     config["model"]["new_channel_init_method"] = init_method
     config["dataset"]["band_names"] = ("red", "green", "blue", "05")
 
     model_gen = TIMMGenerator()
 
-    model = model_gen.generate_model(task_specs=task_specs, hparams=hparams, config=config)
-    assert model.hyperparameters["backbone"] == backbone
+    model = model_gen.generate_model(task_specs=task_specs, config=config)
+    assert model.config["model"]["backbone"] == backbone

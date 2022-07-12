@@ -4,6 +4,7 @@ experiment:
   experiment_type: standard # standard, seeded_runs, sweep
   benchmark_dir: tests/data/ccb-test-classification
   partition_name: default
+  loggers: ["csv"]
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
   head_type: linear # classification
