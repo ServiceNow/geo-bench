@@ -77,6 +77,11 @@ exclude = '''
 )/
 '''
 
+[tool.pytest.ini_options]
+filterwarnings = [
+  "ignore::PossibleUserWarning",
+]
+
 [tool.poetry.scripts]
 ccb-expgen = "ccb.experiment.experiment_generator:start"
 ccb-trainer = "ccb.torch_toolbox.trainer:start"
