@@ -677,8 +677,8 @@ class Sample(object):
         return band_array, dates, band_names
 
     def pack_to_3d(
-        self, band_names: List[str] = None, resample: bool = False, fill_value=None, resample_order=3
-    ) -> Tuple[np.ndarray, List[str]]:
+        self, band_names: Sequence[str], resample: bool = False, fill_value=None, resample_order=3
+    ) -> np.ndarray:
         """Pack representation to 3d array.
 
         Args:
@@ -1306,7 +1306,7 @@ class Dataset:
             red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
-    def normalization_stats(self) -> Tuple[Tuple[float, ...]]:
+    def normalization_stats(self) -> Tuple[List[float]]:
         """Retrieve band mean and std statistics for image normalization for dataset bands."""
         means = []
         stds = []
@@ -1315,7 +1315,7 @@ class Dataset:
             means.append(band_stat.mean)
             stds.append(band_stat.std)
 
-        return tuple(means), tuple(stds)
+        return means, stds
 
     #### Common accessors and iterators ####
 

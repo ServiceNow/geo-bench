@@ -29,8 +29,8 @@ def test_pack_4d_dense():
         random_band((6, 8), "band_3", ("alt_band_3",)),
     ]
     sample = io.Sample(bands, np.random.randint(2), "test_sample")
-    image, dates, band_names = sample.pack_to_4d(resample=True)
-    image_, _ = sample.pack_to_3d(resample=True)
+    image, dates, band_names = sample.pack_to_4d(resample=True, band_names=("band_1", "band_2", "band_3"))
+    image_, _ = sample.pack_to_3d(resample=True, band_names=("band_1", "band_2", "band_3"))
 
     np.testing.assert_array_equal(image[0], image_)
 
