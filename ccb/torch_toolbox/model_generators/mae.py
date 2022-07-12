@@ -24,7 +24,15 @@ class MaeGenerator(model.ModelGenerator):
 
     """
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: dict):
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize a new instance of MAE Generator.
+
+        Args:
+            config: configuration file
+        """
+        super().__init__()
+
+    def generate_model(self, task_specs: TaskSpecifications, config: dict):
         """Return a model instance from task specs and hyperparameters.
 
         Args:
@@ -34,36 +42,31 @@ class MaeGenerator(model.ModelGenerator):
         Returns:
             model instance from task_specs and hyperparameters
         """
-        backbone = Mae(self.model_path, task_specs, hyperparams)
-        head = model.head_generator(task_specs, hyperparams)
-        loss = model.train_loss_generator(task_specs, hyperparams)
-        train_metrics = model.train_metrics_generator(task_specs, hyperparams)
-        eval_metrics = model.eval_metrics_generator(task_specs, hyperparams)
-        return model.Model(backbone, head, loss, hyperparams, train_metrics, eval_metrics)
+        backbone = Mae(self.model_path, task_specs, config)
+        head = model.head_generator(task_specs, [], config)
+        loss = model.train_loss_generator(task_specs, config)
+        train_metrics = model.train_metrics_generator(task_specs, config)
+        eval_metrics = model.eval_metrics_generator(task_specs, config)
+        return model.Model(backbone, head, loss, config, train_metrics, eval_metrics)
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: Dict[str, Any]):
         """Define a collate function to batch input tensors.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            config: model hyperparameters
 
         Returns:
             collate function
         """
-        if task_specs.dataset_name.lower() == "mnist":
-            return None  # will use torch's default collate function.
-        elif task_specs.dataset_name.lower() == "imagenet":
-            return None  # will use torch's default collate function.
-        else:
-            return default_collate
+        return default_collate
 
-    def get_transform(self, task_specs, hyperparams):
+    def get_transform(self, task_specs: TaskSpecifications, config: Dict[str, Any], train: bool = True):
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            config: model hyperparameters
             train: train mode true or false
             scale: define image scale
             ratio: define image ratio range
@@ -76,16 +79,16 @@ class MaeGenerator(model.ModelGenerator):
         return transform
 
 
-def model_generator(hparams: Dict[str, Any] = {}) -> MaeGenerator:
-    """Generate Mae generator with a defined set of hparams.
+def model_generator(config: Dict[str, Any] = {}) -> MaeGenerator:
+    """Generate Mae generator with a defined set of config.
 
     Args:
-        hparams: hyperparameters
+        config: hyperparameters
 
     Returns:
         mae model generator
     """
-    model_generator = MaeGenerator(hparams=hparams)
+    model_generator = MaeGenerator(config=config)
     return model_generator
 
 
@@ -128,7 +131,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
         """
         if norm_layer is None:
-            norm_layer = partial(nn.LayerNorm, eps=1e-6)
+            partial_norm_layer = partial(nn.LayerNorm, eps=1e-6)
 
         super(VisionTransformer, self).__init__(
             num_classes=num_classes,
@@ -138,7 +141,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
             qkv_bias=qkv_bias,
-            norm_layer=norm_layer,
+            norm_layer=partial_norm_layer,
             drop_path_rate=drop_path_rate,
         )
 
@@ -148,7 +151,8 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
         self.global_pool = global_pool
         if self.global_pool:
-            self.fc_norm = norm_layer(embed_dim)
+            if partial_norm_layer is not None:
+                self.fc_norm = partial_norm_layer(embed_dim)
 
             del self.norm  # remove the original norm
 
@@ -260,33 +264,36 @@ class Mae(model.BackBone):
         h = hyperparams
 
         if hyperparams["model_name"] == "vit_base_patch16":
-            self.vit = vit_base_patch16(
-                num_classes=h["num_classes"],
-                drop_path_rate=h["drop_path_rate"],
-                global_pool=h["global_pool"],
-                in_chans=len(task_specs.bands_info),
-            )
+            if task_specs.bands_info is not None:
+                self.vit = vit_base_patch16(
+                    num_classes=h["num_classes"],
+                    drop_path_rate=h["drop_path_rate"],
+                    global_pool=h["global_pool"],
+                    in_chans=len(task_specs.bands_info),
+                )
         elif hyperparams["model_name"] == "vit_large_patch16":
-            self.vit = vit_large_patch16(
-                num_classes=h["num_classes"],
-                drop_path_rate=h["drop_path_rate"],
-                global_pool=h["global_pool"],
-                in_chans=len(task_specs.bands_info),
-            )
+            if task_specs.bands_info is not None:
+                self.vit = vit_large_patch16(
+                    num_classes=h["num_classes"],
+                    drop_path_rate=h["drop_path_rate"],
+                    global_pool=h["global_pool"],
+                    in_chans=len(task_specs.bands_info),
+                )
         elif hyperparams["model_name"] == "vit_huge_patch14":
-            self.vit = vit_huge_patch14(
-                num_classes=h["num_classes"],
-                drop_path_rate=h["drop_path_rate"],
-                global_pool=h["global_pool"],
+            if task_specs.bands_info is not None:
+                self.vit = vit_huge_patch14(
+                    num_classes=h["num_classes"],
+                    drop_path_rate=h["drop_path_rate"],
+                    global_pool=h["global_pool"],
+                    in_chans=len(task_specs.bands_info),
+                )
+        if task_specs.bands_info is not None:
+            self.vit = VisionTransformer(
+                num_classes=1000,  # doesn't matter, we only want the backbone
+                drop_path_rate=0.1,
+                global_pool=True,
                 in_chans=len(task_specs.bands_info),
             )
-
-        self.vit = VisionTransformer(
-            num_classes=1000,  # doesn't matter, we only want the backbone
-            drop_path_rate=0.1,
-            global_pool=True,
-            in_chans=len(task_specs.bands_info),
-        )
 
     def forward(self, x):
         """Forward input through model.
