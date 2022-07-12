@@ -3,7 +3,7 @@
 import os
 import random
 import string
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import pytorch_lightning as pl
@@ -275,7 +275,7 @@ class ModelGenerator:
             loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement their own
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to specify this function that returns model.")
 
     def generate_trainer(self, config: dict, job) -> pl.Trainer:
         """Configure a pytroch lightning Trainer.
@@ -301,6 +301,7 @@ class ModelGenerator:
                 name=config["wandb"].get("name", None),
                 resume="allow",
                 config=config["model"],
+                mode=config["wandb"].get("mode", "online"),
             ),
         ]
 
@@ -342,7 +343,7 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define collate function.")
 
     def get_transform(self, task_specs: TaskSpecifications, config: Dict[str, Any], train: bool = True):
         """Generate the collate functions for stacking the mini-batch.
@@ -356,7 +357,7 @@ class ModelGenerator:
         Returns:
             A callable taking an object of type Sample as input. The return will be fed to the collate_fn
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define a transform function.")
 
 
 def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], config: Dict[str, Any]):
@@ -389,53 +390,7 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
-def vit_head_generator(task_specs: TaskSpecifications, config: Dict[str, Any], input_shape: int):
-    """Generate head for VIT.
-
-    ViT architectures may require different type of heads.
-    In which case, we should provide this to the users as well. TO BE DISCUSSED.
-
-    Args:
-        task_specs: an object describing the task to be performed
-        hyperparams: dictionary containing hyperparameters of the experiment
-        input_shape: input shape to transformer
-
-    """
-    pass
-
-
-def compute_accuracy(
-    output: Tensor, target: Tensor, prefix: str, topk: Tuple[int] = (1,), *args, **kwargs
-) -> Dict[str, float]:
-    """Compute the accuracy over the k top predictions for the specified values of k.
-
-    Args:
-        output: model output
-        target: target to compute accuracy on
-        pefix: prefix for k
-        topk: define k values for which to compute accuracy
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-        computed accuracy values for each k
-    """
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = {}
-        for k in topk:
-            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res[f"{prefix}_accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
-        return res
-
-
-METRIC_MAP: Dict[str, Any] = {}
+METRIC_MAP = {}
 
 
 def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
@@ -460,8 +415,8 @@ def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, An
         io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
-    for metric_name in config["model"].get("train_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("train_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
 
     return torchmetrics.MetricCollection(metrics)
 
@@ -485,8 +440,8 @@ def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any
         io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
     }[task_specs.label_type.__class__]
 
-    for metric_name in config["model"].get("eval_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("eval_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
 
     return torchmetrics.MetricCollection(metrics)
 
@@ -555,37 +510,3 @@ class BackBone(torch.nn.Module):
         Returns:
             the encoded representation or a list of representations for
         """
-
-
-def collate_rgb(samples: List[io.Sample]) -> Dict[str, Tensor]:
-    """Collate function for RGB images.
-
-    Args:
-        samples: list of samples
-
-    Returns:
-        collated version of samples
-    """
-    x_list = []
-    label_list = []
-    for sample in samples:
-        rgb_image, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
-        x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
-        label_list.append(sample.label)
-
-    return {"input": torch.stack(x_list), "label": stack_labels(label_list)}
-
-
-def stack_labels(label_list: List[Tensor]) -> Tensor:
-    """Stack labels for collate function.
-
-    Args:
-        label_list: list of labels to be stacked
-
-    Returns:
-        stacked labels
-    """
-    if isinstance(label_list[0], int):
-        return torch.tensor(label_list)
-    else:
-        raise NotImplementedError()

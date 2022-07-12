@@ -1,12 +1,9 @@
 """Segmentation Model Generator."""
 
-import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import segmentation_models_pytorch as smp
-import timm
 import torch
-import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from torch import Tensor
 from torch.utils.data.dataloader import default_collate
@@ -15,12 +12,9 @@ from torchvision import transforms as tt
 from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
-    BackBone,
     Model,
     ModelGenerator,
-    collate_rgb,
     eval_metrics_generator,
-    head_generator,
     train_loss_generator,
     train_metrics_generator,
 )
@@ -45,35 +39,35 @@ class SegmentationGenerator(ModelGenerator):
         super().__init__()
 
         # These params are for unit tests, please set proper ones for real optimization
-        self.base_hparams = {
-            "input_size": (3, 256, 256),  # FIXME
-            "pretrained": True,
-            "lr_backbone": 1e-5,
-            "lr_head": 1e-4,
-            "optimizer": "adamw",
-            "head_type": "linear",
-            "loss_type": "crossentropy",
-            "batch_size": 1,
-            "num_workers": 0,
-            "max_epochs": 1,
-            "n_gpus": 0,
-            "logger": "csv",  # Set to wandb for wandb tracking
-            "encoder_type": "resnet18",
-            "accumulate_grad_batches": 2,
-            "decoder_type": "Unet",
-            "decoder_weights": "imagenet",
-            "enable_progress_bar": False,
-            "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
-            "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml",
-            "num_agents": 4,
-            "num_trials_per_agent": 5,
-            "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
-            "image_size": 224,
-            "format": "hdf5",
-        }
-        if hparams is not None:
-            self.base_hparams.update(hparams)
+        # self.base_hparams = {
+        #     "input_size": (3, 256, 256),  # FIXME
+        #     "pretrained": True,
+        #     "lr_backbone": 1e-5,
+        #     "lr_head": 1e-4,
+        #     "optimizer": "adamw",
+        #     "head_type": "linear",
+        #     "loss_type": "crossentropy",
+        #     "batch_size": 1,
+        #     "num_workers": 0,
+        #     "max_epochs": 1,
+        #     "n_gpus": 0,
+        #     "logger": "csv",  # Set to wandb for wandb tracking
+        #     "encoder_type": "resnet18",
+        #     "accumulate_grad_batches": 2,
+        #     "decoder_type": "Unet",
+        #     "decoder_weights": "imagenet",
+        #     "enable_progress_bar": False,
+        #     "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
+        #     "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
+        #     "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml",
+        #     "num_agents": 4,
+        #     "num_trials_per_agent": 5,
+        #     "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
+        #     "image_size": 224,
+        #     "format": "hdf5",
+        # }
+        # if hparams is not None:
+        #     self.base_hparams.update(hparams)
 
     def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return model instance from task specs and hyperparameters.
