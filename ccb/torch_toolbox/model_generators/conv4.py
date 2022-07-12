@@ -15,7 +15,6 @@ from ccb.torch_toolbox.model import (
     BackBone,
     Model,
     ModelGenerator,
-    collate_rgb,
     eval_metrics_generator,
     head_generator,
     train_loss_generator,
@@ -37,36 +36,36 @@ class Conv4Generator(ModelGenerator):
         """
         super().__init__()
 
-        self.base_hparams = {
-            "backbone": "conv4",
-            "lr_gamma": 0.1,
-            "lr_backbone": 4e-3,
-            "lr_head": 4e-3,
-            "head_type": "linear",
-            "hidden_size": 128,
-            "loss_type": "crossentropy",
-            "batch_size": 32,
-            "num_workers": 0,
-            "max_epochs": 1,
-            "n_gpus": 0,
-            "logger": "csv",
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml",
-            "num_seeds": 3,
-            "num_agents": 4,
-            "num_trials_per_agent": 5,
-            "band_names": ["red", "green", "blue"],
-            "image_size": 224,
-            "format": "hdf5",
-        }
-        if config is not None:
-            self.base_hparams.update(config)
+        # self.base_hparams = {
+        #     "backbone": "conv4",
+        #     "lr_gamma": 0.1,
+        #     "lr_backbone": 4e-3,
+        #     "lr_head": 4e-3,
+        #     "head_type": "linear",
+        #     "hidden_size": 128,
+        #     "loss_type": "crossentropy",
+        #     "batch_size": 32,
+        #     "num_workers": 0,
+        #     "max_epochs": 1,
+        #     "n_gpus": 0,
+        #     "logger": "csv",
+        #     "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml",
+        #     "num_seeds": 3,
+        #     "num_agents": 4,
+        #     "num_trials_per_agent": 5,
+        #     "band_names": ["red", "green", "blue"],
+        #     "image_size": 224,
+        #     "format": "hdf5",
+        # }
+        # if hparams is not None:
+        #     self.base_hparams.update(hparams)
 
     def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return a model instance from task specs and hyperparameters.
 
         Args:
             task_specs: object with task specs
-            hyperparams: dictionary containing hyperparameters
+            hparams: dictionary containing hyperparameters
 
         Returns:
             model instance from task_specs and hyperparameters
@@ -158,7 +157,7 @@ class Conv4(BackBone):
         Args:
             model_path: path to model
             task_specs: task specs to retrieve dataset
-            hyperparams: model hyperparameters
+            hparams: model hyperparameters
 
         """
         super().__init__(model_path, task_specs, config)
