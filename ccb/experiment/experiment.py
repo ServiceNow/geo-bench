@@ -89,6 +89,7 @@ class Job:
 
             wandb.finish()
             summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
+
             with open(summary[0], "r") as infile:
                 data = json.load(infile)
             return data
