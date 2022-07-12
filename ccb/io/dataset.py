@@ -1,4 +1,6 @@
 """Dataset."""
+from __future__ import annotations
+
 import ast
 import datetime
 import errno
@@ -24,8 +26,12 @@ check_ccb_dir = os.environ.get("CCB_DIR", None)
 
 if check_ccb_dir is None:
     # Deprecated, use CCB_DIR instead
-    src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
-    datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+    src_datasets_dir: Union[str, Path, None] = os.environ.get(
+        "CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/")
+    )
+    datasets_dir: Union[str, Path, None] = os.environ.get(
+        "CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/")
+    )
 
     # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
     CCB_DIR: Path = Path(datasets_dir).parent
@@ -269,8 +275,6 @@ class SegmentationClasses(BandInfo, LabelType):
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        elif hasattr(self, "class_name"):
-            return self.class_name  # for backward compatibility with saved pickles with a typo
         else:
             return None
 
@@ -387,7 +391,8 @@ class Band:
 
     def get_descriptor(self) -> str:
         """Get description of band."""
-        descriptor: str = self.band_info.name
+        if self.band_info.name is not None:
+            descriptor: str = self.band_info.name
         if self.date is not None:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
@@ -552,7 +557,7 @@ class Sample(object):
     def _build_index(self) -> None:
         """Build index so that bands can all be accessed."""
         dates = set()
-        band_info_set = OrderedDict()  # using it as an ordered set
+        band_info_set: OrderedDict = OrderedDict()  # using it as an ordered set
         bands = self.bands
 
         for band in bands:
@@ -958,7 +963,7 @@ def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[st
     return loader(sample_path, band_names=band_names)
 
 
-def _largest_shape(band_array: np.ndarray) -> Tuple[int]:
+def _largest_shape(band_array: np.ndarray) -> Tuple[int, ...]:
     """Extract the largest shape and the dtype from an array of bands.
 
     Args:
@@ -1008,12 +1013,12 @@ def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[
 
     sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
     sizes[-1] += len(sample_set) - np.sum(sizes)
-    sample_set = sample_set.copy()
-    rng.shuffle(sample_set)
-    subsets = []
+    sample_set_copy = sample_set.copy()
+    rng.shuffle(sample_set_copy)
+    subsets: List[str] = []
     index = 0
     for size in sizes:
-        subsets.append(sample_set[index : (index + size)])
+        subsets.append(sample_set_copy[index : (index + size)])
         index += size
     return subsets
 
@@ -1034,7 +1039,7 @@ class Partition:
             partiton_dict: mapping from 'train', 'valid', 'test' to samples
         """
         if partition_dict is None:
-            self.partition_dict = {"train": [], "valid": [], "test": []}
+            self.partition_dict: Dict[str, List] = {"train": [], "valid": [], "test": []}
         else:
             for key in partition_dict.keys():
                 Partition.check_split_name(key)
@@ -1050,7 +1055,7 @@ class Partition:
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
-    def resplit_iid(self, split_names: Tuple[str] = ("valid", "test"), ratios: Tuple[float] = (0.5, 0.5)):
+    def resplit_iid(self, split_names: Tuple[str, ...] = ("valid", "test"), ratios: Tuple[float, ...] = (0.5, 0.5)):
         """Resplit partition iid.
 
         Args:
@@ -1229,7 +1234,7 @@ class Dataset:
                 f"Unknown partition {partition_name}. Maybe the dataset in {self.dataset_dir} is missing a default_partition.json?"
             )
         self.active_partition_name = partition_name
-        self.active_partition = self.load_partition(partition_name)
+        self.active_partition: Partition = self.load_partition(partition_name)
 
     def list_partitions(self) -> List[str]:
         """List available partitions."""
@@ -1280,7 +1285,7 @@ class Dataset:
         self.set_partition(partition_name)
 
     @cached_property
-    def band_stats(self):
+    def band_stats(self) -> Dict[str, Stats]:
         """Retrieve band statistics."""
         with open(self.dataset_dir / "band_stats.json", "r") as fd:
             all_band_stats_dict = json.load(fd)
@@ -1356,7 +1361,7 @@ class Dataset:
             sample_name_list = self.active_partition.partition_dict[self.split]
         return len(sample_name_list)
 
-    def _iter_dataset(self, max_count=None) -> int:
+    def _iter_dataset(self, max_count=None) -> Generator[Sample, None, None]:
         """Iterate over dataset.
 
         Args:
@@ -1600,25 +1605,26 @@ def check_dataset_integrity(
     if samples is None:
         samples = dataset.iter_dataset(max_count=max_count)
 
-    for sample in samples:
-        assert len(task_specs.bands_info) == len(sample.band_info_list)
-        # assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"  # forestnet couldn't pass this test.
+    if samples is not None:
+        for sample in samples:
+            assert len(task_specs.bands_info) == len(sample.band_info_list)
+            # assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"  # forestnet couldn't pass this test.
 
-        for task_band_info, sample_band_info in zip(task_specs.bands_info, sample.band_info_list):
-            assert task_band_info == sample_band_info
+            for task_band_info, sample_band_info in zip(task_specs.bands_info, sample.band_info_list):
+                assert task_band_info == sample_band_info
 
-        shapes = []
-        for band in sample.bands:
-            band.band_info.assert_valid(band)
-            shapes.append(band.data.shape[:2])
-        max_shape = np.array(shapes).max(axis=0)
-        assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
+            shapes = []
+            for band in sample.bands:
+                band.band_info.assert_valid(band)
+                shapes.append(band.data.shape[:2])
+            max_shape = np.array(shapes).max(axis=0)
+            assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
 
-        assert isinstance(task_specs.label_type, LabelType)
-        task_specs.label_type.assert_valid(sample.label)
+            assert isinstance(task_specs.label_type, LabelType)
+            task_specs.label_type.assert_valid(sample.label)
 
-        if assert_dense:
-            assert np.all(sample.band_array is not None)
+            if assert_dense:
+                assert np.all(sample.band_array is not None)
 
 
 def check_partition_integrity(partition: Partition, partition_name: str) -> None:

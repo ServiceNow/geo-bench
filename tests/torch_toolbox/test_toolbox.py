@@ -1,7 +1,6 @@
 import os
 import pickle
 import tempfile
-from datetime import datetime
 
 import pytest
 from ruamel.yaml import YAML
