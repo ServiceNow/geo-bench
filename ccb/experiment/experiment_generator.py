@@ -96,7 +96,7 @@ def experiment_generator(
             part_name = config["experiment"]["partition_name"].split("_partition.json")[0]
             ds_dict = seed_run_dict[back_name][part_name]
 
-            # for ds_name in list(ds_dict.keys()):
+            # for datasets that are in classification benchmark dir but not swept yet
             try:
                 exp_dir = ds_dict[task_specs.dataset_name]
             except KeyError:
