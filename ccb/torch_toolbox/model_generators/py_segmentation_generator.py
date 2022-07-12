@@ -209,6 +209,7 @@ class SegmentationGenerator(ModelGenerator):
             t_y_comp = tt.Compose(t_y)
 
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
+            print(sample.label)
             x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 

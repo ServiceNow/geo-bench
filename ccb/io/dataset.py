@@ -1,4 +1,6 @@
 """Dataset."""
+from __future__ import annotations
+
 import ast
 import datetime
 import errno
@@ -9,13 +11,14 @@ import pickle
 from collections import OrderedDict, defaultdict
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, DefaultDict, Dict, Generator, List, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import h5py
 import numpy as np
 import rasterio
 from scipy.ndimage import zoom
+from torch import isin
 from tqdm import tqdm
 
 from ccb.io.label import LabelType
@@ -24,22 +27,27 @@ check_ccb_dir = os.environ.get("CCB_DIR", None)
 
 if check_ccb_dir is None:
     # Deprecated, use CCB_DIR instead
-    src_datasets_dir = os.environ.get("CC_BENCHMARK_SOURCE_DATASETS", os.path.expanduser("~/dataset/"))
-    datasets_dir = os.environ.get("CC_BENCHMARK_CONVERTED_DATASETS", os.path.expanduser("~/converted_dataset/"))
+    src_datasets_dir: Union[str, Path, None] = os.environ.get(
+        "CC_BENCHMARK_SOURCE_DATASETS", Path(os.path.expanduser("~/dataset/"))
+    )
+    datasets_dir: Union[str, Path, None] = os.environ.get(
+        "CC_BENCHMARK_CONVERTED_DATASETS", Path(os.path.expanduser("~/converted_dataset/"))
+    )
 
     # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
-    CCB_DIR: Path = Path(datasets_dir).parent
+    if datasets_dir is not None:
+        CCB_DIR: Path = Path(datasets_dir).parent
 
 else:
     CCB_DIR = Path(check_ccb_dir)
-    src_datasets_dir: Path = CCB_DIR / "source"
-    datasets_dir: Path = CCB_DIR / "converted"
+    src_datasets_dir: Path = CCB_DIR / "source"  # type: ignore
+    datasets_dir: Path = CCB_DIR / "converted"  # type: ignore
 
 
 class BandInfo(object):
     """Base class for storing non pixel information about bands such as band name, wavelenth and spatial resolution."""
 
-    def __init__(self, name: str = None, alt_names: Sequence[str] = (), spatial_resolution: float = None) -> None:
+    def __init__(self, name: str, alt_names: Sequence[str] = (), spatial_resolution: float = None) -> None:
         """Initialize new instance of BandInfo.
 
         Args:
@@ -170,7 +178,7 @@ class MultiBand(BandInfo):
     """Contains a 3d object with multiple band of the same resolution e.g. HyperSpectralBands."""
 
     def __init__(
-        self, name: str = None, alt_names: Sequence[str] = (), spatial_resolution: float = None, n_bands: int = None
+        self, name: str, alt_names: Sequence[str] = (), spatial_resolution: float = None, n_bands: int = None
     ) -> None:
         """Initialize new instance of MultiBand.
 
@@ -193,7 +201,7 @@ class HyperSpectralBands(MultiBand):
 
     def __init__(
         self,
-        name: str = None,
+        name: str,
         alt_names: Sequence[str] = (),
         spatial_resolution: float = None,
         n_bands: int = None,
@@ -269,8 +277,6 @@ class SegmentationClasses(BandInfo, LabelType):
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        elif hasattr(self, "class_name"):
-            return self.class_name  # for backward compatibility with saved pickles with a typo
         else:
             return None
 
@@ -387,7 +393,8 @@ class Band:
 
     def get_descriptor(self) -> str:
         """Get description of band."""
-        descriptor: str = self.band_info.name
+        if self.band_info.name is not None:
+            descriptor: str = self.band_info.name
         if self.date is not None:
             descriptor += f"_{_format_date(self.date)}"
         return descriptor
@@ -508,7 +515,7 @@ def _make_map(elements) -> Tuple[Any, Any]:
     return element_map, elements
 
 
-def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[str]]:
+def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[BandInfo]]:
     """Map a set of band info objects.
 
     Args:
@@ -552,7 +559,7 @@ class Sample(object):
     def _build_index(self) -> None:
         """Build index so that bands can all be accessed."""
         dates = set()
-        band_info_set = OrderedDict()  # using it as an ordered set
+        band_info_set: OrderedDict = OrderedDict()  # using it as an ordered set
         bands = self.bands
 
         for band in bands:
@@ -561,7 +568,7 @@ class Sample(object):
 
         self.date_map, self.dates = _make_map(dates)
         self.band_name_map, self.band_info_list = _map_bands(band_info_set.keys())
-        self.band_names = [band_info.name for band_info in self.band_info_list]
+        self.band_names: List[str] = [band_info.name for band_info in self.band_info_list]
 
         self.band_array = np.empty((len(self.dates), len(self.band_info_list)), dtype=object)
 
@@ -581,7 +588,7 @@ class Sample(object):
     def pack_to_4d(
         self,
         dates=None,
-        band_names: Tuple[str] = None,
+        band_names: List[str] = None,
         resample: bool = False,
         fill_value: float = None,
         resample_order: int = 3,
@@ -618,7 +625,12 @@ class Sample(object):
                         # TODO doesn't work yet with MultiBand will raise an error when concatenating
                         data_list.append(np.zeros(shape, dtype=np.int16) + fill_value)
                     else:
-                        raise ValueError(f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None.")
+                        if band_names is not None:
+                            raise ValueError(
+                                f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None."
+                            )
+                        else:
+                            raise ValueError(f"Missing band names got {band_names}")
                 else:
                     data = band.data
                     if data.ndim == 2:
@@ -672,8 +684,8 @@ class Sample(object):
         return band_array, dates, band_names
 
     def pack_to_3d(
-        self, band_names: Sequence[str], resample: bool = False, fill_value=None, resample_order=3
-    ) -> np.ndarray:
+        self, band_names: List[str], resample: bool = False, fill_value=None, resample_order=3
+    ) -> Tuple[np.ndarray, List[str]]:
         """Pack representation to 3d array.
 
         Args:
@@ -794,7 +806,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     return sample_path
 
 
-def load_sample_hdf5(sample_path: Path, band_names: List[str] = None, label_only: bool = False) -> Sample:
+def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool = False) -> Sample:
     """Load hdf5 sample.
 
     Args:
@@ -808,7 +820,7 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str] = None, label_only
     with h5py.File(sample_path, "r") as fp:
 
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
-        band_names = attr_dict.get("bands_order", fp.keys())
+        # band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
         label = None
         for band_name in band_names:
@@ -820,12 +832,20 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str] = None, label_only
 
             band = Band(data=np.array(h5_band), **attr_dict[band_name])
             if band_name.startswith("label"):
+                print(band.data)
                 label = band
             else:
                 bands.append(band)
         if label is None:
             label = attr_dict.get("label", None)
-    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+            if isinstance(label, int):
+                return Sample(bands=bands, label=label, sample_name=sample_path.stem)
+            elif isinstance(label, dict):  # segmentation class
+                return Sample(
+                    bands=bands,
+                    label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
+                    sample_name=sample_path.stem,
+                )
 
 
 def write_sample_npz(sample: Sample, dataset_dir: str):
@@ -911,7 +931,7 @@ def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
     return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
-def load_sample_tif(sample_dir: str, band_names: List[str] = None):
+def load_sample_tif(sample_dir: Path, band_names: List[str]) -> Sample:
     """Load a tif sample.
 
     Args:
@@ -921,20 +941,16 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
     Return
         loaded sample
     """
-    sample_dir = Path(sample_dir)
     band_list = []
-    with open(Path(sample_dir, "band_index.json"), "r") as fd:
+    with open(sample_dir / "band_index.json", "r") as fd:
         band_index = OrderedDict(json.load(fd))
-
-    if band_names is None:
-        band_names = band_index.keys()
 
     for band_name in band_names:
         for file_name in band_index[band_name]:
             band_list.append(load_band_tif(Path(sample_dir, file_name)))
 
-    label_file = Path(sample_dir, "label.json")
-    label_file_tif = Path(sample_dir, "label.tif")
+    label_file = sample_dir / "label.json"
+    label_file_tif = sample_dir / "label.tif"
     if label_file.exists():
         with open(label_file, "r") as fd:
             label = json.load(fd)
@@ -943,7 +959,7 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
     return Sample(band_list, label, sample_name=sample_dir.name)
 
 
-def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[str, List[str]], Sample]:
+def load_sample(sample_path: Path, band_names=None, format=None) -> Sample:
     """Create helper function to decide what sample loader to use.
 
     Args:
@@ -952,13 +968,20 @@ def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[st
         format: 'hdf5' or 'tif'
 
     Return:
-        loader corresponding to format
+        sample from corresponding function
+
+    Raises:
+        ValueError if format is not specified correctly
     """
-    loader = dict(tif=load_sample_tif, hdf5=load_sample_hdf5)[format]
-    return loader(sample_path, band_names=band_names)
+    if format == "tif":
+        return load_sample_tif(sample_path, band_names=band_names)
+    elif format == "hdf5":
+        return load_sample_hdf5(sample_path, band_names=band_names)
+    else:
+        raise ValueError(f"Format not compatible, found {format}")
 
 
-def _largest_shape(band_array: np.ndarray) -> Tuple[int]:
+def _largest_shape(band_array: np.ndarray) -> Tuple[int, ...]:
     """Extract the largest shape and the dtype from an array of bands.
 
     Args:
@@ -987,7 +1010,7 @@ def force_symlink(file1, file2):
             os.symlink(file1, file2)
 
 
-def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[str]:
+def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[List[str]]:
     """Split a sample set iif.
 
     Args:
@@ -1008,12 +1031,12 @@ def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[
 
     sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
     sizes[-1] += len(sample_set) - np.sum(sizes)
-    sample_set = sample_set.copy()
-    rng.shuffle(sample_set)
-    subsets = []
+    sample_set_copy = sample_set.copy()
+    rng.shuffle(sample_set_copy)
+    subsets: List[List[str]] = []
     index = 0
     for size in sizes:
-        subsets.append(sample_set[index : (index + size)])
+        subsets.append(sample_set_copy[index : (index + size)])
         index += size
     return subsets
 
@@ -1034,7 +1057,7 @@ class Partition:
             partiton_dict: mapping from 'train', 'valid', 'test' to samples
         """
         if partition_dict is None:
-            self.partition_dict = {"train": [], "valid": [], "test": []}
+            self.partition_dict: Dict[str, List[str]] = {"train": [], "valid": [], "test": []}
         else:
             for key in partition_dict.keys():
                 Partition.check_split_name(key)
@@ -1050,7 +1073,7 @@ class Partition:
         Partition.check_split_name(split_name)
         self.partition_dict[split_name].append(sample_name)
 
-    def resplit_iid(self, split_names: Tuple[str] = ("valid", "test"), ratios: Tuple[float] = (0.5, 0.5)):
+    def resplit_iid(self, split_names: Sequence[str] = ("valid", "test"), ratios: Tuple[float, ...] = (0.5, 0.5)):
         """Resplit partition iid.
 
         Args:
@@ -1116,7 +1139,7 @@ class Dataset:
         partition_name: str = "default",
         band_names: Sequence[str] = None,
         split=None,
-        transform=None,
+        transform: Callable[[Sample], Sample] = None,
         format="hdf5",
     ) -> None:
         """Initialize new CCB dataset.
@@ -1134,6 +1157,7 @@ class Dataset:
         """
         self.dataset_dir = Path(dataset_dir)
         self.split = split
+        assert format in ["hdf5", "tif"], f"Invalid file format, found {format}, choose 'tif' or 'hdf5'"
         self.format = format
         self.transform = transform
         self._load_partitions(partition_name)
@@ -1229,7 +1253,7 @@ class Dataset:
                 f"Unknown partition {partition_name}. Maybe the dataset in {self.dataset_dir} is missing a default_partition.json?"
             )
         self.active_partition_name = partition_name
-        self.active_partition = self.load_partition(partition_name)
+        self.active_partition: Partition = self.load_partition(partition_name)
 
     def list_partitions(self) -> List[str]:
         """List available partitions."""
@@ -1272,7 +1296,7 @@ class Dataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = self._partition_path_dict.keys()[0]  # take any partition??
+                partition_name = list(self._partition_path_dict.keys())[0]  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(f"No default partition found for dataset {self.dataset_dir.name}. Using {partition_name} as default.")
@@ -1280,7 +1304,7 @@ class Dataset:
         self.set_partition(partition_name)
 
     @cached_property
-    def band_stats(self):
+    def band_stats(self) -> Dict[str, Stats]:
         """Retrieve band statistics."""
         with open(self.dataset_dir / "band_stats.json", "r") as fd:
             all_band_stats_dict = json.load(fd)
@@ -1301,7 +1325,7 @@ class Dataset:
             red = self.band_stats["Red"]
         return (red.mean, green.mean, blue.mean), (red.std, green.std, blue.std)
 
-    def normalization_stats(self) -> Tuple[List[float]]:
+    def normalization_stats(self) -> Tuple[List[float], List[float]]:
         """Retrieve band mean and std statistics for image normalization for dataset bands."""
         means = []
         stds = []
@@ -1342,7 +1366,9 @@ class Dataset:
             sample_name_ = sample_name + ".hdf5"
         else:
             sample_name_ = sample_name
-        sample = load_sample(Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format)
+        sample: Sample = load_sample(
+            Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format
+        )
         if self.transform is not None:
             return self.transform(sample)
         else:
@@ -1356,7 +1382,7 @@ class Dataset:
             sample_name_list = self.active_partition.partition_dict[self.split]
         return len(sample_name_list)
 
-    def _iter_dataset(self, max_count=None) -> int:
+    def _iter_dataset(self, max_count=None) -> Generator[Sample, None, None]:
         """Iterate over dataset.
 
         Args:
@@ -1502,7 +1528,7 @@ def compute_dataset_statistics(
     Returns:
         band values and computed band statistics
     """
-    accumulator = defaultdict(list)
+    accumulator: DefaultDict[str, List] = defaultdict(list)
     if n_samples is not None and n_samples < len(dataset):
         indices = np.random.choice(len(dataset), n_samples, replace=False)
     else:
@@ -1534,8 +1560,8 @@ def compute_dataset_statistics(
         else:
             accumulator["label"].append(sample.label)
 
-    band_values = {}
-    band_stats = {}
+    band_values: Dict[str, np.array] = {}
+    band_stats: Dict[str, Stats] = {}
     for name, values in accumulator.items():
         values = np.hstack(values)
         band_values[name] = values
@@ -1581,14 +1607,14 @@ def _date_from_str(date_str):
 
 
 def check_dataset_integrity(
-    dataset: Dataset, max_count: int = None, samples: List[Sample] = None, assert_dense: bool = True
+    dataset: Dataset, samples: List[Sample], max_count: int = None, assert_dense: bool = True
 ) -> None:
     """Verify the intergrity, coherence and consistancy of a list of a dataset.
 
     Args:
         dataset: dataset to check
-        max_count: max count of samples
         sample: list of samples
+        max_count: max count of samples
         assert_dense: whether or not to check that there are no None values
     """
     for partition_name in dataset._partition_path_dict.keys():
@@ -1600,25 +1626,26 @@ def check_dataset_integrity(
     if samples is None:
         samples = dataset.iter_dataset(max_count=max_count)
 
-    for sample in samples:
-        assert len(task_specs.bands_info) == len(sample.band_info_list)
-        # assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"  # forestnet couldn't pass this test.
+    if samples is not None:
+        for sample in samples:
+            assert len(task_specs.bands_info) == len(sample.band_info_list)
+            # assert task_specs.n_time_steps == len(sample.dates), f"{task_specs.n_time_steps} vs {len(sample.dates)}"  # forestnet couldn't pass this test.
 
-        for task_band_info, sample_band_info in zip(task_specs.bands_info, sample.band_info_list):
-            assert task_band_info == sample_band_info
+            for task_band_info, sample_band_info in zip(task_specs.bands_info, sample.band_info_list):
+                assert task_band_info == sample_band_info
 
-        shapes = []
-        for band in sample.bands:
-            band.band_info.assert_valid(band)
-            shapes.append(band.data.shape[:2])
-        max_shape = np.array(shapes).max(axis=0)
-        assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
+            shapes = []
+            for band in sample.bands:
+                band.band_info.assert_valid(band)
+                shapes.append(band.data.shape[:2])
+            max_shape = np.array(shapes).max(axis=0)
+            assert np.all(max_shape == task_specs.patch_size), f"{max_shape} vs {task_specs.patch_size}"
 
-        assert isinstance(task_specs.label_type, LabelType)
-        task_specs.label_type.assert_valid(sample.label)
+            assert isinstance(task_specs.label_type, LabelType)
+            task_specs.label_type.assert_valid(sample.label)
 
-        if assert_dense:
-            assert np.all(sample.band_array is not None)
+            if assert_dense:
+                assert np.all(sample.band_array is not None)
 
 
 def check_partition_integrity(partition: Partition, partition_name: str) -> None:

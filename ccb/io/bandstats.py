@@ -53,16 +53,16 @@ def produce_band_stats(
         print(f"Statistics written to {stats_fname}.")
 
 
-def produce_all_band_stats(benchmark_name) -> None:
+def produce_all_band_stats(benchmark_dir: str) -> None:
     """Compute all band statistics for a benchmark.
 
     Args:
-        benchmark_name: name of the benchmark
+        benchmark_name: path to the benchmark directory
     """
-    for task in io.task_iterator(benchmark_name=benchmark_name):
-        print(f"Producing bandstats for dataset {task.dataset_name} of benchmark {benchmark_name}.")
-        produce_band_stats(task.get_dataset(split=None))
+    for task in io.task_iterator(benchmark_dir=benchmark_dir):
+        print(f"Producing bandstats for dataset {task.dataset_name} of benchmark {os.path.basename(benchmark_dir)}.")
+        produce_band_stats(task.get_dataset(benchmark_dir=benchmark_dir, split=None))
 
 
 if __name__ == "__main__":
-    produce_all_band_stats(benchmark_name="converted")
+    produce_all_band_stats(benchmark_dir="/mnt/data/cc_benchmark/converted")
