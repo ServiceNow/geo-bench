@@ -7,7 +7,6 @@ import tempfile
 from pathlib import Path
 from subprocess import PIPE
 
-import pytest
 from ruamel.yaml import YAML
 
 from ccb.experiment.experiment import Job
@@ -25,14 +24,9 @@ def test_sweep():
     with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
-
     with tempfile.TemporaryDirectory(prefix="test") as job_dir:
         job = Job(job_dir)
         task_specs.save(job.dir)
-
-        job.save_hparams(hparams)
         job.save_config(config)
 
         sweep_name = "testSweep"
@@ -67,9 +61,6 @@ def test_sweep():
         with open(os.path.join(job_dir, "config.yaml"), "w") as yamlfile:
             yaml.dump(config, yamlfile)
 
-        import pdb
-
-        pdb.set_trace()
         launch_agent_cmd = ["wandb", "agent", wandb_agent_command.split(" ")[-1], "--count", str(1)]
         result = subprocess.run(launch_agent_cmd, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         print(result.stderr.replace("\n", ""))
