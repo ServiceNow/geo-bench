@@ -3,6 +3,7 @@
 import random
 from typing import Any, Callable, Dict
 
+import numpy as np
 import timm
 import torch
 from torch.utils.data.dataloader import default_collate
@@ -285,11 +286,11 @@ class TIMMGenerator(ModelGenerator):
 
         t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
 
-        t = tt.Compose(t)
+        transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
-            x = t(x)
+            x: np.Array = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
+            x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
         return transform
