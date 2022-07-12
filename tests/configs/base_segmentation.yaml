@@ -4,7 +4,7 @@ experiment:
   experiment_type: standard # standard, seeded_runs, sweep
   benchmark_dir: tests/data/ccb-test-segmentation
   partition_name: default
-  loggers: ["csv", "wandb"]
+  loggers: ["csv"]
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   head_type: linear # classification

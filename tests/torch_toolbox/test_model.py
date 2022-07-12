@@ -1,6 +1,7 @@
 """Test model.py"""
 
 import copy
+import json
 import os
 import pickle
 
@@ -25,13 +26,10 @@ class TestModel:
         with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
             config = yaml.load(yamlfile)
 
-        with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-            hparams = yaml.load(yamlfile)
-
         model_gen = TIMMGenerator()
-        hparams["backbone"] = "resnet18"
+        config["model"]["backbone"] = "resnet18"
 
-        return model_gen.generate_model(task_specs=task_specs, hparams=hparams, config=config)
+        return model_gen.generate_model(task_specs=task_specs, config=config)
 
     def test_forward(self, model: Model) -> None:
         x = torch.randn(2, 3, 64, 64)
@@ -39,21 +37,21 @@ class TestModel:
         assert out.shape[-1] == model.head.num_classes
 
     def test_forward_frozen_backbone(self, model: Model) -> None:
-        model.hyperparameters["lr_backbone"] = 0
+        model.config["model"]["lr_backbone"] = 0
         x = torch.randn(2, 3, 64, 64)
         out = model(x)
         assert out.shape[-1] == model.head.num_classes
 
     def test_optimizers(self, model: Model) -> None:
         for opt, instc in zip(["sgd", "adam", "adamw"], [torch.optim.SGD, torch.optim.Adam, torch.optim.AdamW]):
-            model.hyperparameters["optimizer"] = opt
+            model.config["model"]["optimizer"] = opt
             optims = model.configure_optimizers()
             assert isinstance(optims[0], instc)
 
     def test_scheduler(self, model: Model) -> None:
-        model.hyperparameters["scheduler"] = "step"
-        model.hyperparameters["lr_milestones"] = [1, 2]
-        model.hyperparameters["lr_gamma"] = 0.1
+        model.config["model"]["scheduler"] = "step"
+        model.config["model"]["lr_milestones"] = [1, 2]
+        model.config["model"]["lr_gamma"] = 0.1
         _, scheduler = model.configure_optimizers()
         assert isinstance(scheduler[0], torch.optim.lr_scheduler.MultiStepLR)
 
@@ -64,8 +62,8 @@ class TestGenerator:
         task_specs = pickle.load(f)
 
     yaml = YAML()
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
+    with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
+        config = yaml.load(yamlfile)
 
     @pytest.fixture
     def model_gen(self):
@@ -77,15 +75,15 @@ class TestGenerator:
 
     def test_generate_model_present(self, model_gen: ModelGenerator) -> None:
         with pytest.raises(NotImplementedError, match="Necessary to"):
-            model_gen.generate_model(task_specs=self.task_specs, hparams=self.hparams)
+            model_gen.generate_model(task_specs=self.task_specs, config=self.config)
 
     def test_get_collate_fn_present(self, model_gen: ModelGenerator) -> None:
         with pytest.raises(NotImplementedError, match="Necessary to"):
-            model_gen.get_collate_fn(task_specs=self.task_specs, hparams=self.hparams)
+            model_gen.get_collate_fn(task_specs=self.task_specs, config=self.config)
 
     def test_get_transform_present(self, model_gen: ModelGenerator) -> None:
         with pytest.raises(NotImplementedError, match="Necessary to"):
-            model_gen.get_transform(task_specs=self.task_specs, hparams=self.hparams, train=True)
+            model_gen.get_transform(task_specs=self.task_specs, config=self.config, train=True)
 
 
 class TestHeadGenerator:
@@ -94,32 +92,32 @@ class TestHeadGenerator:
         task_specs = pickle.load(f)
 
     yaml = YAML()
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
+    with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
+        config = yaml.load(yamlfile)
 
     def test_valid_head_generator(self):
-        hparams = self.hparams.copy()
-        hparams["head_type"] = "linear"
-        head = head_generator(task_specs=self.task_specs, features_shape=[(3, 10, 10)], hyperparams=hparams)
+        test_config = json.loads(json.dumps(self.config))
+        test_config["model"]["head_type"] = "linear"
+        head = head_generator(task_specs=self.task_specs, features_shape=[(3, 10, 10)], config=test_config)
         assert isinstance(head, ClassificationHead)
 
     def test_invalid_head_generator(self):
-        hparams = self.hparams.copy()
-        hparams["head_type"] = "foo"
+        test_config = json.loads(json.dumps(self.config))
+        test_config["model"]["head_type"] = "foo"
         with pytest.raises(AssertionError):
-            head_generator(task_specs=self.task_specs, features_shape=[(3, 10, 10)], hyperparams=hparams)
+            head_generator(task_specs=self.task_specs, features_shape=[(3, 10, 10)], config=test_config)
 
     def test_multilabel_task(self):
         task_specs = copy.copy(self.task_specs)
         setattr(task_specs, "label_type", io.MultiLabelClassification(n_classes=2, class_names=["foo", "bar"]))
-        head = head_generator(task_specs=task_specs, features_shape=[(3, 10, 10)], hyperparams=self.hparams)
+        head = head_generator(task_specs=task_specs, features_shape=[(3, 10, 10)], config=self.config)
         assert isinstance(head, ClassificationHead)
 
     def test_invalid_task(self):
         task_specs = copy.copy(self.task_specs)
         setattr(task_specs, "label_type", torch.nn.Module)
         with pytest.raises(ValueError, match="Unrecognized task"):
-            head_generator(task_specs=task_specs, features_shape=[(3, 10, 10)], hyperparams=self.hparams)
+            head_generator(task_specs=task_specs, features_shape=[(3, 10, 10)], config=self.config)
 
 
 def test_balanced_binary_cross_entropy():

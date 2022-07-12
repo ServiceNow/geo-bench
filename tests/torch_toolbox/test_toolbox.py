@@ -71,6 +71,9 @@ def test_toolbox_classification(backbone, model_generator_module_name):
     with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
+    config["model"]["backbone"] = backbone
+    config["model"]["model_generator_module_name"] = model_generator_module_name
+
     train_job_on_task(config=config, task_specs=task_specs, threshold=0.40)
 
 
