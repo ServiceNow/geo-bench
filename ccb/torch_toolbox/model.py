@@ -6,7 +6,6 @@ import string
 import time
 from typing import Any, Dict, List
 
-import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
