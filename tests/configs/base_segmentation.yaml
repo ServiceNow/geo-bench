@@ -4,12 +4,23 @@ experiment:
   experiment_type: standard # standard, seeded_runs, sweep
   benchmark_dir: tests/data/ccb-test-segmentation
   partition_name: default
+  loggers: ["csv", "wandb"]
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   head_type: linear # classification
   loss_type: crossentropy
   new_channel_init_method: random
   seed: 1
+  encoder_type: resnet18  # resnet18, convnext_base
+  decoder_type: Unet
+  encoder_weights: imagenet
+  image_size: 224 # desired image input dimension to model
+  pretrained: False 
+  lr_backbone: 1.0e-3
+  lr_head: 1.0e-2
+  optimizer: sgd
+  hidden_size: 512
+  batch_size: 2
 dataset:
   band_names: ["red", "green", "blue"]
   format: hdf5
@@ -18,6 +29,7 @@ dataloader:
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
+  mode: offline
   sweep:
     sweep_config_path: path # or maybe define the entire sweep here?
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
