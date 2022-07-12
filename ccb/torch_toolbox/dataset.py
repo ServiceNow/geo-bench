@@ -1,5 +1,6 @@
 """Dataset."""
 
+from pathlib import Path
 from typing import Sequence
 
 import pytorch_lightning as pl
@@ -66,7 +67,7 @@ class DataModule(pl.LightningDataModule):
                 transform=self.train_transform,
                 band_names=self.band_names,
                 format=self.format,
-                benchmark_dir=self.benchmark_dir,
+                benchmark_dir=Path(self.benchmark_dir),
             ),
             batch_size=self.batch_size,
             shuffle=True,
@@ -83,7 +84,7 @@ class DataModule(pl.LightningDataModule):
                 transform=self.eval_transform,
                 band_names=self.band_names,
                 format=self.format,
-                benchmark_dir=self.benchmark_dir,
+                benchmark_dir=Path(self.benchmark_dir),
             ),
             batch_size=self.val_batch_size,
             shuffle=False,
@@ -100,7 +101,7 @@ class DataModule(pl.LightningDataModule):
                 transform=self.eval_transform,
                 band_names=self.band_names,
                 format=self.format,
-                benchmark_dir=self.benchmark_dir,
+                benchmark_dir=Path(self.benchmark_dir),
             ),
             batch_size=self.val_batch_size,
             shuffle=False,

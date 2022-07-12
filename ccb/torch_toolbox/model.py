@@ -390,7 +390,7 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
-METRIC_MAP = {}
+METRIC_MAP: Dict[str, Any] = {}
 
 
 def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
