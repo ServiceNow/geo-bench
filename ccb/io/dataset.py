@@ -586,7 +586,7 @@ class Sample(object):
     def pack_to_4d(
         self,
         dates=None,
-        band_names: Tuple[str] = None,
+        band_names: Sequence[str] = None,
         resample: bool = False,
         fill_value: float = None,
         resample_order: int = 3,
@@ -623,7 +623,12 @@ class Sample(object):
                         # TODO doesn't work yet with MultiBand will raise an error when concatenating
                         data_list.append(np.zeros(shape, dtype=np.int16) + fill_value)
                     else:
-                        raise ValueError(f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None.")
+                        if band_names is not None:
+                            raise ValueError(
+                                f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None."
+                            )
+                        else:
+                            raise ValueError(f"Missing band names got {band_names}")
                 else:
                     data = band.data
                     if data.ndim == 2:
@@ -650,7 +655,7 @@ class Sample(object):
 
     def get_band_array(
         self, dates: List[Union[datetime.date, datetime.datetime]] = None, band_names: List[str] = None
-    ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
+    ) -> Tuple[np.ndarray, List[datetime.date], Sequence[str]]:
         """Retrieve an array for selected datase and band_names.
 
         Args:
@@ -916,7 +921,7 @@ def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
     return Sample(bands=bands, label=label, sample_name=sample_path.stem)
 
 
-def load_sample_tif(sample_dir: str, band_names: List[str] = None):
+def load_sample_tif(sample_dir: Path, band_names: List[str]) -> Sample:
     """Load a tif sample.
 
     Args:
@@ -926,20 +931,19 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
     Return
         loaded sample
     """
-    sample_dir = Path(sample_dir)
     band_list = []
-    with open(Path(sample_dir, "band_index.json"), "r") as fd:
+    with open(sample_dir / "band_index.json", "r") as fd:
         band_index = OrderedDict(json.load(fd))
 
-    if band_names is None:
-        band_names = band_index.keys()
+    # if band_names is None:
+    #     band_names: List[str] = list(band_index.keys())
 
     for band_name in band_names:
         for file_name in band_index[band_name]:
             band_list.append(load_band_tif(Path(sample_dir, file_name)))
 
-    label_file = Path(sample_dir, "label.json")
-    label_file_tif = Path(sample_dir, "label.tif")
+    label_file = sample_dir / "label.json"
+    label_file_tif = sample_dir / "label.tif"
     if label_file.exists():
         with open(label_file, "r") as fd:
             label = json.load(fd)
@@ -948,7 +952,7 @@ def load_sample_tif(sample_dir: str, band_names: List[str] = None):
     return Sample(band_list, label, sample_name=sample_dir.name)
 
 
-def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[str, List[str]], Sample]:
+def load_sample(sample_path: Path, band_names=None, format=None) -> Union[Sample, None]:
     """Create helper function to decide what sample loader to use.
 
     Args:
@@ -957,10 +961,17 @@ def load_sample(sample_path: Path, band_names=None, format=None) -> Callable[[st
         format: 'hdf5' or 'tif'
 
     Return:
-        loader corresponding to format
+        sample from corresponding function
+
+    Raises:
+        ValueError if format is not specified correctly
     """
-    loader = dict(tif=load_sample_tif, hdf5=load_sample_hdf5)[format]
-    return loader(sample_path, band_names=band_names)
+    if format == "tif":
+        return load_sample_tif(sample_path, band_names=band_names)
+    elif format == "hdf5":
+        return load_sample_hdf5(sample_path, band_names=band_names)
+    else:
+        raise ValueError(f"Format not compatible, found {format}")
 
 
 def _largest_shape(band_array: np.ndarray) -> Tuple[int, ...]:
@@ -1277,7 +1288,7 @@ class Dataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = self._partition_path_dict.keys()[0]  # take any partition??
+                partition_name = list(self._partition_path_dict.keys())[0]  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(f"No default partition found for dataset {self.dataset_dir.name}. Using {partition_name} as default.")
