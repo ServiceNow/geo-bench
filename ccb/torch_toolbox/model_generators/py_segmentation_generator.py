@@ -43,6 +43,7 @@ class SegmentationGenerator(ModelGenerator):
 
         """
         super().__init__()
+
         # These params are for unit tests, please set proper ones for real optimization
         self.base_hparams = {
             "input_size": (3, 256, 256),  # FIXME
@@ -74,20 +75,19 @@ class SegmentationGenerator(ModelGenerator):
         if hparams is not None:
             self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return model instance from task specs and hyperparameters.
 
         Args:
             task_specs: object with task specs
-            hparams: dictionary containing hyperparameters
             config: config: dictionary containing config
 
         Returns:
             model specified by task specs and hyperparameters
         """
-        encoder_type = hparams["encoder_type"]
-        decoder_type = hparams["decoder_type"]
-        encoder_weights = hparams.get("encoder_weights", None)
+        encoder_type = config["model"]["encoder_type"]
+        decoder_type = config["model"]["decoder_type"]
+        encoder_weights = config["model"].get("encoder_weights", None)
         # in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
 
@@ -106,8 +106,8 @@ class SegmentationGenerator(ModelGenerator):
         # hparams.update({"std": backbone.default_cfg["std"]})
         config["model"]["input_size"] = (
             len(config["dataset"]["band_names"]),
-            hparams["image_size"],
-            hparams["image_size"],
+            config["model"]["image_size"],
+            config["model"]["image_size"],
         )
 
         with torch.no_grad():
@@ -121,12 +121,12 @@ class SegmentationGenerator(ModelGenerator):
 
         head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
         # head = head_generator(task_specs, shapes, hparams)
-        loss = train_loss_generator(task_specs, hparams)
-        train_metrics = train_metrics_generator(task_specs, hparams)
-        eval_metrics = eval_metrics_generator(task_specs, hparams)
-        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
+        loss = train_loss_generator(task_specs, config)
+        train_metrics = train_metrics_generator(task_specs, config)
+        eval_metrics = eval_metrics_generator(task_specs, config)
+        return Model(backbone, head, loss, config, train_metrics, eval_metrics)
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: dict):
         """Define a collate function to batch input tensors.
 
         Args:
@@ -141,7 +141,6 @@ class SegmentationGenerator(ModelGenerator):
     def get_transform(
         self,
         task_specs: TaskSpecifications,
-        hparams: Dict[str, Any],
         config: Dict[str, Any],
         train=True,
         scale=None,
