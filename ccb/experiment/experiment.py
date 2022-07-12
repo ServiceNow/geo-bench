@@ -89,6 +89,7 @@ class Job:
 
             wandb.finish()
             summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
+
             with open(summary[0], "r") as infile:
                 data = json.load(infile)
             return data
@@ -140,8 +141,16 @@ class Job:
             "--job_dir",
             str(job_dir),
         ]
+        config = Job(job_dir).config
 
-        base_yaml["name"] = name
+        # sweep name that will be seen on wandb
+        if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
+            backbone = config["model"]["backbone"]
+            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
+        else:
+            encoder = config["model"]["encoder_type"]
+            decoder = config["model"]["decoder_type"]
+            base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder + "_" + decoder
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
         yaml.indent(sequence=4, offset=2)
