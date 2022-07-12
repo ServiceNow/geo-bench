@@ -1,12 +1,9 @@
 """Segmentation Model Generator."""
 
-import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import segmentation_models_pytorch as smp
-import timm
 import torch
-import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from torch import Tensor
 from torch.utils.data.dataloader import default_collate
@@ -15,12 +12,9 @@ from torchvision import transforms as tt
 from ccb import io
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
-    BackBone,
     Model,
     ModelGenerator,
-    collate_rgb,
     eval_metrics_generator,
-    head_generator,
     train_loss_generator,
     train_metrics_generator,
 )
@@ -43,51 +37,51 @@ class SegmentationGenerator(ModelGenerator):
 
         """
         super().__init__()
-        # These params are for unit tests, please set proper ones for real optimization
-        self.base_hparams = {
-            "input_size": (3, 256, 256),  # FIXME
-            "pretrained": True,
-            "lr_backbone": 1e-5,
-            "lr_head": 1e-4,
-            "optimizer": "adamw",
-            "head_type": "linear",
-            "loss_type": "crossentropy",
-            "batch_size": 1,
-            "num_workers": 0,
-            "max_epochs": 1,
-            "n_gpus": 0,
-            "logger": "csv",  # Set to wandb for wandb tracking
-            "encoder_type": "resnet18",
-            "accumulate_grad_batches": 2,
-            "decoder_type": "Unet",
-            "decoder_weights": "imagenet",
-            "enable_progress_bar": False,
-            "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
-            "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml",
-            "num_agents": 4,
-            "num_trials_per_agent": 5,
-            "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
-            "image_size": 224,
-            "format": "hdf5",
-        }
-        if hparams is not None:
-            self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+        # These params are for unit tests, please set proper ones for real optimization
+        # self.base_hparams = {
+        #     "input_size": (3, 256, 256),  # FIXME
+        #     "pretrained": True,
+        #     "lr_backbone": 1e-5,
+        #     "lr_head": 1e-4,
+        #     "optimizer": "adamw",
+        #     "head_type": "linear",
+        #     "loss_type": "crossentropy",
+        #     "batch_size": 1,
+        #     "num_workers": 0,
+        #     "max_epochs": 1,
+        #     "n_gpus": 0,
+        #     "logger": "csv",  # Set to wandb for wandb tracking
+        #     "encoder_type": "resnet18",
+        #     "accumulate_grad_batches": 2,
+        #     "decoder_type": "Unet",
+        #     "decoder_weights": "imagenet",
+        #     "enable_progress_bar": False,
+        #     "log_segmentation_masks": False,  # Set to true for visualizing seg masks in wandb
+        #     "fast_dev_run": False,  # runs 1 train, 1 validation, and 1 test batch.
+        #     "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml",
+        #     "num_agents": 4,
+        #     "num_trials_per_agent": 5,
+        #     "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
+        #     "image_size": 224,
+        #     "format": "hdf5",
+        # }
+        # if hparams is not None:
+        #     self.base_hparams.update(hparams)
+
+    def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return model instance from task specs and hyperparameters.
 
         Args:
             task_specs: object with task specs
-            hparams: dictionary containing hyperparameters
             config: config: dictionary containing config
 
         Returns:
             model specified by task specs and hyperparameters
         """
-        encoder_type = hparams["encoder_type"]
-        decoder_type = hparams["decoder_type"]
-        encoder_weights = hparams.get("encoder_weights", None)
+        encoder_type = config["model"]["encoder_type"]
+        decoder_type = config["model"]["decoder_type"]
+        encoder_weights = config["model"].get("encoder_weights", None)
         # in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
 
@@ -106,8 +100,8 @@ class SegmentationGenerator(ModelGenerator):
         # hparams.update({"std": backbone.default_cfg["std"]})
         config["model"]["input_size"] = (
             len(config["dataset"]["band_names"]),
-            hparams["image_size"],
-            hparams["image_size"],
+            config["model"]["image_size"],
+            config["model"]["image_size"],
         )
 
         with torch.no_grad():
@@ -121,12 +115,12 @@ class SegmentationGenerator(ModelGenerator):
 
         head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
         # head = head_generator(task_specs, shapes, hparams)
-        loss = train_loss_generator(task_specs, hparams)
-        train_metrics = train_metrics_generator(task_specs, hparams)
-        eval_metrics = eval_metrics_generator(task_specs, hparams)
-        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
+        loss = train_loss_generator(task_specs, config)
+        train_metrics = train_metrics_generator(task_specs, config)
+        eval_metrics = eval_metrics_generator(task_specs, config)
+        return Model(backbone, head, loss, config, train_metrics, eval_metrics)
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: dict):
         """Define a collate function to batch input tensors.
 
         Args:
@@ -141,7 +135,6 @@ class SegmentationGenerator(ModelGenerator):
     def get_transform(
         self,
         task_specs: TaskSpecifications,
-        hparams: Dict[str, Any],
         config: Dict[str, Any],
         train=True,
         scale=None,
@@ -209,14 +202,14 @@ class SegmentationGenerator(ModelGenerator):
             t_x.append(tt.ToTensor())
             t_x.append(tt.Normalize(mean=mean, std=std))
             t_x.append(lambda x: st(x, resample=True, train=train))
-            t_x = tt.Compose(t_x)
+            t_x_comp = tt.Compose(t_x)
             t_y = []
             t_y.append(tt.ToTensor())
             t_y.append(lambda x: st(x, resample=False, train=train))
-            t_y = tt.Compose(t_y)
+            t_y_comp = tt.Compose(t_y)
 
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
-            x, y = t_x(x), t_y(sample.label.data.astype("float32"))
+            x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 
         return transform

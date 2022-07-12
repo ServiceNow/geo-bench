@@ -1,20 +1,15 @@
 """Timm Model Generator."""
 
-import os
 import random
-import string
 from typing import Any, Callable, Dict
 
-import pytorch_lightning as pl
+import numpy as np
 import timm
 import torch
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
 from ccb import io
-from ccb.experiment.experiment import Job
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     Model,
@@ -42,32 +37,32 @@ class TIMMGenerator(ModelGenerator):
         """
         super().__init__()
 
-        self.base_hparams = {
-            "backbone": "resnet50",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
-            "pretrained": True,
-            "lr_backbone": 1e-6,
-            "lr_head": 1e-4,
-            "optimizer": "sgd",
-            "head_type": "linear",
-            "hidden_size": 512,
-            "loss_type": "crossentropy",
-            "batch_size": 64,
-            "num_workers": 0,
-            "max_epochs": 1,
-            "n_gpus": 0,
-            "logger": "wandb",
-            "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
-            "num_agents": 4,
-            "num_trials_per_agent": 5,
-            "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
-            "image_size": 224,
-            "format": "hdf5",
-            "new_channel_init_method": "random",  # random, clone_random_rgb_channel
-        }
-        if hparams is not None:
-            self.base_hparams.update(hparams)
+        # self.base_hparams = {
+        #     "backbone": "resnet50",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+        #     "pretrained": True,
+        #     "lr_backbone": 1e-6,
+        #     "lr_head": 1e-4,
+        #     "optimizer": "sgd",
+        #     "head_type": "linear",
+        #     "hidden_size": 512,
+        #     "loss_type": "crossentropy",
+        #     "batch_size": 64,
+        #     "num_workers": 0,
+        #     "max_epochs": 1,
+        #     "n_gpus": 0,
+        #     "logger": "wandb",
+        #     "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
+        #     "num_agents": 4,
+        #     "num_trials_per_agent": 5,
+        #     "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
+        #     "image_size": 224,
+        #     "format": "hdf5",
+        #     "new_channel_init_method": "random",  # random, clone_random_rgb_channel
+        # }
+        # if hparams is not None:
+        #     self.base_hparams.update(hparams)
 
-    def generate_model(self, task_specs: TaskSpecifications, hparams: dict, config: dict) -> Model:
+    def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return a ccb.torch_toolbox.model.Model instance from task specs and hparams.
 
         Args:
@@ -78,12 +73,14 @@ class TIMMGenerator(ModelGenerator):
         Returns:
             configured model
         """
-        backbone = timm.create_model(hparams["backbone"], pretrained=hparams["pretrained"], features_only=False)
+        backbone = timm.create_model(
+            config["model"]["backbone"], pretrained=config["model"]["pretrained"], features_only=False
+        )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
 
         new_in_channels = len(config["dataset"]["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
-        if hparams["backbone"] in ["resnet18", "resnet50"] and new_in_channels > 3:
+        if config["model"]["backbone"] in ["resnet18", "resnet50"] and new_in_channels > 3:
             current_layer = backbone.conv1
 
             # Creating new Conv2d layer
@@ -100,7 +97,7 @@ class TIMMGenerator(ModelGenerator):
                 current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, config=config
             )
 
-        elif hparams["backbone"] in ["convnext_base"] and new_in_channels > 3:
+        elif config["model"]["backbone"] in ["convnext_base"] and new_in_channels > 3:
             current_layer = backbone.stem[0]
 
             # Creating new Conv2d layer
@@ -120,7 +117,7 @@ class TIMMGenerator(ModelGenerator):
             )
 
         elif (
-            hparams["backbone"]
+            config["model"]["backbone"]
             in [
                 "vit_tiny_patch16_224",
                 "vit_small_patch16_224",
@@ -147,8 +144,8 @@ class TIMMGenerator(ModelGenerator):
 
         config["model"]["input_size"] = (
             len(config["dataset"]["band_names"]),
-            hparams["image_size"],
-            hparams["image_size"],
+            config["model"]["image_size"],
+            config["model"]["image_size"],
         )
 
         with torch.no_grad():
@@ -159,12 +156,19 @@ class TIMMGenerator(ModelGenerator):
 
         config["model"]["n_backbone_features"] = shapes[0][0]
 
-        head = head_generator(task_specs, shapes, hparams)
-        loss = train_loss_generator(task_specs, hparams)
-        train_metrics = train_metrics_generator(task_specs, hparams)
-        eval_metrics = eval_metrics_generator(task_specs, hparams)
+        head = head_generator(task_specs, shapes, config)
+        loss = train_loss_generator(task_specs, config)
+        train_metrics = train_metrics_generator(task_specs, config)
+        eval_metrics = eval_metrics_generator(task_specs, config)
 
-        return Model(backbone, head, loss, hparams, train_metrics, eval_metrics)
+        return Model(
+            backbone=backbone,
+            head=head,
+            loss_function=loss,
+            config=config,
+            train_metrics=train_metrics,
+            eval_metrics=eval_metrics,
+        )
 
     def _initialize_additional_in_channels(
         self,
@@ -183,7 +187,6 @@ class TIMMGenerator(ModelGenerator):
             task_specs: task specs to retrieve dataset
             config: config file for dataset specifics
 
-
         Returns:
             newly initialized input Conv2d layer
         """
@@ -193,6 +196,7 @@ class TIMMGenerator(ModelGenerator):
             split="train",
             band_names=config["dataset"]["band_names"],
             format=config["dataset"]["format"],
+            benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
         )
         alt_band_names = dataset.alt_band_names
@@ -235,12 +239,12 @@ class TIMMGenerator(ModelGenerator):
 
         return new_layer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hparams: dict):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: dict):
         """Define a collate function to batch input tensors.
 
         Args:
             task_specs: task specs to retrieve dataset
-            hparams: model hyperparameters
+            config: model hyperparameters
 
         Returns:
             collate function
@@ -248,14 +252,13 @@ class TIMMGenerator(ModelGenerator):
         return default_collate
 
     def get_transform(
-        self, task_specs, config: Dict[str, Any], hparams: Dict[str, Any], train=True, scale=None, ratio=None
+        self, task_specs, config: Dict[str, Any], train=True, scale=None, ratio=None
     ) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
             config: config file for dataset specifics
-            hparams: hparam file for model specifics
             train: train mode true or false
             scale: define image scale
             ratio: define image ratio range
@@ -281,13 +284,13 @@ class TIMMGenerator(ModelGenerator):
             t.append(tt.RandomHorizontalFlip())
             t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
-        t.append(tt.Resize((hparams["image_size"], hparams["image_size"])))
+        t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
 
-        t = tt.Compose(t)
+        transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
-            x = t(x)
+            x: np.Array = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
+            x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
         return transform
