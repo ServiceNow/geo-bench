@@ -11,7 +11,6 @@ from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
     config_filepath="/mnt/home/climate-change-benchmark/ccb/configs/seed_classification_config.yaml",
-    hparam_filepath="/mnt/home/climate-change-benchmark/ccb/configs/dumm_config.yaml",
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)
