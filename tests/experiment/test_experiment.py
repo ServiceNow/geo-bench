@@ -37,13 +37,13 @@ def test_unexisting_path():
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "config_filepath, hparam_filepath",
+    "config_filepath",
     [
-        ("tests/configs/base_classification.yaml", "tests/configs/classification_hparams.yaml"),
-        ("tests/configs/base_segmentation.yaml", "tests/configs/segmentation_hparams.yaml"),
+        ("tests/configs/base_classification.yaml"),
+        ("tests/configs/base_segmentation.yaml"),
     ],
 )
-def test_experiment_generator_on_benchmark(config_filepath, hparam_filepath):
+def test_experiment_generator_on_benchmark(config_filepath):
 
     experiment_generator_dir = Path(ccb.experiment.__file__).absolute().parent
 
@@ -65,8 +65,6 @@ def test_experiment_generator_on_benchmark(config_filepath, hparam_filepath):
             str(experiment_generator_dir / "experiment_generator.py"),
             "--config_filepath",
             new_config_filepath,
-            "--hparam_filepath",
-            hparam_filepath,
         ]
 
         subprocess.check_call(cmd)
