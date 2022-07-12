@@ -13,10 +13,10 @@ def sequential_dispatcher(exp_dir: str, prompt: bool = True) -> None:
         exp_dir: path to experiment dir containing job directories
         prompt: whether or not to prompt the user for execution of scripts
     """
-    exp_dir = Path(exp_dir)
+    exp_dir_path: Path = Path(exp_dir)
 
-    print(f"Scanning {exp_dir}.")
-    script_list = list(exp_dir.glob("**/run.sh"))
+    print(f"Scanning {exp_dir_path}.")
+    script_list = list(exp_dir_path.glob("**/run.sh"))
     if prompt:
         print("Will sequentially execute all of these scripts:")
         for script in script_list:
