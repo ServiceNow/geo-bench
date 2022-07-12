@@ -89,8 +89,6 @@ class TaskSpecifications:
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
-        if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name
         return Dataset(
             dataset_dir=self.get_dataset_dir(benchmark_dir),
             split=split,
@@ -102,17 +100,7 @@ class TaskSpecifications:
 
     def get_dataset_dir(self, benchmark_dir: str = None):
         """Retrieve directory where dataset is read."""
-        # benchmark_name = self.benchmark_name or "default"
-        # benchmark_dir = get_benchmark_dir(benchmark_name)
-        if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name
         return Path(benchmark_dir) / self.dataset_name
-
-    # # for backward compatibility (we'll remove soon)
-    # @cached_property
-    # def benchmark_name(self):
-    #     """Return benchmark name."""
-    #     return "default"
 
     def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
