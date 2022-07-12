@@ -689,7 +689,7 @@ class Sample(object):
             band_names=band_names, resample=resample, fill_value=fill_value, resample_order=resample_order
         )
         assert data_4d.shape[0] == 1
-        return data_4d[0]
+        return data_4d[0], band_names
 
     def write(self, dataset_dir: str, format: str = "hdf5"):  # -> Callable[[Sample, str], None]:
         """Write sample to a directory.
