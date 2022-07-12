@@ -46,16 +46,10 @@ def experiment_generator(
         experiment_dir = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
 
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
-        # if task_filter is not None:
-        #     if not task_filter(task_specs):
-        #         continue
-
         print(task_specs.dataset_name)
         experiment_type = config["experiment"]["experiment_type"]
         if experiment_type == "sweep":
             model_generator = get_model_generator(config["model"]["model_generator_module_name"])
-
-            # base_hparams = model_generator.base_hparams
 
             # use wandb sweep for hyperparameter search
             model = model_generator.generate_model(task_specs, config)
@@ -87,7 +81,7 @@ def experiment_generator(
             part_name = config["experiment"]["partition_name"].split("_partition.json")[0]
             ds_dict = seed_run_dict[back_name][part_name]
 
-            # for ds_name in list(ds_dict.keys()):
+            # for datasets that are in classification benchmark dir but not swept yet
             try:
                 exp_dir = ds_dict[task_specs.dataset_name]
             except KeyError:
