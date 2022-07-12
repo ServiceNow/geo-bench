@@ -374,25 +374,17 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         hyperparams: dict of hyperparameters.
 
     """
+    assert (
+        config["model"]["head_type"] == "linear"
+    ), f"Currently only support linear head type, but got {config['model']['head_type']}."
     if isinstance(task_specs.label_type, io.Classification):
-        if config["model"]["head_type"] == "linear":
-            in_ch, *other_dims = features_shape[-1]
-            out_ch = task_specs.label_type.n_classes
-            return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {config['model']['head_type']}")
+        in_ch, *other_dims = features_shape[-1]
+        out_ch = task_specs.label_type.n_classes
+        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
     elif isinstance(task_specs.label_type, io.MultiLabelClassification):
-        if config["model"]["head_type"] == "linear":
-            in_ch, *other_dims = features_shape[-1]
-            out_ch = task_specs.label_type.n_classes
-            return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {config['model']['head_type']}")
-    elif isinstance(task_specs.label_type, io.SemanticSegmentation):
-        if config["model"]["head_type"].split("-")[0] == "smp":  # smp: segmentation-models-pytorch
-            return lambda *args: args
-        else:
-            raise ValueError(f"Unrecognized head type: {config['model']['head_type']}")
+        in_ch, *other_dims = features_shape[-1]
+        out_ch = task_specs.label_type.n_classes
+        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
     else:
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 

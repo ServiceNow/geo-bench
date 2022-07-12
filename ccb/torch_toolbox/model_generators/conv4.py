@@ -162,7 +162,8 @@ class Conv4(BackBone):
 
         """
         super().__init__(model_path, task_specs, config)
-        n_bands = min(3, len(task_specs.bands_info))
+        if task_specs.bands_info is not None:
+            n_bands = min(3, len(task_specs.bands_info))
         self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)
