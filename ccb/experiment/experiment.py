@@ -36,7 +36,7 @@ class Job:
     Helper class to organize running of experiments.
     """
 
-    def __init__(self, dir: str) -> None:
+    def __init__(self, dir: Union[str, Path]) -> None:
         """Initialize new instance of Job.
 
         Args:
@@ -122,7 +122,7 @@ class Job:
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(
-        self, model_generator_module_name: str, job_dir: str, base_sweep_config: str
+        self, model_generator_module_name: str, job_dir: Union[str, Path], base_sweep_config: str, name: str
     ) -> None:
         """Write final sweep_config.yaml that can be used to initialize sweep.
 
@@ -130,6 +130,7 @@ class Job:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
             base_sweep_config: path to base sweep config yaml file for wandb
+            name: wandb sweep experiment name
         """
         yaml = YAML()
         with open(base_sweep_config, "r") as yamlfile:
