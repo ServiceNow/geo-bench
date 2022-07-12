@@ -3,18 +3,16 @@
 from functools import partial
 from typing import Any, Dict
 
-import pytest
 import timm.models.vision_transformer
 import torch
-import torch.nn.functional as F
 from timm.models.vision_transformer import PatchEmbed  # with version 0.3.2
 from torch import Tensor, nn
+from torch.utils.data.dataloader import default_collate
 from torchvision import transforms
 
 from ccb import io
-from ccb.io.task import TaskSpecifications, imagenet_task_specs, mnist_task_specs
+from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox import model
-from ccb.torch_toolbox.tests.test_toolbox import train_job_on_task
 
 # from timm.models.layers.patch_embed import PatchEmbed for newer versions
 
@@ -58,7 +56,7 @@ class MaeGenerator(model.ModelGenerator):
         elif task_specs.dataset_name.lower() == "imagenet":
             return None  # will use torch's default collate function.
         else:
-            return model.collate_rgb
+            return default_collate
 
     def get_transform(self, task_specs, hyperparams):
         """Define data transformations specific to the models generated.
