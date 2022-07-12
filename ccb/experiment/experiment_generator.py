@@ -7,7 +7,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 import yaml
 
@@ -30,14 +29,14 @@ def experiment_generator(
     Raises:
         FileNotFoundError if path to config file or hparam file does not exist
     """
-    config_filepath = Path(config_filepath)
+    config_file_path = Path(config_filepath)
 
     # check that specified paths exists
-    if config_filepath.is_file():
-        with config_filepath.open() as f:
+    if config_file_path.is_file():
+        with config_file_path.open() as f:
             config = yaml.safe_load(f)
     else:
-        raise FileNotFoundError(f"Config file at path {config_filepath} does not exist.")
+        raise FileNotFoundError(f"Config file at path {config_file_path} does not exist.")
 
     benchmark_dir = config["experiment"]["benchmark_dir"]
 
@@ -64,10 +63,26 @@ def experiment_generator(
             job.save_config(config)
             job.save_task_specs(task_specs)
 
+            # sweep name that will be seen on wandb
+            if (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
+            else:
+                name = (
+                    "_".join(str(job_dir).split("/")[-2:])
+                    + "_"
+                    + config["model"]["encoder_type"]
+                    + "_"
+                    + config["model"]["decoder_type"]
+                )
+
             job.write_wandb_sweep_cl_script(
                 config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
                 base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
+                name=name,
             )
 
         elif experiment_type == "seeded_runs":
@@ -100,7 +115,7 @@ def experiment_generator(
                 job = Job(job_dir)
                 job.save_config(best_config)
                 job.save_task_specs(task_specs)
-                job.write_script(job_dir=job_dir)
+                job.write_script(job_dir=str(job_dir))
 
         else:
             # single run of a model
