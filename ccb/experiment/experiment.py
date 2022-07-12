@@ -46,37 +46,6 @@ class Job:
         self.dir.mkdir(parents=True, exist_ok=True)
 
     @cached_property
-    def hparams(self):
-        """Return hyperparameters."""
-        yaml = YAML()
-        with open(self.dir / "hparams.yaml", "r") as yamlfile:
-            return yaml.load(yamlfile)
-
-    def save_hparams(
-        self, hparams: Dict[str, Union[str, float, int, List[int], List[str]]], overwrite: bool = False
-    ) -> None:
-        """Save hyperparameters in job directory.
-
-        Args:
-            hparams: set of hyperparameters to save
-            overwrite: whether to overwrite existing hparams
-        """
-        # hparams_path = self.dir / "hparams.json"
-        # if hparams_path.exists() and not overwrite:
-        #     raise Exception("hparams alread exists and overwrite is set to False.")
-        # with open(hparams_path, "w") as fd:
-        #     json.dump(hparams, fd, indent=4, sort_keys=True)
-        #     self.hparams = hparams
-
-        hparam_path = self.dir / "hparams.yaml"
-        if hparam_path.exists() and not overwrite:
-            raise Exception("hparams alread exists and overwrite is set to False.")
-        yaml = YAML()
-        with open(hparam_path, "w") as fd:
-            yaml.dump(hparams, fd)
-            self.hparams = hparams
-
-    @cached_property
     def task_specs(self):
         """Return task specifications."""
         with open(self.dir / "task_specs.pkl", "rb") as fd:
@@ -107,7 +76,7 @@ class Job:
         """
         config_path = self.dir / "config.yaml"
         if config_path.exists() and not overwrite:
-            raise Exception("hparams alread exists and overwrite is set to False.")
+            raise Exception("config alread exists and overwrite is set to False.")
         yaml = YAML()
         with open(config_path, "w") as fd:
             yaml.dump(config, fd)
@@ -115,7 +84,7 @@ class Job:
 
     def get_metrics(self):
         """Retrieve the metrics after training from job directory."""
-        if self.hparams.get("logger", "") == "wandb":
+        if "wandb" in self.config["experiment"].get("loggers", ""):
             import wandb
 
             wandb.finish()
@@ -138,20 +107,16 @@ class Job:
                 else:
                     raise e
 
-    def write_script(self, model_generator_module_name: str, job_dir: str) -> None:
+    def write_script(self, job_dir: str) -> None:
         """Write bash scrip that can be executed to run job.
 
         Args:
-            model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-            # fd.write(
-            #     f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
-            # )
             fd.write(f"ccb-trainer --job_dir {job_dir} >log.out 2>err.out")
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
