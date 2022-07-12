@@ -11,7 +11,6 @@ from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
     config_filepath="/home/nils/projects/climate-change-benchmark/ccb/configs/base_config.yaml",
-    hparam_filepath="/home/nils/projects/climate-change-benchmark/ccb/configs/segmentation_hparams.yaml",
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)

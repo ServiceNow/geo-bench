@@ -9,6 +9,14 @@ model:
   head_type: linear # classification
   loss_type: crossentropy
   new_channel_init_method: random
+  pretrained: True
+  image_size: 224 # desired image input dimension to model
+  backbone: resnet18  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+  lr_backbone: 1.0e-3
+  lr_head: 1.0e-2
+  optimizer: sgd
+  hidden_size: 512
+  batch_size: 2
 dataset:
   band_names: ["red", "green", "blue"]
   format: hdf5

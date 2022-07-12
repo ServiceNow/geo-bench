@@ -35,7 +35,7 @@ TOOLKIT_ENVS = (
 )
 
 # Computational requirements
-TOOLKIT_CPU = 2
+TOOLKIT_CPU = 4
 TOOLKIT_GPU = 1
 TOOLKIT_MEM = 32
 
@@ -58,7 +58,7 @@ def toolkit_job(script_path: Path, env_vars=()):
         job_name = job_name.replace(char, "_")
 
     # General job config
-    cmd = f"eai job new -i {TOOLKIT_IMAGE} --non-preemptable".split(" ")
+    cmd = f"eai job new -i {TOOLKIT_IMAGE} --restartable".split(" ")
 
     # Set job name
     # cmd += ["--name", job_name]  # TODO: Job names cause issues and are not super useful
@@ -122,16 +122,16 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
             yaml = YAML()
             with open(config_path, "r") as yamlfile:
                 config = yaml.load(yamlfile)
-            with open(config_path.parents[0] / "hparams.yaml", "r") as yamlfile:
-                hparams = yaml.load(yamlfile)
 
-            ans = input(f"Launch {hparams['backbone']} on {config_path.parents[0].name} y/n.")
+            ans = input(f"Launch {config['model']['backbone']} on {config_path.parents[0].name} y/n.")
             if ans != "y":
                 continue
 
             assert "sweep_config_path" in config["wandb"]["sweep"]
 
-            sweep_name = config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + hparams["backbone"]
+            sweep_name = (
+                config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + config["model"]["backbone"]
+            )
             sweep_path = config_path.parents[0] / "sweep_config.yaml"
 
             cmd = ["wandb", "sweep", "--name", sweep_name, str(config_path.parents[0] / "sweep_config.yaml")]
