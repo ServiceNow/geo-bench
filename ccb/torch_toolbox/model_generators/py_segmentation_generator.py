@@ -202,14 +202,14 @@ class SegmentationGenerator(ModelGenerator):
             t_x.append(tt.ToTensor())
             t_x.append(tt.Normalize(mean=mean, std=std))
             t_x.append(lambda x: st(x, resample=True, train=train))
-            t_x = tt.Compose(t_x)
+            t_x_comp = tt.Compose(t_x)
             t_y = []
             t_y.append(tt.ToTensor())
             t_y.append(lambda x: st(x, resample=False, train=train))
-            t_y = tt.Compose(t_y)
+            t_y_comp = tt.Compose(t_y)
 
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
-            x, y = t_x(x), t_y(sample.label.data.astype("float32"))
+            x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 
         return transform

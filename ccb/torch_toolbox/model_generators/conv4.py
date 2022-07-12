@@ -2,6 +2,7 @@
 
 from typing import Any, Dict
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import Tensor
@@ -121,11 +122,11 @@ class Conv4Generator(ModelGenerator):
 
         t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
 
-        t = tt.Compose(t)
+        transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
             x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
-            x = t(x)
+            x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
         return transform
@@ -160,7 +161,8 @@ class Conv4(BackBone):
 
         """
         super().__init__(model_path, task_specs, config)
-        n_bands = min(3, len(task_specs.bands_info))
+        if task_specs.bands_info is not None:
+            n_bands = min(3, len(task_specs.bands_info))
         self.conv0 = torch.nn.Conv2d(n_bands, 64, 3, 1, 1)
         self.conv1 = torch.nn.Conv2d(64, 64, 3, 1, 1)
         self.conv2 = torch.nn.Conv2d(64, 64, 3, 1, 1)
