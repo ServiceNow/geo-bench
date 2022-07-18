@@ -85,7 +85,7 @@ def float_image_to_uint8(
 
 def extract_images(
     samples: List[Sample],
-    band_names: Sequence[str] = ("red", "green", "blue"),
+    band_names: List[str] = ["red", "green", "blue"],
     percentile_max: float = 99.9,
     resample: bool = False,
     fill_value: int = None,
@@ -104,8 +104,8 @@ def extract_images(
     Returns:
         images and labels extracted from sample
     """
-    images = []
-    labels = []
+    images: List[np.array] = []
+    labels: List[np.array] = []
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(
             sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value

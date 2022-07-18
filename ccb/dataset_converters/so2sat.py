@@ -13,8 +13,8 @@ from ccb.io.dataset import Sample
 from ccb.io.task import TaskSpecifications
 
 DATASET_NAME = "so2sat"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
 
 
 def make_sample(images: np.array, label: np.array, sample_name: str, task_specs: TaskSpecifications) -> Sample:
@@ -73,7 +73,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
-    task_specs.save(dataset_dir, overwrite=True)
+    task_specs.save(str(dataset_dir), overwrite=True)
     n_samples = 0
     for split_name in ["train", "validation", "test"]:
         so2sat_dataset = So2Sat(root=SRC_DATASET_DIR, split=split_name, transforms=None, checksum=True)
@@ -84,7 +84,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
             label = tg_sample["label"]
 
             sample = make_sample(images, int(label), sample_name, task_specs)
-            sample.write(dataset_dir)
+            sample.write(str(dataset_dir))
 
             partition.add(split_name.replace("validation", "valid"), sample_name)
 
@@ -95,7 +95,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         if max_count is not None and n_samples >= max_count:
             break
 
-    partition.save(dataset_dir, "original", as_default=True)
+    partition.save(str(dataset_dir), "original", as_default=True)
 
 
 if __name__ == "__main__":

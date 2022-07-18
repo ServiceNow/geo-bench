@@ -20,15 +20,15 @@ class TaskSpecifications:
     def __init__(
         self,
         dataset_name: str,
-        benchmark_name: str,
+        bands_info: List[BandInfo],
+        spatial_resolution: float,
+        benchmark_name: str = None,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_info: List[BandInfo] = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
         eval_metrics=None,
-        spatial_resolution: float = None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
 

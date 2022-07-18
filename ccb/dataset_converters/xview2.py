@@ -17,6 +17,7 @@
 
 import json
 from pathlib import Path
+from typing import Dict
 
 import numpy as np
 import rasterio
@@ -26,8 +27,8 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "xview2"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 # # Todo: move to io.dataset.py
@@ -166,8 +167,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
             #   'image': torch.Tensor(2,3,1024,1024)
             #   'mask': torch.Tensor(2,1024,1024)) -
             sample_name = f"id_{i+offset:04d}"
-            image_A = {}
-            image_B = {}
+            image_A: Dict[str, np.array] = {}
+            image_B: Dict[str, np.array] = {}
             for j, image in enumerate([image_A, image_B]):
                 # TODO: why are we converting torch.Tensor to np.array here; seems like it would be more efficient to keep as Tensor?
                 image["image"] = np.array(tg_sample["image"][j, ...])

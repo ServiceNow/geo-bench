@@ -24,18 +24,18 @@ if SEGMENTATION:
 else:
     DATASET_NAME = "nz_cattle_detection"
 
-SRC_DATASET_DIR = Path(io.src_datasets_dir, "nz_cattle")
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, "nz_cattle")  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 BAND_INFO_LIST = io.make_rgb_bands(0.1)
 
 if SEGMENTATION:
-    label_type = io.SegmentationClasses(
+    label_type = io.SegmentationClasses(  # type: ignore
         "label", spatial_resolution=0.1, n_classes=2, class_names=["no cattle", "cattle"]
     )
 else:
-    label_type = io.PointAnnotation()
+    label_type = io.PointAnnotation()  # type: ignore
 
 
 def parse_file_name(name):
