@@ -35,6 +35,7 @@ segmentation-models-pytorch = { git = "https://github.com/ElementAI/segmentation
 timm = { git = "https://github.com/rwightman/pytorch-image-models.git", branch = "master"}
 mypy = ">=0.900"
 setuptools = "59.5.0"
+types-PyYAML = "6.0.10"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"

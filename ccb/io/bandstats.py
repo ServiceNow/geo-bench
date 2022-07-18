@@ -17,12 +17,12 @@ parser.add_argument("--samples", default=1000, help="dataset subset size")
 
 
 def produce_band_stats(
-    dataset: io.Dataset, use_splits: bool = False, values_per_image: int = 1000, samples: int = 1000
+    dataset: io.CCBDataset, use_splits: bool = False, values_per_image: int = 1000, samples: int = 1000
 ) -> None:
     """Compute and save band statistics.
 
     Args:
-        dataset: Dataset
+        dataset: CCBDataset
         use_split: whether or not use defined splits
         values_per_image: number of values to consider per image
         sample: number of samples

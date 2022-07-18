@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Union
 from ruamel.yaml import YAML
 
 from ccb import io
+from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import ModelGenerator
 
 
@@ -27,7 +28,7 @@ def get_model_generator(module_name: str) -> ModelGenerator:
     Returns:
         a model_generator function loaded from the module with hparams
     """
-    return import_module(module_name).model_generator()
+    return import_module(module_name).model_generator()  # type: ignore[no-any-return]
 
 
 class Job:
@@ -46,10 +47,11 @@ class Job:
         self.dir.mkdir(parents=True, exist_ok=True)
 
     @cached_property
-    def task_specs(self):
+    def task_specs(self) -> TaskSpecifications:
         """Return task specifications."""
         with open(self.dir / "task_specs.pkl", "rb") as fd:
-            return pickle.load(fd)
+            load_task_specs: TaskSpecifications = pickle.load(fd)
+            return load_task_specs
 
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite: bool = False) -> None:
         """Save task specifications in job directory.
@@ -61,11 +63,12 @@ class Job:
         task_specs.save(str(self.dir), overwrite=overwrite)
 
     @cached_property
-    def config(self):
+    def config(self) -> Dict[str, Any]:
         """Return config file."""
         yaml = YAML()
         with open(self.dir / "config.yaml", "r") as yamlfile:
-            return yaml.load(yamlfile)
+            loaded_yaml: Dict[str, Any] = yaml.load(yamlfile)
+            return loaded_yaml
 
     def save_config(self, config: Dict[str, Any], overwrite: bool = False) -> None:
         """Save config file in job directory.
@@ -82,7 +85,7 @@ class Job:
             yaml.dump(config, fd)
             self.config = config
 
-    def get_metrics(self):
+    def get_metrics(self) -> Dict[str, Any]:
         """Retrieve the metrics after training from job directory."""
         if "wandb" in self.config["experiment"].get("loggers", ""):
             import wandb
@@ -91,12 +94,12 @@ class Job:
             summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
 
             with open(summary[0], "r") as infile:
-                data = json.load(infile)
+                data: Dict[str, Any] = json.load(infile)
             return data
         else:
             try:
                 with open(self.dir / "lightning_logs" / "version_0" / "metrics.csv", "r") as fd:
-                    data = {}
+                    data: Dict[str, Any] = {}  # type: ignore[no-redef]
                     # FIXME: This would be more efficient if done backwards
                     for entry in csv.DictReader(fd):
                         data.update({k: v for k, v in entry.items() if v != ""})

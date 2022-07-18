@@ -58,7 +58,7 @@ def get_transform(img_path: str):
     return transform
 
 
-def get_bands(img: np.array, transform) -> List[Band]:
+def get_bands(img: "np.typing.NDArray[np.int_]", transform) -> List[Band]:
     """Retrieve RGB bands.
 
     Args:

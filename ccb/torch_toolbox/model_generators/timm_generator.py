@@ -29,38 +29,9 @@ class TIMMGenerator(ModelGenerator):
     attaches a classification head according to the task.
     """
 
-    def __init__(self, hparams=None) -> None:
-        """Initialize a new instance of Timm model generator.
-
-        Args:
-            hparams: set of hyperparameters
-        """
+    def __init__(self) -> None:
+        """Initialize a new instance of Timm model generator."""
         super().__init__()
-
-        # self.base_hparams = {
-        #     "backbone": "resnet50",  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
-        #     "pretrained": True,
-        #     "lr_backbone": 1e-6,
-        #     "lr_head": 1e-4,
-        #     "optimizer": "sgd",
-        #     "head_type": "linear",
-        #     "hidden_size": 512,
-        #     "loss_type": "crossentropy",
-        #     "batch_size": 64,
-        #     "num_workers": 0,
-        #     "max_epochs": 1,
-        #     "n_gpus": 0,
-        #     "logger": "wandb",
-        #     "sweep_config_yaml_path": "/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet50.yaml",
-        #     "num_agents": 4,
-        #     "num_trials_per_agent": 5,
-        #     "band_names": ["red", "green", "blue"],  # , "01", "05", "06", "07", "08", "08A", "09", "10", "11", "12"],
-        #     "image_size": 224,
-        #     "format": "hdf5",
-        #     "new_channel_init_method": "random",  # random, clone_random_rgb_channel
-        # }
-        # if hparams is not None:
-        #     self.base_hparams.update(hparams)
 
     def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
         """Return a ccb.torch_toolbox.model.Model instance from task specs and hparams.
@@ -109,7 +80,7 @@ class TIMMGenerator(ModelGenerator):
                 padding=current_layer.padding,
             )
 
-            new_layer.bias.data = current_layer.bias
+            new_layer.bias.data = current_layer.bias  # type: ignore
 
             # add new layer back to backbone
             backbone.stem[0] = self._initialize_additional_in_channels(
@@ -136,7 +107,7 @@ class TIMMGenerator(ModelGenerator):
                 padding=current_layer.padding,
             )
 
-            new_layer.bias.data = current_layer.bias
+            new_layer.bias.data = current_layer.bias  # type: ignore
 
             backbone.patch_embed.proj = self._initialize_additional_in_channels(
                 current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, config=config
@@ -152,7 +123,7 @@ class TIMMGenerator(ModelGenerator):
             backbone.eval()
             features = torch.zeros(config["model"]["input_size"]).unsqueeze(0)
             features = backbone(features)
-        shapes = [features.shape[1:]]  # get the backbone's output features
+        shapes = [tuple(features.shape[1:])]  # get the backbone's output features
 
         config["model"]["n_backbone_features"] = shapes[0][0]
 
@@ -289,7 +260,9 @@ class TIMMGenerator(ModelGenerator):
         transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x: np.Array = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype("float32")
+            x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
+                "float32"
+            )
             x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
