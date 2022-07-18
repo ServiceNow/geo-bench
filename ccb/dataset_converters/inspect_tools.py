@@ -1,6 +1,6 @@
 """Inspect tools."""
 import math
-from typing import Any, Callable, Dict, List, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 from warnings import warn
 
 import ipyplot
@@ -85,12 +85,12 @@ def float_image_to_uint8(
 
 def extract_images(
     samples: List[Sample],
-    band_names: Sequence[str] = ("red", "green", "blue"),
+    band_names: List[str] = ["red", "green", "blue"],
     percentile_max: float = 99.9,
     resample: bool = False,
     fill_value: int = None,
     date_index: int = 0,
-) -> Tuple[List[np.array]]:
+) -> Tuple[List["np.typing.NDArray[np.int_]"], List["np.typing.NDArray[np.int_]"]]:
     """Extract images from samples.
 
     Args:
@@ -104,8 +104,8 @@ def extract_images(
     Returns:
         images and labels extracted from sample
     """
-    images = []
-    labels = []
+    images: List[np.array] = []
+    labels: List[np.array] = []
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(
             sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
@@ -176,7 +176,11 @@ def hyperspectral_to_rgb(samples: List[Sample], band_name, rgb_extract, percenti
     """Convert hyperspectral to rgb."""
     images = []
     for sample in samples:
-        band_array, _, _ = sample.get_band_array(band_names=(band_name,))
+        band_array, _, _ = sample.get_band_array(
+            band_names=[
+                band_name,
+            ]
+        )
         assert band_array.shape == (1, 1), f"Got shape: {band_array.shape}."
         band = band_array[0, 0]
         assert isinstance(band.band_info, HyperSpectralBands), f"Got type: {type(band.band_info)}."
@@ -343,9 +347,9 @@ def summarize_band_info(band_info_list: List[io.BandInfo]):
         for name in band_info.alt_names:
             resolution_dict[name.lower()] = band_info.spatial_resolution
 
-    RGB_resolution = [resolution_dict.get(color, None) for color in ("red", "green", "blue")]
+    RGB_resolution = [resolution_dict.get(color, None) for color in ("red", "green", "blue")]  # type: ignore
     if RGB_resolution[0] == RGB_resolution[1] and RGB_resolution[0] == RGB_resolution[2]:
-        RGB_resolution = RGB_resolution[0]
+        RGB_resolution = RGB_resolution[0]  # type: ignore
 
     return {
         "RGB res": RGB_resolution,

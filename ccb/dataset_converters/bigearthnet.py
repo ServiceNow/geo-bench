@@ -8,8 +8,8 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "bigearthnet"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 def make_sample(images: np.array, label, sample_name: str, task_specs: io.TaskSpecifications) -> io.Sample:
@@ -33,7 +33,8 @@ def make_sample(images: np.array, label, sample_name: str, task_specs: io.TaskSp
     for band_idx in range(n_bands):
         band_data = images[band_idx, :, :]
 
-        band_info = task_specs.bands_info[band_idx]
+        if task_specs.bands_info is not None:
+            band_info = task_specs.bands_info[band_idx]
         band_data = band_data.astype(np.float32)
         band = io.Band(
             data=band_data,

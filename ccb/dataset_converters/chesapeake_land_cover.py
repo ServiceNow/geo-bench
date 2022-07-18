@@ -19,8 +19,8 @@ from ccb import io
 # 2. Extension: https://zenodo.org/record/5866525#.YlhpH27MJf0
 
 DATASET_NAME = "cvpr_chesapeake_landcover"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 # See dataset documentation for more details on below:
 # https://torchgeo.readthedocs.io/en/latest/api/datasets.html#torchgeo.datasets.ChesapeakeCVPR
 SPATIAL_RESOLUTION = 1  # meters

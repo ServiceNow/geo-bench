@@ -15,11 +15,9 @@ from tqdm import tqdm
 
 from ccb import io
 
-# print(os.environ["HOME"])
-# print(os.environ["CC_BENCHMARK_SOURCE_DATASETS"])
 DATASET_NAME = "brick_kiln_v1.0"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 def load_examples_bloc(file_path):
@@ -126,7 +124,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         n_time_steps=1,
         bands_info=io.sentinel2_13_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(2, ("not brick kiln", "brick kiln")),
+        label_type=io.Classification(2, ["not brick kiln", "brick kiln"]),
         eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
