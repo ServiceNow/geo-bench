@@ -461,7 +461,7 @@ uritemplate = ">=3.0.0,<4dev"
 
 [[package]]
 name = "google-auth"
-version = "2.9.0"
+version = "2.9.1"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -1456,7 +1456,7 @@ resolved_reference = "903115cb156e7bd6d28148e7db66584b3b81b4a8"
 
 [[package]]
 name = "sentry-sdk"
-version = "1.7.0"
+version = "1.7.1"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
@@ -1648,7 +1648,7 @@ torchvision = "*"
 type = "git"
 url = "https://github.com/rwightman/pytorch-image-models.git"
 reference = "master"
-resolved_reference = "f96da54eb1e03d7dfc32844deac34e231e73ea6f"
+resolved_reference = "324a4e58b6b0365d16dcf8f93739be8f74cd7d37"
 
 [[package]]
 name = "tomli"
@@ -2223,10 +2223,7 @@ google-api-python-client = [
     {file = "google-api-python-client-1.12.11.tar.gz", hash = "sha256:1b4bd42a46321e13c0542a9e4d96fa05d73626f07b39f83a73a947d70ca706a9"},
     {file = "google_api_python_client-1.12.11-py2.py3-none-any.whl", hash = "sha256:7e0a1a265c8d3088ee1987778c72683fcb376e32bada8d7767162bd9c503fd9b"},
 ]
-google-auth = [
-    {file = "google-auth-2.9.0.tar.gz", hash = "sha256:3b2f9d2f436cc7c3b363d0ac66470f42fede249c3bafcc504e9f0bcbe983cff0"},
-    {file = "google_auth-2.9.0-py2.py3-none-any.whl", hash = "sha256:75b3977e7e22784607e074800048f44d6a56df589fb2abe58a11d4d20c97c314"},
-]
+google-auth = []
 google-auth-httplib2 = [
     {file = "google-auth-httplib2-0.1.0.tar.gz", hash = "sha256:a07c39fd632becacd3f07718dfd6021bf396978f03ad3ce4321d060015cc30ac"},
     {file = "google_auth_httplib2-0.1.0-py2.py3-none-any.whl", hash = "sha256:31e49c36c6b5643b57e82617cb3e021e3e1d2df9da63af67252c02fa9c1f4a10"},
