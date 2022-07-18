@@ -125,7 +125,7 @@ class Conv4Generator(ModelGenerator):
         transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x = sample.pack_to_3d(band_names=tuple(config["dataset"]["band_names"]))[0].astype("float32")
+            x = sample.pack_to_3d(band_names=(config["dataset"]["band_names"]))[0].astype("float32")
             x = transform_comp(x)
             return {"input": x, "label": sample.label}
 

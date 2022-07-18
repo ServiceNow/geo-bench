@@ -3,7 +3,7 @@ import shutil
 from collections import defaultdict
 from math import floor
 from pathlib import Path
-from typing import DefaultDict, Dict, List
+from typing import DefaultDict, Dict, List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -198,7 +198,7 @@ def resample_from_stats(
     verbose: bool = True,
     rng=np.random,
     return_prob: bool = False,
-) -> io.Partition:
+) -> Union[io.Partition, Tuple[io.Partition, Dict[str, List[str]]]]:
     """Resample based on statistics.
 
     Args:
@@ -213,7 +213,7 @@ def resample_from_stats(
         resampled partition
     """
     partition_dict = defaultdict(list)
-    prob_dict = {}
+    prob_dict: Dict[str, List[str]] = {}
     for split, sample_names in partition.partition_dict.items():
 
         if len(sample_names) > max_sizes[split]:
