@@ -2,7 +2,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 
 import numpy as np
 import rasterio
@@ -15,7 +15,7 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "southAfricaCropType"
-SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)
+SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)  # type: ignore
 IMG_DIR = "ref_south_africa_crops_competition_v1_train_source_s2"
 LABEL_DIR = "ref_south_africa_crops_competition_v1_train_labels"
 SRC_TRANSFORM = Affine(10.0, 0.0, 331040.0, 0.0, -10.0, -3714560.0)
@@ -90,7 +90,7 @@ def compute_area_with_labels(mask: np.array) -> float:
 
 
 def load_images(
-    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1), num_imgs: int = 5
+    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Sequence[float] = (0.0, 0.1), num_imgs: int = 5
 ) -> np.array:
     """Load the desired input image.
 
@@ -256,7 +256,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         path = os.path.join(label_dir, dirpath)
         # to extract date information and id to match input images
         match = re.search(label_dir_regex, path)
-        id = "_source_s2_" + match.group("id")
+        if match is not None:
+            id = "_source_s2_" + match.group("id")
 
         matched_image_dirs = [os.path.join(img_dir, dir) for dir in img_dir_paths if id in dir]
 

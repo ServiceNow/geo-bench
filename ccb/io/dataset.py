@@ -847,6 +847,8 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
                     sample_name=sample_path.stem,
                 )
 
+    return Sample(bands=bands, label=None, sample_name=sample_path.stem)
+
 
 def write_sample_npz(sample: Sample, dataset_dir: str):
     """Write a sample to npz.
