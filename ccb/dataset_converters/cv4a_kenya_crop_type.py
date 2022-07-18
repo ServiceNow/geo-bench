@@ -18,27 +18,27 @@ from ccb import io
 
 
 DATASET_NAME = "CV4AKenyaCropType"
-SRC_DATASET_DIR = io.src_datasets_dir
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = io.src_datasets_dir  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 DATES = [
-    "20190606",
-    "20190701",
-    "20190706",
-    "20190711",
-    "20190721",
-    "20190805",
-    "20190815",
-    "20190825",
-    "20190909",
-    "20190919",
-    "20190924",
-    "20191004",
-    "20191103",
+    datetime.datetime.strptime(date, "%Y%m%d").date()
+    for date in [
+        "20190606",
+        "20190701",
+        "20190706",
+        "20190711",
+        "20190721",
+        "20190805",
+        "20190815",
+        "20190825",
+        "20190909",
+        "20190919",
+        "20190924",
+        "20191004",
+        "20191103",
+    ]
 ]
-
-
-DATES = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in DATES]
 
 max_band_value = {
     "06 - Vegetation Red Edge": 1.4976,

@@ -25,9 +25,9 @@ SPATIAL_RESOLUTION = 1
 PATCH_SIZE = 256
 
 N_LABELS = 100
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATA_PATH = Path(SRC_DATASET_DIR)
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
+DATA_PATH = Path(SRC_DATASET_DIR)  # type: ignore
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
 
 # US NAIP, FR aerial based (IGN)
 BAND_INFO_LIST = io.make_rgb_bands(spatial_resolution=SPATIAL_RESOLUTION)
@@ -148,7 +148,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         spatial_resolution=SPATIAL_RESOLUTION,
     )
 
-    task_specs.save(dataset_dir, overwrite=True)
+    task_specs.save(str(dataset_dir), overwrite=True)
 
     for i, el in enumerate(tqdm(list(df.iterrows()))):
         sample_name = f"{el[0]}"
@@ -165,7 +165,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         # print(f'name={sample_name} oid={observation_id} y={label} lat={latitude} lng={longitude} split={split_name}')
 
         sample = make_sample(observation_id, int(label), latitude, longitude)
-        sample.write(dataset_dir)
+        sample.write(str(dataset_dir))
         partition.add(split_name, sample_name)
 
         # temporary for creating small datasets for development purpose
@@ -173,7 +173,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
             break
 
     partition.resplit_iid(split_names=("valid", "test"), ratios=(0.5, 0.5))
-    partition.save(dataset_dir, "original", as_default=True)
+    partition.save(str(dataset_dir), "original", as_default=True)
 
 
 if __name__ == "__main__":
