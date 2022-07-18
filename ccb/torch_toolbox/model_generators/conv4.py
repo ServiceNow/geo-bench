@@ -1,6 +1,6 @@
 """Conv4 Model Generator."""
 
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -69,8 +69,8 @@ class Conv4Generator(ModelGenerator):
         task_specs: TaskSpecifications,
         config: Dict[str, Any],
         train: bool = True,
-        scale: Union[None, Tuple[float]] = None,
-        ratio: Union[None, Tuple[float]] = None,
+        scale: Union[None, Sequence[float]] = None,
+        ratio: Union[None, Sequence[float]] = None,
     ) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
@@ -84,10 +84,9 @@ class Conv4Generator(ModelGenerator):
         Returns:
             callable function that applies transformations on input data
         """
-        if scale is not None:
-            scale_tup = tuple(scale or (0.08, 1.0))  # default imagenet scale range
-        if ratio is not None:
-            ratio_tup = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
+        scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
+        ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
+
         _, h, w = (len(config["dataset"]["band_names"]), config["model"]["image_size"], config["model"]["image_size"])
 
         mean, std = task_specs.get_dataset(
@@ -102,7 +101,7 @@ class Conv4Generator(ModelGenerator):
         t.append(tt.Normalize(mean=mean, std=std))
         if train:
             t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomResizedCrop((h, w), scale=scale_tup, ratio=ratio_tup))
+            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
 
         t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
 
@@ -116,6 +115,15 @@ class Conv4Generator(ModelGenerator):
             return {"input": x, "label": sample.label}
 
         return transform
+
+
+def model_generator() -> Conv4Generator:
+    """Generate Conv generator.
+
+    Returns:
+        conv model generator
+    """
+    return Conv4Generator()
 
 
 class Conv4(BackBone):
