@@ -115,7 +115,7 @@ class TaskSpecifications:
         label_map_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
-                label_map = json.load(fp)
+                label_map: Dict[str, List[str]] = json.load(fp)
             return label_map
         else:
             return None

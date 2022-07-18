@@ -32,7 +32,7 @@ class MaeGenerator(model.ModelGenerator):
         """
         super().__init__()
 
-    def generate_model(self, task_specs: TaskSpecifications, config: dict):
+    def generate_model(self, task_specs: TaskSpecifications, config: Dict[str, Any]) -> model.Model:
         """Return a model instance from task specs and hyperparameters.
 
         Args:
@@ -49,7 +49,7 @@ class MaeGenerator(model.ModelGenerator):
         eval_metrics = model.eval_metrics_generator(task_specs, config)
         return model.Model(backbone, head, loss, config, train_metrics, eval_metrics)
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, config: Dict[str, Any]):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: Dict[str, Any]) -> Any:
         """Define a collate function to batch input tensors.
 
         Args:
@@ -61,7 +61,7 @@ class MaeGenerator(model.ModelGenerator):
         """
         return default_collate
 
-    def get_transform(self, task_specs: TaskSpecifications, config: Dict[str, Any], train: bool = True):
+    def get_transform(self, task_specs: TaskSpecifications, config: Dict[str, Any], train: bool = True) -> Any:
         """Define data transformations specific to the models generated.
 
         Args:
