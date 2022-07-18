@@ -538,7 +538,7 @@ def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[BandInfo]]:
 class Sample(object):
     """Samples that contains all band information as well as input and label."""
 
-    def __init__(self, bands: List[Band], label: Union[Band, int, None], sample_name: str) -> None:
+    def __init__(self, bands: List[Band], label: Union[Band, int], sample_name: str) -> None:
         """Initialize new instance of Sample.
 
         Args:
@@ -776,7 +776,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     with h5py.File(sample_path, "w") as fp:
         bands = sample.bands
 
-        attr_dict: Dict[Dict[str, Any]] = {}
+        attr_dict: Dict[str, Any] = {}
         bands_order = []
 
         if sample.label is not None:
@@ -838,17 +838,17 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
             else:
                 bands.append(band)
         if label is None:
-            label = attr_dict.get("label", None)
-            if isinstance(label, int):
-                return Sample(bands=bands, label=label, sample_name=sample_path.stem)
-            elif isinstance(label, dict):  # segmentation class
-                return Sample(
-                    bands=bands,
-                    label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
-                    sample_name=sample_path.stem,
-                )
+            label = attr_dict["label"]
+        if isinstance(label, int):
+            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        elif isinstance(label, dict):  # segmentation class
+            sample = Sample(
+                bands=bands,
+                label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
+                sample_name=sample_path.stem,
+            )
 
-    return Sample(bands=bands, label=None, sample_name=sample_path.stem)
+        return sample
 
 
 def write_sample_npz(sample: Sample, dataset_dir: str):
@@ -866,7 +866,7 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
 
     bands = sample.bands
     band_dict: Dict[str, Any] = {}
-    attr_dict: Dict[Dict[str, Any]] = {}
+    attr_dict: Dict[str, Any] = {}
     bands_order = []
 
     if sample.label is not None:
