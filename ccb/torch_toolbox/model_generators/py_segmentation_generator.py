@@ -162,7 +162,7 @@ class SegmentationGenerator(ModelGenerator):
             benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
         ).rgb_stats()
-        band_names = tuple(config["dataset"]["band_names"])
+        band_names = config["dataset"]["band_names"]
 
         class SegTransform:
             """Segmentation Transform.
