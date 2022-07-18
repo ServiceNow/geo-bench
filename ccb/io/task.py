@@ -10,7 +10,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from ccb import io
-from ccb.io.dataset import BandInfo, Dataset
+from ccb.io.dataset import BandInfo, Dataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
 from ccb.io.label import Classification
 
 
@@ -20,15 +20,15 @@ class TaskSpecifications:
     def __init__(
         self,
         dataset_name: str,
-        benchmark_name: str,
+        bands_info: List[Any],
+        spatial_resolution: float,
+        benchmark_name: str = None,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_info: List[BandInfo] = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
         eval_metrics=None,
-        spatial_resolution: float = None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
 
@@ -259,6 +259,7 @@ mnist_task_specs = TaskSpecifications(
     dataset_name="MNIST",
     benchmark_name="test",
     patch_size=(28, 28),
+    spatial_resolution=1.0,
     bands_info=[BandInfo("grey")],
     label_type=Classification(10),
     eval_loss=CrossEntropy(),
@@ -269,6 +270,7 @@ imagenet_task_specs = TaskSpecifications(
     dataset_name="imagenet",
     benchmark_name="imagenet",
     patch_size=(256, 256),
+    spatial_resolution=1.0,
     bands_info=[BandInfo("red"), BandInfo("green"), BandInfo("blue")],
     label_type=Classification(1000),
     eval_loss=CrossEntropy(),
