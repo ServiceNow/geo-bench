@@ -27,7 +27,7 @@ def train(job_dir: str) -> None:
     # Load the user-specified model generator
     model_gen = get_model_generator(config["model"]["model_generator_module_name"])
 
-    with wandb.init(
+    with wandb.init(  # type: ignore[union-attr]
         dir=job_dir,
         project=config["wandb"]["project"],
         entity=config["wandb"]["entity"],
