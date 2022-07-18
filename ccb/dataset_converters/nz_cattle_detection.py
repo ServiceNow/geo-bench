@@ -95,7 +95,6 @@ def load_sample(img_path: Path) -> io.Sample:
         )
         bands.append(band_data)
 
-    label: Union[io.Band, List[List[int]]]
     if SEGMENTATION:
         label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=4), img_shape=data.shape[:2])
         label = io.Band(
@@ -107,8 +106,8 @@ def load_sample(img_path: Path) -> io.Sample:
             date=date,
             meta_info={"location": location},
         )
-    else:
-        label = coords
+    # else:
+    #     label = coords
 
     return io.Sample(bands, label=label, sample_name=img_path.stem)
 

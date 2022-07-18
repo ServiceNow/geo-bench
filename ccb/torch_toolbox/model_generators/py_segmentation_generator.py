@@ -10,6 +10,7 @@ from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
 from ccb import io
+from ccb.io.dataset import Band
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     Model,
@@ -213,7 +214,8 @@ class SegmentationGenerator(ModelGenerator):
 
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
             print(sample.label)
-            x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
+            if isinstance(sample.label, Band):
+                x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 
         return transform
