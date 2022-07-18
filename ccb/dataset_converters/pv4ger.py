@@ -10,7 +10,7 @@
 """
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import numpy as np
 import pandas as pd
@@ -25,14 +25,14 @@ sys.path.append(str(Path.cwd()))
 
 
 DATASET_NAME = "pv4ger"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
 # CLS_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
 # SEG_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
-DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
+DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"  # type: ignore
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
-LABELS = ("no solar pv", "solar pv")
+LABELS = ["no solar pv", "solar pv"]
 SEG_LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS)
 
 
@@ -46,7 +46,7 @@ def get_transform(img_path: str):
         rasterio transform
     """
     # Get lat center and lon center from img path
-    lat_center, lon_center = map(float, img_path.stem.split(","))
+    lat_center, lon_center = map(float, Path(img_path).stem.split(","))
     # Lat/lons are swapped for much of the dataset, fix this.
     if lat_center < lon_center:
         lat_center, lon_center = lon_center, lat_center
@@ -92,7 +92,7 @@ def load_cls_sample(img_path: Path, label: int) -> Sample:
     Returns:
         classification sample
     """
-    transform = get_transform(img_path)
+    transform = get_transform(str(img_path))
 
     img = np.array(Image.open(img_path).convert("RGB"))
 
@@ -111,7 +111,7 @@ def load_seg_sample(img_path: Path, mask_path: Path) -> Sample:
     Returns:
         segmentation sample
     """
-    transform = get_transform(img_path)
+    transform = get_transform(str(img_path))
 
     img = np.array(Image.open(img_path).convert("RGB"))
     mask = np.array(Image.open(mask_path))
@@ -135,12 +135,12 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, classificati
         classification: whether or not to convert the classification version
     """
     if classification:
-        label_type = io.Classification(2, LABELS)
-        eval_loss = io.Accuracy
+        label_type = io.Classification(2, LABELS)  # type: ignore
+        eval_loss = io.Accuracy  # type: ignore
         # dataset_dir = CLS_DATASET_DIR
     else:
-        label_type = SEG_LABEL_BAND
-        eval_loss = io.SegmentationAccuracy  # TODO probably not the final
+        label_type = SEG_LABEL_BAND  # type: ignore
+        eval_loss = io.SegmentationAccuracy  # type: ignore # TODO probably not the final
         # eval loss. To be discussed.
         dataset_dir = dataset_dir.with_name(f"{DATASET_NAME}_segmentation")
 
@@ -156,7 +156,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, classificati
         eval_loss=eval_loss,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
-    task_specs.save(dataset_dir, overwrite=True)
+    task_specs.save(str(dataset_dir), overwrite=True)
 
     rows = []
 
@@ -182,22 +182,21 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, classificati
     sample_count = 0
     for _, row in tqdm(df.iterrows(), total=df.shape[0]):
         split = row["Split"]
-        path = row["Path"]
-        label = row["Label"]
+        row_path: Path = row["Path"]
         if classification:
-            sample = load_cls_sample(path, label)
+            sample = load_cls_sample(row_path, row["Label"])
         else:
-            sample = load_seg_sample(path, label)
-        sample_name = path.stem
+            sample = load_seg_sample(row_path, row["Label"])
+        sample_name = row_path.stem
         partition.add(split, sample_name)
-        sample.write(dataset_dir)
+        sample.write(str(dataset_dir))
         sample_count += 1
 
         # temporary for creating small datasets for development purpose
         if max_count is not None and sample_count >= max_count:
             break
 
-    partition.save(dataset_dir, "original", as_default=True)
+    partition.save(str(dataset_dir), "original", as_default=True)
 
 
 if __name__ == "__main__":

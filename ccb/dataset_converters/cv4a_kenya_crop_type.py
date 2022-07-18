@@ -1,6 +1,7 @@
 """CV4A Kenya Crop Type dataset."""
 import datetime
 from pathlib import Path
+from typing import Any, List
 
 import numpy as np
 from torchgeo.datasets import cv4a_kenya_crop_type
@@ -18,27 +19,27 @@ from ccb import io
 
 
 DATASET_NAME = "CV4AKenyaCropType"
-SRC_DATASET_DIR = io.src_datasets_dir
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = io.src_datasets_dir  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 DATES = [
-    "20190606",
-    "20190701",
-    "20190706",
-    "20190711",
-    "20190721",
-    "20190805",
-    "20190815",
-    "20190825",
-    "20190909",
-    "20190919",
-    "20190924",
-    "20191004",
-    "20191103",
+    datetime.datetime.strptime(date, "%Y%m%d").date()
+    for date in [
+        "20190606",
+        "20190701",
+        "20190706",
+        "20190711",
+        "20190721",
+        "20190805",
+        "20190815",
+        "20190825",
+        "20190909",
+        "20190919",
+        "20190924",
+        "20191004",
+        "20191103",
+    ]
 ]
-
-
-DATES = [datetime.datetime.strptime(date, "%Y%m%d").date() for date in DATES]
 
 max_band_value = {
     "06 - Vegetation Red Edge": 1.4976,
@@ -55,7 +56,7 @@ max_band_value = {
     "08 - NIR": 1.4592,
 }
 
-BAND_INFO_LIST = io.sentinel2_13_bands[:]
+BAND_INFO_LIST: List[Any] = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
 BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")))
