@@ -14,7 +14,7 @@
 import csv
 import re
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Union
+from typing import Any, Dict, List, Set, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -40,9 +40,9 @@ DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 
 if SEGMENTATION:
-    label_type = io.SegmentationClasses("label", spatial_resolution=0.1, n_classes=2, class_names=["no tree", "tree"])
+    label_type = io.SegmentationClasses("label", spatial_resolution=0.1, n_classes=2, class_names=["no tree", "tree"])  # type: ignore
 else:
-    label_type = io.Detection()
+    label_type = io.Detection()  # type: ignore
 
 
 def read_xml(xml_path) -> List[Dict[str, int]]:
@@ -220,7 +220,7 @@ def convert_dataset(src_dataset_dir: str, zenodo_dataset_dir: str, dataset_dir: 
     find_missing([Path(zenodo_dataset_dir)], file_set)
 
 
-BAND_INFO_LIST = io.make_rgb_bands(0.1)
+BAND_INFO_LIST: List[Any] = io.make_rgb_bands(0.1)
 BAND_INFO_LIST.append(io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM"), spatial_resolution=0.1))
 BAND_INFO_LIST.append(io.HyperSpectralBands("Neon", n_bands=369, spatial_resolution=1))
 

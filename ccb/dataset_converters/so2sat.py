@@ -67,7 +67,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         dataset_name=DATASET_NAME,
         patch_size=(32, 32),
         n_time_steps=1,
-        bands_info=io.sentinel1_8_bands + io.sentinel2_13_bands[1:9] + io.sentinel2_13_bands[-2:],
+        bands_info=io.sentinel1_8_bands + io.sentinel2_13_bands[1:9] + io.sentinel2_13_bands[-2:],  # type: ignore
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.Classification(17, class_names=So2Sat.classes),
         eval_loss=io.Accuracy,
