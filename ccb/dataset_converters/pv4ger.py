@@ -32,7 +32,7 @@ DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"  # typ
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)
-LABELS = ("no solar pv", "solar pv")
+LABELS = ["no solar pv", "solar pv"]
 SEG_LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=2, class_names=LABELS)
 
 
@@ -135,12 +135,12 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR, classificati
         classification: whether or not to convert the classification version
     """
     if classification:
-        label_type = io.Classification(2, LABELS)
-        eval_loss = io.Accuracy
+        label_type = io.Classification(2, LABELS)  # type: ignore
+        eval_loss = io.Accuracy  # type: ignore
         # dataset_dir = CLS_DATASET_DIR
     else:
-        label_type = SEG_LABEL_BAND
-        eval_loss = io.SegmentationAccuracy  # TODO probably not the final
+        label_type = SEG_LABEL_BAND  # type: ignore
+        eval_loss = io.SegmentationAccuracy  # type: ignore # TODO probably not the final
         # eval loss. To be discussed.
         dataset_dir = dataset_dir.with_name(f"{DATASET_NAME}_segmentation")
 

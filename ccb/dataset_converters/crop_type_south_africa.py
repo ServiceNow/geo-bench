@@ -2,7 +2,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import Any, List, Sequence
 
 import numpy as np
 import rasterio
@@ -66,7 +66,7 @@ BANDNAMES = [
     "CLM.tif",
 ]
 
-BAND_INFO_LIST = io.sentinel2_13_bands[:]
+BAND_INFO_LIST: List[Any] = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
 BAND_INFO_LIST.extend([io.CloudProbability(alt_names=("CPL", "CLM"))])

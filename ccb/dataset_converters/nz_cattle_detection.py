@@ -8,6 +8,7 @@
 
 import datetime
 from pathlib import Path
+from typing import List, Union
 
 import numpy as np
 import rasterio
@@ -94,6 +95,7 @@ def load_sample(img_path: Path) -> io.Sample:
         )
         bands.append(band_data)
 
+    label: Union[io.Band, List[List[int]]]
     if SEGMENTATION:
         label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=4), img_shape=data.shape[:2])
         label = io.Band(
