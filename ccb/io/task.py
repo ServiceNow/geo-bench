@@ -10,7 +10,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from ccb import io
-from ccb.io.dataset import BandInfo, Dataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
+from ccb.io.dataset import BandInfo, CCBDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
 from ccb.io.label import Classification
 
 
@@ -78,7 +78,7 @@ class TaskSpecifications:
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
-    ) -> Dataset:
+    ) -> CCBDataset:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
@@ -89,7 +89,7 @@ class TaskSpecifications:
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
-        return Dataset(
+        return CCBDataset(
             dataset_dir=self.get_dataset_dir(benchmark_dir),
             split=split,
             partition_name=partition_name,
@@ -115,7 +115,7 @@ class TaskSpecifications:
         label_map_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
-                label_map = json.load(fp)
+                label_map: Dict[str, List[str]] = json.load(fp)
             return label_map
         else:
             return None

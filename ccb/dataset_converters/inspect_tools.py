@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from ccb import io
 from ccb.io import dataset as io_ds
-from ccb.io.dataset import Band, Dataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
+from ccb.io.dataset import Band, CCBDataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
 
 
 def compare(a, b, name, src_a, src_b) -> None:
@@ -24,7 +24,9 @@ def compare(a, b, name, src_a, src_b) -> None:
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def plot_band_stats(band_values: Dict[str, np.array], n_cols: int = 4, n_hist_bins: int = None) -> None:
+def plot_band_stats(
+    band_values: Dict[str, "np.typing.NDArray[np.int_]"], n_cols: int = 4, n_hist_bins: int = None
+) -> None:
     """Plot a histogram of band values for each band.
 
     Args:
@@ -44,8 +46,11 @@ def plot_band_stats(band_values: Dict[str, np.array], n_cols: int = 4, n_hist_bi
 
 
 def float_image_to_uint8(
-    images: np.array, percentile_max=99.9, ensure_3_channels=True, per_channel_scaling=False
-) -> np.array:
+    image_list: List["np.typing.NDArray[np.float_]"],
+    percentile_max=99.9,
+    ensure_3_channels=True,
+    per_channel_scaling=False,
+) -> List["np.typing.NDArray[np.uint]"]:
     """Convert a batch of images to uint8 such that 99.9% of values fit in the range (0,255).
 
     Args:
@@ -57,9 +62,9 @@ def float_image_to_uint8(
     Returns:
         converted batch of images
     """
-    images = np.asarray(images)
+    images = np.asarray(image_list)
     if images.dtype == np.uint8:
-        return images
+        return [images[idx] for idx in range(images.shape[0])]
 
     images = images.astype(np.float64)
 
@@ -71,7 +76,7 @@ def float_image_to_uint8(
         mn = np.percentile(images, q=100 - percentile_max)
         mx = np.percentile(images, q=percentile_max)
 
-    new_images = []
+    new_images: List["np.typing.NDArray[np.uint]"] = []
     for image in images:
         image = np.clip((image - mn) * 255 / (mx - mn), 0, 255)
         if ensure_3_channels:
@@ -90,7 +95,7 @@ def extract_images(
     resample: bool = False,
     fill_value: int = None,
     date_index: int = 0,
-) -> Tuple[List["np.typing.NDArray[np.int_]"], List["np.typing.NDArray[np.int_]"]]:
+) -> Tuple[List["np.typing.NDArray[np.uint]"], List[Union[int, Band]]]:
     """Extract images from samples.
 
     Args:
@@ -104,13 +109,13 @@ def extract_images(
     Returns:
         images and labels extracted from sample
     """
-    images: List[np.array] = []
-    labels: List[np.array] = []
+    images: List["np.typing.NDArray[np.uint]"] = []
+    labels: List[Union[Band, int]] = []
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(
             sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
         )
-        img_data = img_data[0].astype(np.float)
+        img_data = img_data[0].astype(np.float_)
         # TODO We should pass labelType from task specs and compare that instead of the class
         # Once we change this function, we should update all inspection notebooks
         # if isinstance(sample.label, np.ndarray):
@@ -122,8 +127,8 @@ def extract_images(
         images.append(img_data)
         labels.append(sample.label)
 
-    images = float_image_to_uint8(images, percentile_max)
-    return images, labels
+    uint8_images = float_image_to_uint8(images, percentile_max)  # type: ignore
+    return uint8_images, labels
 
 
 def callback_hyperspectral_to_rgb(
@@ -174,7 +179,7 @@ def make_rgb_extractor(center, width):
 
 def hyperspectral_to_rgb(samples: List[Sample], band_name, rgb_extract, percentile_max=99.9):
     """Convert hyperspectral to rgb."""
-    images = []
+    images: List["np.typing.NDArray[np.float_]"] = []
     for sample in samples:
         band_array, _, _ = sample.get_band_array(
             band_names=[
@@ -299,7 +304,7 @@ def leaflet_map(samples):
 
 def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
-    dataset = Dataset(dataset_dir, split=split)
+    dataset = CCBDataset(dataset_dir, split=split)
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)

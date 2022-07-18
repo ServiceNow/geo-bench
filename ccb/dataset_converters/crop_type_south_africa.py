@@ -75,7 +75,7 @@ BAND_INFO_LIST.extend([io.CloudProbability(alt_names=("CPL", "CLM"))])
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels))
 
 
-def compute_area_with_labels(mask: np.array) -> float:
+def compute_area_with_labels(mask: "np.typing.NDArray[np.int_]") -> float:
     """Compute percentage of mask that contain labels.
 
     Args:
@@ -91,7 +91,7 @@ def compute_area_with_labels(mask: np.array) -> float:
 
 def load_images(
     filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Sequence[float] = (0.0, 0.1), num_imgs: int = 5
-) -> np.array:
+) -> "np.typing.NDArray[np.int_]":
     """Load the desired input image.
 
     Args:
@@ -121,7 +121,7 @@ def load_images(
     return imgs
 
 
-def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.array:
+def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> "np.typing.NDArray[np.int_]":
     """Load seperate band images.
 
     Args:
@@ -166,7 +166,7 @@ def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
         return src
 
 
-def load_tif_mask(filepath: str, dest_crs: CRS) -> np.array:
+def load_tif_mask(filepath: str, dest_crs: CRS) -> "np.typing.NDArray[np.int_]":
     """Load the mask.
 
     Args:
@@ -185,7 +185,9 @@ def load_tif_mask(filepath: str, dest_crs: CRS) -> np.array:
     return label
 
 
-def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample:
+def make_sample(
+    images: "np.typing.NDArray[np.int_]", mask: "np.typing.NDArray[np.int_]", sample_name: str
+) -> io.Sample:
     """Make a single sample from the dataset.
 
     Args:

@@ -75,7 +75,7 @@ def read_xml(xml_path) -> List[Dict[str, int]]:
     return boxes
 
 
-def load_tif(tif_path) -> np.array:
+def load_tif(tif_path) -> Tuple["np.typing.NDArray[np.int_]", Any, Any, Any]:
     """Load tif file.
 
     Args:
@@ -85,10 +85,10 @@ def load_tif(tif_path) -> np.array:
         tif image data array
     """
     with rasterio.open(tif_path) as fd:
-        data = fd.read()
-        crs = fd.crs
-        transform = fd.transform
-        no_data = fd.nodata
+        data: "np.typing.NDArray[np.int_]" = fd.read()
+        crs: Any = fd.crs
+        transform: Any = fd.transform
+        no_data: Any = fd.nodata
     return np.moveaxis(data, 0, 2), crs, transform, no_data
 
 
