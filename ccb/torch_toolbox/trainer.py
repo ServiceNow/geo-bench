@@ -9,7 +9,7 @@ from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
 
-def train(job_dir) -> None:
+def train(job_dir: str) -> None:
     """Train a model from the model generator on datamodule.
 
     Args:
