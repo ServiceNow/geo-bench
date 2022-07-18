@@ -64,7 +64,9 @@ BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD")))
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=8)
 
 
-def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample:
+def make_sample(
+    images: "np.typing.NDArray[np.int_]", mask: "np.typing.NDArray[np.int_]", sample_name: str
+) -> io.Sample:
     """Create a sample from images and label.
 
     Args:
@@ -88,7 +90,7 @@ def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample
             band_info = BAND_INFO_LIST[band_idx]
 
             if band_info.name in max_band_value:
-                band_data = band_data / max_band_value[band_info.name] * 10000
+                band_data = band_data / max_band_value[band_info.name] * 10000  # type: ignore
 
             band = io.Band(
                 data=band_data,

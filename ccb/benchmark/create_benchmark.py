@@ -259,7 +259,7 @@ def transform_dataset(
         delete_existing:
         hdf5:
     """
-    dataset = io.Dataset(dataset_dir, partition_name=partition_name)
+    dataset = io.CCBDataset(dataset_dir, partition_name=partition_name)
     task_specs = dataset.task_specs
     task_specs.benchmark_name = dataset_dir.parent.name
     new_dataset_dir = new_benchmark_dir / dataset_dir.name
@@ -309,7 +309,7 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
             delete_existing=True,
         )
         print(f"  Producing band stats for {dataset_name}.")
-        bandstats.produce_band_stats(io.Dataset(new_dataset_dir))
+        bandstats.produce_band_stats(io.CCBDataset(new_dataset_dir))
         print()
 
 

@@ -109,7 +109,7 @@ class TIMMGenerator(ModelGenerator):
                 padding=current_layer.padding,
             )
 
-            new_layer.bias.data = current_layer.bias
+            new_layer.bias.data = current_layer.bias  # type: ignore
 
             # add new layer back to backbone
             backbone.stem[0] = self._initialize_additional_in_channels(
@@ -136,7 +136,7 @@ class TIMMGenerator(ModelGenerator):
                 padding=current_layer.padding,
             )
 
-            new_layer.bias.data = current_layer.bias
+            new_layer.bias.data = current_layer.bias  # type: ignore
 
             backbone.patch_embed.proj = self._initialize_additional_in_channels(
                 current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, config=config
@@ -152,7 +152,7 @@ class TIMMGenerator(ModelGenerator):
             backbone.eval()
             features = torch.zeros(config["model"]["input_size"]).unsqueeze(0)
             features = backbone(features)
-        shapes = [features.shape[1:]]  # get the backbone's output features
+        shapes = [tuple(features.shape[1:])]  # get the backbone's output features
 
         config["model"]["n_backbone_features"] = shapes[0][0]
 
@@ -289,7 +289,9 @@ class TIMMGenerator(ModelGenerator):
         transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x: np.Array = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype("float32")
+            x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
+                "float32"
+            )
             x = transform_comp(x)
             return {"input": x, "label": sample.label}
 
