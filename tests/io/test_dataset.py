@@ -76,7 +76,11 @@ def test_write_read():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
@@ -122,7 +126,11 @@ def test_dataset_partition():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
@@ -254,7 +262,11 @@ def test_dataset_statistics():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
