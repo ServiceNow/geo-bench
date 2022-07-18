@@ -1,5 +1,5 @@
 """Benin Smallholder Cashew dataset."""
-# Smallholder Cashew Dataset will be downloaded by torchgeo
+# Smallholder Cashew CCBDataset will be downloaded by torchgeo
 #
 # 1) This requires Radiant MLHub package and API token
 #   pip install radiant_mlhub

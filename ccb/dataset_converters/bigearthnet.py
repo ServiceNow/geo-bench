@@ -12,7 +12,9 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, "bigearthnet")  # type: ignore
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
-def make_sample(images: np.array, label, sample_name: str, task_specs: io.TaskSpecifications) -> io.Sample:
+def make_sample(
+    images: "np.typing.NDArray[np.int_]", label, sample_name: str, task_specs: io.TaskSpecifications
+) -> io.Sample:
     """Create a sample from images and label.
 
     Args:

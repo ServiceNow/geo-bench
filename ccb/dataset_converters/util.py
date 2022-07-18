@@ -1,4 +1,4 @@
-"""Dataset converter utils."""
+"""CCBDataset converter utils."""
 import sys
 
 
