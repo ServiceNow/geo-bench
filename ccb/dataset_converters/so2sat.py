@@ -17,7 +17,9 @@ SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
 
 
-def make_sample(images: np.array, label: np.array, sample_name: str, task_specs: TaskSpecifications) -> Sample:
+def make_sample(
+    images: "np.typing.NDArray[np.int_]", label: int, sample_name: str, task_specs: TaskSpecifications
+) -> Sample:
     """Create a sample from images and label.
 
     Args:

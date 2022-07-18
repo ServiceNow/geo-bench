@@ -17,7 +17,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 import numpy as np
 import rasterio
@@ -98,7 +98,7 @@ def make_sample(image_A, image_B, mask, sample_name):
         sample_name str: Sample name; 'id_{:04d}'
 
     Returns:
-        sample io.Sample: Dataset sample
+        sample io.Sample: CCBDataset sample
     """
     # Todo: Convert images and mask into uint16.
     for j, image in enumerate([image_A, image_B]):
@@ -136,7 +136,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
 
     Args:
         max_count int: Maximum number of images to be converted
-        dataset_dir string: Dataset directory
+        dataset_dir string: CCBDataset directory
     """
     dataset_dir.mkdir(exist_ok=True, parents=True)  # Creates path to converted data
     partition = io.Partition()  # Creates dictionary to store train, val, test filenames
@@ -167,8 +167,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
             #   'image': torch.Tensor(2,3,1024,1024)
             #   'mask': torch.Tensor(2,1024,1024)) -
             sample_name = f"id_{i+offset:04d}"
-            image_A: Dict[str, np.array] = {}
-            image_B: Dict[str, np.array] = {}
+            image_A: Dict[str, Any] = {}
+            image_B: Dict[str, Any] = {}
             for j, image in enumerate([image_A, image_B]):
                 # TODO: why are we converting torch.Tensor to np.array here; seems like it would be more efficient to keep as Tensor?
                 image["image"] = np.array(tg_sample["image"][j, ...])

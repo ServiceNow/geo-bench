@@ -18,6 +18,7 @@ from ccb.torch_toolbox.model import (
     train_loss_generator,
     train_metrics_generator,
 )
+from ccb.torch_toolbox.modules import ClassificationHead
 
 
 class SegmentationGenerator(ModelGenerator):
@@ -113,7 +114,9 @@ class SegmentationGenerator(ModelGenerator):
             def forward(self, x):
                 return x
 
-        head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
+        head = ClassificationHead(
+            num_classes=1, hidden_size=1, in_ch=1, ret_identity=True
+        )  # pytorch image models already adds a classifier on top of the UNETs
         # head = head_generator(task_specs, shapes, hparams)
         loss = train_loss_generator(task_specs, config)
         train_metrics = train_metrics_generator(task_specs, config)

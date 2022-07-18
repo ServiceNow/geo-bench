@@ -4,9 +4,9 @@ import argparse
 import os
 
 import pytorch_lightning as pl
-import wandb
 from ruamel.yaml import YAML
 
+import wandb
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
@@ -27,7 +27,7 @@ def train(job_dir) -> None:
     # Load the user-specified model generator
     model_gen = get_model_generator(config["model"]["model_generator_module_name"])
 
-    with wandb.init(
+    with wandb.init(  # type: ignore
         dir=job_dir,
         project=config["wandb"]["project"],
         entity=config["wandb"]["entity"],
@@ -76,7 +76,7 @@ def train(job_dir) -> None:
 
         # update trainer module
         trainer.loggers = loggers
-        trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])
+        trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])  # type: ignore[attr-defined]
 
         ckpt_path = config["model"].get("ckpt_path", None)
 

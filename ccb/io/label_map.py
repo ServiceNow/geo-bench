@@ -68,7 +68,7 @@ def get_samples_and_verify_partition(dataset_dir, partition_name="default", max_
     Returns:
         list of samples
     """
-    dataset = io.Dataset(dataset_dir)
+    dataset = io.CCBDataset(dataset_dir)
     partition = dataset.load_partition(partition_name)
 
     partition, all_samples, squeezed_out, size_difference = clean_partition(partition)
