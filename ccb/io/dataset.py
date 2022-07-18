@@ -1,4 +1,4 @@
-"""Dataset."""
+"""CCBDataset."""
 from __future__ import annotations
 
 import ast
@@ -19,6 +19,7 @@ import numpy as np
 import rasterio
 from scipy.ndimage import zoom
 from torch import isin
+from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 
 from ccb.io.label import LabelType
@@ -347,7 +348,7 @@ class Band:
 
     def __init__(
         self,
-        data: np.ndarray,
+        data: "np.typing.NDArray[np.int_]",
         band_info: BandInfo,
         spatial_resolution: float,
         date: Union[datetime.datetime, datetime.date] = None,
@@ -537,7 +538,7 @@ def _map_bands(band_info_set) -> Tuple[Dict[str, int], List[BandInfo]]:
 class Sample(object):
     """Samples that contains all band information as well as input and label."""
 
-    def __init__(self, bands: List[Band], label, sample_name: str) -> None:
+    def __init__(self, bands: List[Band], label: Union[Band, int, None], sample_name: str) -> None:
         """Initialize new instance of Sample.
 
         Args:
@@ -775,7 +776,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     with h5py.File(sample_path, "w") as fp:
         bands = sample.bands
 
-        attr_dict = {}
+        attr_dict: Dict[Dict[str, Any]] = {}
         bands_order = []
 
         if sample.label is not None:
@@ -864,8 +865,8 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
 
     bands = sample.bands
-    band_dict = {}
-    attr_dict = {}
+    band_dict: Dict[str, Any] = {}
+    attr_dict: Dict[Dict[str, Any]] = {}
     bands_order = []
 
     if sample.label is not None:
@@ -1012,7 +1013,7 @@ def force_symlink(file1, file2):
             os.symlink(file1, file2)
 
 
-def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[List[str]]:
+def split_iid(sample_set: List[str], ratios: "np.typing.NDArray[np.int_]", rng=np.random) -> List[List[str]]:
     """Split a sample set iif.
 
     Args:
@@ -1031,7 +1032,7 @@ def split_iid(sample_set: List[str], ratios: np.ndarray, rng=np.random) -> List[
     if np.sum(ratios) > 1.001:
         raise ValueError(f"Ratios sum to greater than 1: sum({str(ratios)}) = {np.sum(ratios)}.")
 
-    sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int)
+    sizes = np.round(len(sample_set) * np.array(ratios)).astype(np.int_)
     sizes[-1] += len(sample_set) - np.sum(sizes)
     sample_set_copy = sample_set.copy()
     rng.shuffle(sample_set_copy)
@@ -1087,7 +1088,7 @@ class Partition:
         for split_name in split_names:
             union.extend(self.partition_dict[split_name])
 
-        subsets = split_iid(union, ratios=ratios)
+        subsets = split_iid(union, ratios=np.array(ratios))
 
         for split_name, subset in zip(split_names, subsets):
             self.partition_dict[split_name] = subset
@@ -1096,7 +1097,7 @@ class Partition:
         """Save partition.
 
         If as_default is True, create symlink named default_partition.json -> {partition_name}_partition.json
-        This will be loaded as the default partition by class Dataset
+        This will be loaded as the default partition by class CCBDataset
 
         Args:
             directory: path to directory where partition is stored
@@ -1132,8 +1133,8 @@ class GeneratorWithLength(object):
         return self.generator
 
 
-class Dataset:
-    """Dataset."""
+class CCBDataset(Dataset):
+    """CCBDataset."""
 
     def __init__(
         self,
@@ -1438,7 +1439,7 @@ class Dataset:
 
     def __repr__(self):
         """Return representation of dataset."""
-        return f"Dataset(dataset_dir={ self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
+        return f"CCBDataset(dataset_dir={ self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
 
 
 class Stats:
@@ -1518,8 +1519,8 @@ def compute_stats(values) -> Stats:
 
 
 def compute_dataset_statistics(
-    dataset: Dataset, n_value_per_image: int = 1000, n_samples: int = None
-) -> Tuple[Dict[str, np.array], Dict[str, Stats]]:
+    dataset: CCBDataset, n_value_per_image: int = 1000, n_samples: int = None
+) -> Tuple[Dict[str, "np.typing.NDArray[np.float_]"], Dict[str, Stats]]:
     """Compute statistics over an entire dataset.
 
     Args:
@@ -1532,9 +1533,9 @@ def compute_dataset_statistics(
     """
     accumulator: DefaultDict[str, List] = defaultdict(list)
     if n_samples is not None and n_samples < len(dataset):
-        indices = np.random.choice(len(dataset), n_samples, replace=False)
+        indices = np.random.choice(len(dataset), n_samples, replace=False)  # type: ignore
     else:
-        indices = list(range(len(dataset)))
+        indices = list(range(len(dataset)))  # type: ignore
 
     for i in tqdm(indices, desc="Extracting Statistics"):
         sample = dataset[i]
@@ -1562,12 +1563,12 @@ def compute_dataset_statistics(
         else:
             accumulator["label"].append(sample.label)
 
-    band_values: Dict[str, np.array] = {}
+    band_values: Dict[str, "np.typing.NDArray[np.float_]"] = {}
     band_stats: Dict[str, Stats] = {}
     for name, values in accumulator.items():
-        values = np.hstack(values)
-        band_values[name] = values
-        band_stats[name] = compute_stats(values)
+        stacked_values = np.hstack(values)
+        band_values[name] = stacked_values
+        band_stats[name] = compute_stats(stacked_values)
 
     return band_values, band_stats
 
@@ -1609,7 +1610,7 @@ def _date_from_str(date_str):
 
 
 def check_dataset_integrity(
-    dataset: Dataset, samples: List[Sample], max_count: int = None, assert_dense: bool = True
+    dataset: CCBDataset, samples: List[Sample], max_count: int = None, assert_dense: bool = True
 ) -> None:
     """Verify the intergrity, coherence and consistancy of a list of a dataset.
 
