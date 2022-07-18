@@ -95,7 +95,7 @@ def extract_images(
     resample: bool = False,
     fill_value: int = None,
     date_index: int = 0,
-) -> Tuple[List["np.typing.NDArray[np.uint]"], List["np.typing.NDArray[np.int_]"]]:
+) -> Tuple[List["np.typing.NDArray[np.uint]"], List[Union[int, Band]]]:
     """Extract images from samples.
 
     Args:
@@ -110,7 +110,7 @@ def extract_images(
         images and labels extracted from sample
     """
     images: List["np.typing.NDArray[np.uint]"] = []
-    labels: List["np.typing.NDArray[np.int_]"] = []
+    labels: List[Union[Band, int]] = []
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(
             sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
