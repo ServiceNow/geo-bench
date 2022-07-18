@@ -24,7 +24,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install poetry
     - name: Run mypy checks
-      run: poetry mypy ccb/ --ignore-missing-imports
+      run: poetry run python -m mypy ccb/ --ignore-missing-imports
   pytest:
     name: pytest
     runs-on: ${{ matrix.os }}
