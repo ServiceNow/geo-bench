@@ -393,7 +393,9 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[Tuple[in
 METRIC_MAP: Dict[str, Any] = {}
 
 
-def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> List[torchmetrics.Metric]:
+def train_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate loss function depending on the task_specs.
 
     We should implement basic loss and we can leverage the
@@ -406,13 +408,17 @@ def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, An
     Returns:
         metric collection used during training
     """
-    metrics: List[torchmetrics.Metric] = {
-        io.Classification: [torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)],  # type: ignore
-        io.MultiLabelClassification: [
-            # torchmetrics.Accuracy(dist_sync_on_step=True),
-            torchmetrics.F1Score(task_specs.label_type.n_classes)
-        ],
-        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)]),  # type: ignore
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [
+                # torchmetrics.Accuracy(dist_sync_on_step=True),
+                torchmetrics.F1Score(task_specs.label_type.n_classes)
+            ]
+        ),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
     # for metric_name in hparams.get("train_metrics", ()):
@@ -420,7 +426,9 @@ def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, An
     return metrics
 
 
-def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> List[torchmetrics.Metric]:
+def eval_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate eval function depending on the task_specs.
 
     Args:
@@ -430,13 +438,17 @@ def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any
     Returns:
         metric collection used during evaluation
     """
-    metrics: List[torchmetrics.Metric] = {  # type: ignore
-        io.Classification: [torchmetrics.Accuracy()],
-        io.SegmentationClasses: [
-            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
-            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
-        ],
-        io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {  # type: ignore
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy()]),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [
+                torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+                torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
+            ]
+        ),
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [torchmetrics.F1Score(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
     # for metric_name in hparams.get("eval_metrics", ()):

@@ -11,7 +11,7 @@ from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
 
-def train(job_dir) -> None:
+def train(job_dir: str) -> None:
     """Train a model from the model generator on datamodule.
 
     Args:
@@ -27,7 +27,7 @@ def train(job_dir) -> None:
     # Load the user-specified model generator
     model_gen = get_model_generator(config["model"]["model_generator_module_name"])
 
-    with wandb.init(  # type: ignore
+    with wandb.init(
         dir=job_dir,
         project=config["wandb"]["project"],
         entity=config["wandb"]["entity"],
@@ -90,7 +90,7 @@ def train(job_dir) -> None:
             yaml.dump(config, fd)
 
 
-def start():
+def start() -> None:
     """Start sweeping."""
     # Command line arguments
     parser = argparse.ArgumentParser(
