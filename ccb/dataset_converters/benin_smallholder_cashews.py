@@ -1,5 +1,5 @@
 """Benin Smallholder Cashew dataset."""
-# Smallholder Cashew Dataset will be downloaded by torchgeo
+# Smallholder Cashew CCBDataset will be downloaded by torchgeo
 #
 # 1) This requires Radiant MLHub package and API token
 #   pip install radiant_mlhub
@@ -11,16 +11,14 @@
 # More info on the dataset: https://mlhub.earth/10.34911/rdnt.hfv20i
 
 import datetime
-import os
-from multiprocessing import Pool
 from pathlib import Path
+from typing import Any, List
 
 import numpy as np
 from torchgeo.datasets import BeninSmallHolderCashews
 from tqdm import tqdm
 
 from ccb import io
-from ccb.io.dataset import CloudProbability, Sentinel2
 
 # Classification labels
 LABELS = (
@@ -32,79 +30,81 @@ LABELS = (
     "background",
     "uncertain",
 )
-DATES = (
-    "2019-11-05",
-    "2019-11-10",
-    "2019-11-15",
-    "2019-11-20",
-    "2019-11-30",
-    "2019-12-05",
-    "2019-12-10",
-    "2019-12-15",
-    "2019-12-20",
-    "2019-12-25",
-    "2019-12-30",
-    "2020-01-04",
-    "2020-01-09",
-    "2020-01-14",
-    "2020-01-19",
-    "2020-01-24",
-    "2020-01-29",
-    "2020-02-08",
-    "2020-02-13",
-    "2020-02-18",
-    "2020-02-23",
-    "2020-02-28",
-    "2020-03-04",
-    "2020-03-09",
-    "2020-03-14",
-    "2020-03-19",
-    "2020-03-24",
-    "2020-03-29",
-    "2020-04-03",
-    "2020-04-08",
-    "2020-04-13",
-    "2020-04-18",
-    "2020-04-23",
-    "2020-04-28",
-    "2020-05-03",
-    "2020-05-08",
-    "2020-05-13",
-    "2020-05-18",
-    "2020-05-23",
-    "2020-05-28",
-    "2020-06-02",
-    "2020-06-07",
-    "2020-06-12",
-    "2020-06-17",
-    "2020-06-22",
-    "2020-06-27",
-    "2020-07-02",
-    "2020-07-07",
-    "2020-07-12",
-    "2020-07-17",
-    "2020-07-22",
-    "2020-07-27",
-    "2020-08-01",
-    "2020-08-06",
-    "2020-08-11",
-    "2020-08-16",
-    "2020-08-21",
-    "2020-08-26",
-    "2020-08-31",
-    "2020-09-05",
-    "2020-09-10",
-    "2020-09-15",
-    "2020-09-20",
-    "2020-09-25",
-    "2020-09-30",
-    "2020-10-10",
-    "2020-10-15",
-    "2020-10-20",
-    "2020-10-25",
-    "2020-10-30",
-)
-DATES = [datetime.datetime.strptime(date, "%Y-%m-%d").date() for date in DATES]
+DATES: List[datetime.date] = [
+    datetime.datetime.strptime(date, "%Y-%m-%d").date()
+    for date in [
+        "2019-11-05",
+        "2019-11-10",
+        "2019-11-15",
+        "2019-11-20",
+        "2019-11-30",
+        "2019-12-05",
+        "2019-12-10",
+        "2019-12-15",
+        "2019-12-20",
+        "2019-12-25",
+        "2019-12-30",
+        "2020-01-04",
+        "2020-01-09",
+        "2020-01-14",
+        "2020-01-19",
+        "2020-01-24",
+        "2020-01-29",
+        "2020-02-08",
+        "2020-02-13",
+        "2020-02-18",
+        "2020-02-23",
+        "2020-02-28",
+        "2020-03-04",
+        "2020-03-09",
+        "2020-03-14",
+        "2020-03-19",
+        "2020-03-24",
+        "2020-03-29",
+        "2020-04-03",
+        "2020-04-08",
+        "2020-04-13",
+        "2020-04-18",
+        "2020-04-23",
+        "2020-04-28",
+        "2020-05-03",
+        "2020-05-08",
+        "2020-05-13",
+        "2020-05-18",
+        "2020-05-23",
+        "2020-05-28",
+        "2020-06-02",
+        "2020-06-07",
+        "2020-06-12",
+        "2020-06-17",
+        "2020-06-22",
+        "2020-06-27",
+        "2020-07-02",
+        "2020-07-07",
+        "2020-07-12",
+        "2020-07-17",
+        "2020-07-22",
+        "2020-07-27",
+        "2020-08-01",
+        "2020-08-06",
+        "2020-08-11",
+        "2020-08-16",
+        "2020-08-21",
+        "2020-08-26",
+        "2020-08-31",
+        "2020-09-05",
+        "2020-09-10",
+        "2020-09-15",
+        "2020-09-20",
+        "2020-09-25",
+        "2020-09-30",
+        "2020-10-10",
+        "2020-10-15",
+        "2020-10-20",
+        "2020-10-25",
+        "2020-10-30",
+    ]
+]
 
 noclouds_25 = [
     2,
@@ -134,7 +134,7 @@ noclouds_25 = [
     69,
 ]  # 25 dates with the least clouds
 
-BAND_INFO_LIST = io.sentinel2_13_bands[:]
+BAND_INFO_LIST: List[Any] = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
 BAND_INFO_LIST.append(io.CloudProbability(alt_names=("CPL", "CLD"), spatial_resolution=10))
@@ -148,8 +148,8 @@ NOCLOUDS = True
 
 # Paths
 DATASET_NAME = "smallholder_cashew"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 def get_sample_name(total_samples) -> str:
@@ -177,7 +177,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     cashew = BeninSmallHolderCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
 
     if GROUP_BY_TIMESTEP:
-        n_time_steps = (len(noclouds_25) if NOCLOUDS else N_TIMESTEPS,)
+        n_time_steps = len(noclouds_25) if NOCLOUDS else N_TIMESTEPS
     else:
         n_time_steps = 1
 

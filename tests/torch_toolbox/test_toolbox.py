@@ -1,7 +1,6 @@
 import os
 import pickle
 import tempfile
-from datetime import datetime
 
 import pytest
 from ruamel.yaml import YAML
@@ -11,24 +10,19 @@ from ccb.experiment.experiment import Job
 from ccb.torch_toolbox import trainer
 
 
-def train_job_on_task(config, hparams, task_specs, threshold, check_logs=True, metric_name="Accuracy", **kwargs):
+def train_job_on_task(config, task_specs, threshold, check_logs=True, metric_name="Accuracy", **kwargs):
     """Based on a job train model_generator on task.
 
     Args:
         model_generator: model_generator that has been instantiated and called with desired hparams
         config: config file
-        hparams: hparam file
         task_specs: task specifications which to train model on
-
     """
     with tempfile.TemporaryDirectory(prefix="test") as job_dir:
-        # job_dir = f"{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
-        # os.makedirs(job_dir, exist_ok=True)
 
         job = Job(job_dir)
         task_specs.save(job.dir)
 
-        job.save_hparams(hparams)
         job.save_config(config)
 
         trainer.train(job_dir=job_dir)
@@ -39,7 +33,6 @@ def train_job_on_task(config, hparams, task_specs, threshold, check_logs=True, m
             metrics = job.get_metrics()
             print(metrics)
             print(task_specs.benchmark_name)
-            print(hparams)
             assert (
                 float(metrics[f"test_{metric_name}"]) > threshold
             )  # has to be better than random after seeing 20 batches
@@ -58,15 +51,17 @@ def test_toolbox_segmentation():
     with open(os.path.join("tests", "configs", "base_segmentation.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    with open(os.path.join("tests", "configs", "segmentation_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
-
-    train_job_on_task(config=config, hparams=hparams, task_specs=task_specs, threshold=0.05, metric_name="JaccardIndex")
+    train_job_on_task(config=config, task_specs=task_specs, threshold=0.04, metric_name="JaccardIndex")
 
 
-# this test is too slow
-@pytest.mark.slow
-def test_toolbox_timm():
+@pytest.mark.parametrize(
+    "backbone, model_generator_module_name",
+    [
+        ("resnet18", "ccb.torch_toolbox.model_generators.timm_generator"),
+        ("conv4", "ccb.torch_toolbox.model_generators.conv4"),
+    ],
+)
+def test_toolbox_classification(backbone, model_generator_module_name):
     with open(
         os.path.join("tests", "data", "ccb-test-classification", "brick_kiln_v1.0", "task_specs.pkl"), "rb"
     ) as fd:
@@ -76,10 +71,10 @@ def test_toolbox_timm():
     with open(os.path.join("tests", "configs", "base_classification.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    with open(os.path.join("tests", "configs", "classification_hparams.yaml"), "r") as yamlfile:
-        hparams = yaml.load(yamlfile)
+    config["model"]["backbone"] = backbone
+    config["model"]["model_generator_module_name"] = model_generator_module_name
 
-    train_job_on_task(config=config, hparams=hparams, task_specs=task_specs, threshold=0.40)
+    train_job_on_task(config=config, task_specs=task_specs, threshold=0.40)
 
 
 def test_toolbox_getitem():

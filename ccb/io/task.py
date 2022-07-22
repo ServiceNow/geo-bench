@@ -10,7 +10,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from ccb import io
-from ccb.io.dataset import BandInfo, Dataset
+from ccb.io.dataset import BandInfo, CCBDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
 from ccb.io.label import Classification
 
 
@@ -19,16 +19,16 @@ class TaskSpecifications:
 
     def __init__(
         self,
-        dataset_name: str = None,
+        dataset_name: str,
+        bands_info: List[Any],
+        spatial_resolution: float,
         benchmark_name: str = None,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_info: List[BandInfo] = None,
         bands_stats=None,
         label_type=None,
         eval_loss=None,
         eval_metrics=None,
-        spatial_resolution: float = None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
 
@@ -72,13 +72,13 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        benchmark_dir: Path = None,
+        benchmark_dir: str,
         split: Union[str, None] = None,
         partition_name: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
         format: str = "hdf5",
-    ) -> Dataset:
+    ) -> CCBDataset:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
@@ -89,9 +89,7 @@ class TaskSpecifications:
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
-        if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name
-        return Dataset(
+        return CCBDataset(
             dataset_dir=self.get_dataset_dir(benchmark_dir),
             split=split,
             partition_name=partition_name,
@@ -100,64 +98,41 @@ class TaskSpecifications:
             band_names=band_names,
         )
 
-    def get_dataset_dir(self, benchmark_dir: str = None):
+    def get_dataset_dir(self, benchmark_dir: str):
         """Retrieve directory where dataset is read."""
-        # benchmark_name = self.benchmark_name or "default"
-        # benchmark_dir = get_benchmark_dir(benchmark_name)
-        if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name
         return Path(benchmark_dir) / self.dataset_name
 
-    # # for backward compatibility (we'll remove soon)
-    # @cached_property
-    # def benchmark_name(self):
-    #     """Return benchmark name."""
-    #     return "default"
-
-    def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
+    def get_label_map(self, benchmark_dir: str) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
+
+        Args:
+            benchmark_dir: benchmark directory from which to retrieve dataset
+
 
         Returns:
             label map if present or None
         """
-        label_map_path = self.get_dataset_dir() / "label_map.json"
+        label_map_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
-                label_map = json.load(fp)
+                label_map: Dict[str, List[str]] = json.load(fp)
             return label_map
         else:
             return None
 
-    @cached_property
-    def label_stats(self) -> Union[None, Dict[str, List[Any]]]:
+    def label_stats(self, benchmark_dir: str) -> Union[None, Dict[str, List[Any]]]:
         """Retriebe the label stats, a dictionary defining labels to statistics.
 
         Returns:
             label stats if present or None
         """
-        label_stats_path = self.get_dataset_dir() / "label_stats.json"
+        label_stats_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_stats.json"
         if label_stats_path.exists():
             with open(label_stats_path, "r") as fp:
                 label_stats = json.load(fp)
             return label_stats
         else:
             return None
-
-
-# def get_benchmark_dir(benchmark_name: str) -> Path:
-#     """Retrieve benchmark directory depending on experiment or testing case.
-
-#     Args:
-#         benchmark_name: name of the benchmark
-
-#     Returns:
-#         path to benchmark directory
-#     """
-#     if benchmark_name in ["ccb-test-classification", "ccb-test-segmentation"]:
-#         ccb_dir = Path(os.path.abspath(os.path.join("tests", "data")))
-#     else:
-#         ccb_dir: Path = CCB_DIR
-#     return ccb_dir / benchmark_name
 
 
 def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, None]:
@@ -169,9 +144,9 @@ def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, Non
     Returns:
         task specifications for the desired benchmark dataset
     """
-    benchmark_dir = Path(benchmark_dir)
+    benchmark_dir_path = Path(benchmark_dir)
 
-    for dataset_dir in benchmark_dir.iterdir():
+    for dataset_dir in benchmark_dir_path.iterdir():
         if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
@@ -284,6 +259,7 @@ mnist_task_specs = TaskSpecifications(
     dataset_name="MNIST",
     benchmark_name="test",
     patch_size=(28, 28),
+    spatial_resolution=1.0,
     bands_info=[BandInfo("grey")],
     label_type=Classification(10),
     eval_loss=CrossEntropy(),
@@ -294,6 +270,7 @@ imagenet_task_specs = TaskSpecifications(
     dataset_name="imagenet",
     benchmark_name="imagenet",
     patch_size=(256, 256),
+    spatial_resolution=1.0,
     bands_info=[BandInfo("red"), BandInfo("green"), BandInfo("blue")],
     label_type=Classification(1000),
     eval_loss=CrossEntropy(),

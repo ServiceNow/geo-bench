@@ -3,7 +3,7 @@
 import os
 import random
 import string
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 import pytorch_lightning as pl
@@ -32,7 +32,7 @@ class Model(LightningModule):
         backbone,
         head: ClassificationHead,
         loss_function,
-        hyperparameters,
+        config,
         train_metrics=None,
         eval_metrics=None,
     ) -> None:
@@ -53,7 +53,7 @@ class Model(LightningModule):
         self.loss_function = loss_function
         self.train_metrics = train_metrics
         self.eval_metrics = eval_metrics
-        self.hyperparameters = hyperparameters
+        self.config = config
 
     def forward(self, x):
         """Forward input through model.
@@ -64,7 +64,7 @@ class Model(LightningModule):
         Returns:
             feature representation
         """
-        if self.hyperparameters["lr_backbone"] == 0:
+        if self.config["model"]["lr_backbone"] == 0:
             self.backbone.eval()
             with torch.no_grad():
                 features = self.backbone(x)
@@ -73,7 +73,7 @@ class Model(LightningModule):
         logits = self.head(features)
         return logits
 
-    def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
+    def training_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Dict[str, Tensor]:  # type: ignore
         """Define steps taken during training mode.
 
         Args:
@@ -89,7 +89,7 @@ class Model(LightningModule):
         loss_train = self.loss_function(output, target)
         return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
 
-    def training_step_end(self, outputs: Dict[str, Tensor]) -> None:
+    def training_step_end(self, outputs: Dict[str, Tensor]) -> None:  # type: ignore
         """Define steps taken after training phase.
 
         Args:
@@ -99,7 +99,7 @@ class Model(LightningModule):
         self.log("train_loss", outputs["loss"], logger=True)
         self.train_metrics.update(outputs["output"], outputs["target"])
 
-    def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:
+    def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:  # type: ignore
         """Define actions after a training epoch.
 
         Args:
@@ -108,7 +108,7 @@ class Model(LightningModule):
         self.log_dict({f"train_{k}": v for k, v in self.train_metrics.compute().items()}, logger=True)
         self.train_metrics.reset()
 
-    def eval_step(self, batch: Tensor, batch_idx: int, prefix: str) -> Dict[str, Tensor]:
+    def eval_step(self, batch: Dict[str, Tensor], batch_idx: int, prefix: str) -> Dict[str, Tensor]:
         """Define steps taken during validation and testing.
 
         Args:
@@ -187,7 +187,7 @@ class Model(LightningModule):
         eval_metrics = self.eval_metrics.compute()
         self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
         self.eval_metrics.reset()
-        if self.hyperparameters.get("log_segmentation_masks", False):
+        if self.config["model"].get("log_segmentation_masks", False):
             import wandb
 
             current_element = int(torch.randint(0, outputs[0]["input"].shape[0], size=(1,)))
@@ -215,12 +215,12 @@ class Model(LightningModule):
         # backbone_parameters = list(filter(lambda p: p.requires_grad, backbone_parameters))
         head_parameters = self.head.parameters()
         # head_parameters = list(filter(lambda p: p.requires_grad, head_parameters))
-        lr_backbone = self.hyperparameters["lr_backbone"]
-        lr_head = self.hyperparameters["lr_head"]
-        momentum = self.hyperparameters.get("momentum", 0.9)
-        nesterov = self.hyperparameters.get("nesterov", True)
-        weight_decay = self.hyperparameters.get("weight_decay", 1e-4)
-        optimizer_type = self.hyperparameters.get("optimizer", "sgd").lower()
+        lr_backbone = self.config["model"]["lr_backbone"]
+        lr_head = self.config["model"]["lr_head"]
+        momentum = self.config["model"].get("momentum", 0.9)
+        nesterov = self.config["model"].get("nesterov", True)
+        weight_decay = self.config["model"].get("weight_decay", 1e-4)
+        optimizer_type = self.config["model"].get("optimizer", "sgd").lower()
         to_optimize = []
         for params, lr in [(backbone_parameters, lr_backbone), (head_parameters, lr_head)]:
             if lr > 0:
@@ -232,9 +232,9 @@ class Model(LightningModule):
         elif optimizer_type == "adamw":
             optimizer = torch.optim.AdamW(to_optimize, weight_decay=weight_decay)
 
-        if self.hyperparameters.get("scheduler", None) == "step":
+        if self.config["model"].get("scheduler", None) == "step":
             scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer, milestones=self.hyperparameters["lr_milestones"], gamma=self.hyperparameters["lr_gamma"]
+                optimizer, milestones=self.config["model"]["lr_milestones"], gamma=self.config["model"]["lr_gamma"]
             )
             return [optimizer], [scheduler]
         else:
@@ -259,12 +259,12 @@ class ModelGenerator:
         """
         self.model_path = model_path
 
-    def generate_model(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def generate_model(self, task_specs: TaskSpecifications, config: Dict[str, Any]):
         """Generate a Model to train.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            config: config dictionary containing experiment and hyperparameters configurations
 
         Raises:
             NotImplementedError
@@ -275,14 +275,13 @@ class ModelGenerator:
             loss = train_loss_generator(task_specs, hyperparams) # provided by the toolbox or the user can implement their own
             return Model(backbone, head, loss, hyperparams) # base model provided by the toolbox
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to specify this function that returns model.")
 
-    def generate_trainer(self, config: dict, hparams: dict, job) -> pl.Trainer:
+    def generate_trainer(self, config: dict, job) -> pl.Trainer:
         """Configure a pytroch lightning Trainer.
 
         Args:
             config: dictionary containing config
-            hparams: hparams to pass to track with logger
             job: job being executed to let logger know directory
 
         Returns:
@@ -301,7 +300,8 @@ class ModelGenerator:
                 group=config["wandb"].get("wandb_group", None),
                 name=config["wandb"].get("name", None),
                 resume="allow",
-                config=hparams,
+                config=config["model"],
+                mode=config["wandb"].get("mode", "online"),
             ),
         ]
 
@@ -316,7 +316,9 @@ class ModelGenerator:
             **config["pl"],
             default_root_dir=job.dir,
             callbacks=[
-                EarlyStopping(monitor="val_loss", mode="min", patience=hparams.get("patience", 30), min_delta=1e-5),
+                EarlyStopping(
+                    monitor="val_loss", mode="min", patience=config["pl"].get("patience", 30), min_delta=1e-5
+                ),
                 checkpoint_callback,
             ],
             logger=loggers,
@@ -324,12 +326,12 @@ class ModelGenerator:
 
         return trainer
 
-    def get_collate_fn(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any]):
+    def get_collate_fn(self, task_specs: TaskSpecifications, config: Dict[str, Any]):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            config: dictionary containing hyperparameters of the experiment
 
         Returns:
             A callable mapping a list of Sample to a tuple containing stacked inputs and labels. The stacked inputs
@@ -341,23 +343,24 @@ class ModelGenerator:
         Example:
             return ccb.torch_toolbox.model.collate_rgb
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define collate function.")
 
-    def get_transform(self, task_specs: TaskSpecifications, hyperparams: Dict[str, Any], train: bool = True):
+    def get_transform(self, task_specs: TaskSpecifications, config: Dict[str, Any], train: bool = True):
         """Generate the collate functions for stacking the mini-batch.
 
         Args:
             task_specs: an object describing the task to be performed
-            hyperparams: dictionary containing hyperparameters of the experiment
+            hparams: dictionary containing hyperparameters of the experiment
+            config: config file
             train: whether to return train or evaluation transforms
 
         Returns:
             A callable taking an object of type Sample as input. The return will be fed to the collate_fn
         """
-        raise NotImplementedError()
+        raise NotImplementedError("Necessary to define a transform function.")
 
 
-def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], hyperparams: Dict[str, Any]):
+def head_generator(task_specs: TaskSpecifications, features_shape: List[Tuple[int, ...]], config: Dict[str, Any]):
     """Return an appropriate head based on the task specifications.
 
     We can use task_specs.task_type as follow:
@@ -372,79 +375,27 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
         hyperparams: dict of hyperparameters.
 
     """
+    assert (
+        config["model"]["head_type"] == "linear"
+    ), f"Currently only support linear head type, but got {config['model']['head_type']}."
     if isinstance(task_specs.label_type, io.Classification):
-        if hyperparams["head_type"] == "linear":
-            in_ch, *other_dims = features_shape[-1]
-            out_ch = task_specs.label_type.n_classes
-            return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
+        in_ch, *other_dims = features_shape[-1]
+        out_ch = task_specs.label_type.n_classes
+        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
     elif isinstance(task_specs.label_type, io.MultiLabelClassification):
-        if hyperparams["head_type"] == "linear":
-            in_ch, *other_dims = features_shape[-1]
-            out_ch = task_specs.label_type.n_classes
-            return ClassificationHead(in_ch, out_ch, hidden_size=hyperparams["hidden_size"])
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
-    elif isinstance(task_specs.label_type, io.SemanticSegmentation):
-        if hyperparams["head_type"].split("-")[0] == "smp":  # smp: segmentation-models-pytorch
-            return lambda *args: args
-        else:
-            raise ValueError(f"Unrecognized head type: {hyperparams['head_type']}")
+        in_ch, *other_dims = features_shape[-1]
+        out_ch = task_specs.label_type.n_classes
+        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
     else:
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
 
-def vit_head_generator(task_specs: TaskSpecifications, hyperparams: Dict[str, Any], input_shape: int):
-    """Generate head for VIT.
-
-    ViT architectures may require different type of heads.
-    In which case, we should provide this to the users as well. TO BE DISCUSSED.
-
-    Args:
-        task_specs: an object describing the task to be performed
-        hyperparams: dictionary containing hyperparameters of the experiment
-        input_shape: input shape to transformer
-
-    """
-    pass
+METRIC_MAP: Dict[str, Any] = {}
 
 
-def compute_accuracy(
-    output: Tensor, target: Tensor, prefix: str, topk: Tuple[int] = (1,), *args, **kwargs
-) -> Dict[str, float]:
-    """Compute the accuracy over the k top predictions for the specified values of k.
-
-    Args:
-        output: model output
-        target: target to compute accuracy on
-        pefix: prefix for k
-        topk: define k values for which to compute accuracy
-        *args: Variable length argument list.
-        **kwargs: Arbitrary keyword arguments.
-
-    Returns:
-        computed accuracy values for each k
-    """
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = {}
-        for k in topk:
-            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
-            res[f"{prefix}_accuracy-{k}"] = correct_k.mul_(100.0 / batch_size)
-        return res
-
-
-METRIC_MAP = {}
-
-
-def train_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> torchmetrics.MetricCollection:
+def train_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate loss function depending on the task_specs.
 
     We should implement basic loss and we can leverage the
@@ -452,27 +403,32 @@ def train_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, A
 
     Args:
         task_specs: an object describing the task to be performed
-        hyperparams: dictionary containing hyperparameters of the experiment
+        config: dictionary containing hyperparameters of the experiment
 
     Returns:
         metric collection used during training
     """
-    metrics = {
-        io.Classification: [torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)],
-        io.MultiLabelClassification: [
-            # torchmetrics.Accuracy(dist_sync_on_step=True),
-            torchmetrics.F1Score(task_specs.label_type.n_classes)
-        ],
-        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)]),  # type: ignore
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [
+                # torchmetrics.Accuracy(dist_sync_on_step=True),
+                torchmetrics.F1Score(task_specs.label_type.n_classes)
+            ]
+        ),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
-    for metric_name in hparams.get("train_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("train_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
+    return metrics
 
-    return torchmetrics.MetricCollection(metrics)
 
-
-def eval_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> torchmetrics.MetricCollection:
+def eval_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate eval function depending on the task_specs.
 
     Args:
@@ -482,19 +438,23 @@ def eval_metrics_generator(task_specs: TaskSpecifications, hparams: Dict[str, An
     Returns:
         metric collection used during evaluation
     """
-    metrics = {
-        io.Classification: [torchmetrics.Accuracy()],
-        io.SegmentationClasses: [
-            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
-            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
-        ],
-        io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {  # type: ignore
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy()]),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [
+                torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+                torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
+            ]
+        ),
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [torchmetrics.F1Score(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
-    for metric_name in hparams.get("eval_metrics", ()):
-        metrics.extend(METRIC_MAP[metric_name])
+    # for metric_name in hparams.get("eval_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
 
-    return torchmetrics.MetricCollection(metrics)
+    return metrics
 
 
 def _balanced_binary_cross_entropy_with_logits(outputs: Tensor, targets: Tensor) -> Tensor:
@@ -512,12 +472,12 @@ def _balanced_binary_cross_entropy_with_logits(outputs: Tensor, targets: Tensor)
     return loss
 
 
-def train_loss_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> Dict:
+def train_loss_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> Callable[[Tensor], Tensor]:
     """Return the appropriate loss function depending on the task_specs.
 
     Args:
         task_specs: an object describing the task to be performed
-        hyperparams: dictionary containing hyperparameters of the experiment
+        config: dictionary containing hyperparameters of the experiment
 
     Returns:
         available loss functions for training
@@ -528,7 +488,7 @@ def train_loss_generator(task_specs: TaskSpecifications, hparams: Dict[str, Any]
         io.SegmentationClasses: F.cross_entropy,
     }[task_specs.label_type.__class__]
 
-    return loss
+    return loss  # type: ignore
 
 
 class BackBone(torch.nn.Module):
@@ -538,60 +498,26 @@ class BackBone(torch.nn.Module):
 
     """
 
-    def __init__(self, model_path: str, task_specs: TaskSpecifications, hparams: Dict[str, Any]) -> None:
+    def __init__(self, model_path: str, task_specs: TaskSpecifications, config: Dict[str, Any]) -> None:
         """Initialize a new instance of Backbone.
 
         Args:
             model_path:
             task_specs: an object describing the task to be performed
-            hparams: dictionary containing hyperparameters of the experiment
+            config: dictionary containing hyperparameters of the experiment
 
         """
         super().__init__()
         self.model_path = model_path
         self.task_specs = task_specs
-        self.hparams = hparams
+        self.config = config
 
-    def forward(self, data_dict: Dict[str, Tensor]) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         """Forward input through backbone.
 
         Args:
-            data_dict:  is a collection of tensors returned by the data loader.
+            x: input tensor to backbone
 
         Returns:
             the encoded representation or a list of representations for
         """
-
-
-def collate_rgb(samples: List[io.Sample]) -> Dict[str, Tensor]:
-    """Collate function for RGB images.
-
-    Args:
-        samples: list of samples
-
-    Returns:
-        collated version of samples
-    """
-    x_list = []
-    label_list = []
-    for sample in samples:
-        rgb_image, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
-        x_list.append(torch.from_numpy(np.moveaxis(rgb_image.astype(np.float32), 2, 0)))
-        label_list.append(sample.label)
-
-    return {"input": torch.stack(x_list), "label": stack_labels(label_list)}
-
-
-def stack_labels(label_list: List[Tensor]) -> Tensor:
-    """Stack labels for collate function.
-
-    Args:
-        label_list: list of labels to be stacked
-
-    Returns:
-        stacked labels
-    """
-    if isinstance(label_list[0], int):
-        return torch.tensor(label_list)
-    else:
-        raise NotImplementedError()
