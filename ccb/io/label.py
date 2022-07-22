@@ -37,8 +37,6 @@ class Classification(LabelType):
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names
-        elif hasattr(self, "class_name"):
-            return self.class_name  # for backward compatibility with saved pickles with a typo
         else:
             return None
 

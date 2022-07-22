@@ -3,7 +3,7 @@ import shutil
 from collections import defaultdict
 from math import floor
 from pathlib import Path
-from typing import Dict, List
+from typing import DefaultDict, Dict, List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -50,7 +50,9 @@ def subsample(partition: io.Partition, max_sizes: Dict[str, int], rng=np.random)
     return new_partition
 
 
-def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict[str, List[str]]):
+def _make_split_label_maps(
+    label_map: Dict[int, List[str]], partition_dict: Dict[str, List[str]]
+) -> Dict[str, DefaultDict[int, List[str]]]:
     """Organize label map into 'train', 'valid' and 'test'.
 
     Args:
@@ -60,7 +62,7 @@ def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict
     Retruns:
         split label map
     """
-    split_label_maps = {}
+    split_label_maps: Dict[str, DefaultDict[int, List[str]]] = {}
     reverse_label_map = {}
     for label, sample_names in label_map.items():
         for sample_name in sample_names:
@@ -73,14 +75,14 @@ def _make_split_label_maps(label_map: Dict[int, List[str]], partition_dict: Dict
     return split_label_maps
 
 
-def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
+def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]) -> Dict[str, DefaultDict[int, List[str]]]:
     """Make sure each class has statisfies `min_class_sizes`.
 
     Args:
         split_label_maps:
         min_class_sizes:
     """
-    new_split_label_maps = defaultdict(dict)
+    new_split_label_maps: Dict[str, DefaultDict[int, List[str]]] = {}
     for label in split_label_maps["train"].keys():
 
         ok = True
@@ -94,7 +96,7 @@ def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]):
     return new_split_label_maps
 
 
-def assert_no_overlap(split_label_maps: Dict[str, Dict[int, List[str]]]) -> None:
+def assert_no_overlap(split_label_maps: Dict[str, DefaultDict[int, List[str]]]) -> None:
     """Asser that label map is a partition and that no sample are common across splits.
 
     Args:
@@ -196,7 +198,7 @@ def resample_from_stats(
     verbose: bool = True,
     rng=np.random,
     return_prob: bool = False,
-) -> io.Partition:
+) -> Union[io.Partition, Tuple[io.Partition, Dict[str, List[str]]]]:
     """Resample based on statistics.
 
     Args:
@@ -211,7 +213,7 @@ def resample_from_stats(
         resampled partition
     """
     partition_dict = defaultdict(list)
-    prob_dict = {}
+    prob_dict: Dict[str, List[str]] = {}
     for split, sample_names in partition.partition_dict.items():
 
         if len(sample_names) > max_sizes[split]:
@@ -245,7 +247,7 @@ def transform_dataset(
     sample_converter=None,
     delete_existing: bool = False,
     hdf5: bool = True,
-) -> None:
+) -> Path:
     """Transform dataset.
 
     Args:
@@ -257,7 +259,7 @@ def transform_dataset(
         delete_existing:
         hdf5:
     """
-    dataset = io.Dataset(dataset_dir, partition_name=partition_name)
+    dataset = io.CCBDataset(dataset_dir, partition_name=partition_name)
     task_specs = dataset.task_specs
     task_specs.benchmark_name = dataset_dir.parent.name
     new_dataset_dir = new_benchmark_dir / dataset_dir.name
@@ -307,7 +309,7 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
             delete_existing=True,
         )
         print(f"  Producing band stats for {dataset_name}.")
-        bandstats.produce_band_stats(io.Dataset(new_dataset_dir))
+        bandstats.produce_band_stats(io.CCBDataset(new_dataset_dir))
         print()
 
 

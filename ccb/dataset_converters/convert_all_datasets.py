@@ -30,7 +30,7 @@ def convert(module_name: str) -> None:
     """
     converter = import_module("ccb.dataset_converters." + module_name)
     assert Path(converter.DATASET_DIR).parent == Path(
-        io.datasets_dir
+        str(io.datasets_dir)
     ), f"{Path(converter.DATASET_DIR).parent} vs {io.datasets_dir}"
     assert Path(converter.DATASET_DIR).name == converter.DATASET_NAME
 

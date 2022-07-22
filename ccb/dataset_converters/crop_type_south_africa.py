@@ -2,7 +2,7 @@
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any, List, Sequence
 
 import numpy as np
 import rasterio
@@ -15,7 +15,7 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "southAfricaCropType"
-SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)
+SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)  # type: ignore
 IMG_DIR = "ref_south_africa_crops_competition_v1_train_source_s2"
 LABEL_DIR = "ref_south_africa_crops_competition_v1_train_labels"
 SRC_TRANSFORM = Affine(10.0, 0.0, 331040.0, 0.0, -10.0, -3714560.0)
@@ -66,7 +66,7 @@ BANDNAMES = [
     "CLM.tif",
 ]
 
-BAND_INFO_LIST = io.sentinel2_13_bands[:]
+BAND_INFO_LIST: List[Any] = io.sentinel2_13_bands[:]
 dropped_band = BAND_INFO_LIST.pop(10)
 assert dropped_band.name == "10 - SWIR - Cirrus"
 BAND_INFO_LIST.extend([io.CloudProbability(alt_names=("CPL", "CLM"))])
@@ -75,7 +75,7 @@ BAND_INFO_LIST.extend([io.CloudProbability(alt_names=("CPL", "CLM"))])
 LABEL_BAND = io.SegmentationClasses("label", spatial_resolution=10, n_classes=len(crop_labels))
 
 
-def compute_area_with_labels(mask: np.array) -> float:
+def compute_area_with_labels(mask: "np.typing.NDArray[np.int_]") -> float:
     """Compute percentage of mask that contain labels.
 
     Args:
@@ -90,8 +90,8 @@ def compute_area_with_labels(mask: np.array) -> float:
 
 
 def load_images(
-    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Tuple[float] = (0.0, 0.1), num_imgs: int = 5
-) -> np.array:
+    filepaths: List[str], band_names: List[str], dest_crs: CRS, cloud_p: Sequence[float] = (0.0, 0.1), num_imgs: int = 5
+) -> "np.typing.NDArray[np.int_]":
     """Load the desired input image.
 
     Args:
@@ -121,7 +121,7 @@ def load_images(
     return imgs
 
 
-def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> np.array:
+def load_image_bands(filepath: str, bandnames: List[str], dest_crs: CRS) -> "np.typing.NDArray[np.int_]":
     """Load seperate band images.
 
     Args:
@@ -166,7 +166,7 @@ def load_warp_file(filepath: str, dest_crs: CRS) -> DatasetReader:
         return src
 
 
-def load_tif_mask(filepath: str, dest_crs: CRS) -> np.array:
+def load_tif_mask(filepath: str, dest_crs: CRS) -> "np.typing.NDArray[np.int_]":
     """Load the mask.
 
     Args:
@@ -185,7 +185,9 @@ def load_tif_mask(filepath: str, dest_crs: CRS) -> np.array:
     return label
 
 
-def make_sample(images: np.array, mask: np.array, sample_name: str) -> io.Sample:
+def make_sample(
+    images: "np.typing.NDArray[np.int_]", mask: "np.typing.NDArray[np.int_]", sample_name: str
+) -> io.Sample:
     """Make a single sample from the dataset.
 
     Args:
@@ -256,7 +258,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         path = os.path.join(label_dir, dirpath)
         # to extract date information and id to match input images
         match = re.search(label_dir_regex, path)
-        id = "_source_s2_" + match.group("id")
+        if match is not None:
+            id = "_source_s2_" + match.group("id")
 
         matched_image_dirs = [os.path.join(img_dir, dir) for dir in img_dir_paths if id in dir]
 
