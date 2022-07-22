@@ -29,8 +29,8 @@ def test_pack_4d_dense():
         random_band((6, 8), "band_3", ("alt_band_3",)),
     ]
     sample = io.Sample(bands, np.random.randint(2), "test_sample")
-    image, dates, band_names = sample.pack_to_4d(resample=True)
-    image_, _ = sample.pack_to_3d(resample=True)
+    image, dates, band_names = sample.pack_to_4d(resample=True, band_names=("band_1", "band_2", "band_3"))
+    image_, _ = sample.pack_to_3d(resample=True, band_names=("band_1", "band_2", "band_3"))
 
     np.testing.assert_array_equal(image[0], image_)
 
@@ -75,13 +75,19 @@ def test_write_read():
             for band in sample.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         partition = io.Partition()
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
@@ -119,7 +125,13 @@ def test_dataset_partition():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         # Create default partition
@@ -137,7 +149,7 @@ def test_dataset_partition():
         partition.save(directory=dataset_dir, partition_name="funky")
 
         # Test 1: load partition default, no split
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "default"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -171,7 +183,7 @@ def test_dataset_partition():
         with pytest.raises(IndexError):  # default:test is empty
             ds[0]
 
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="funky")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="funky")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "funky"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -209,7 +221,7 @@ def test_dataset_withnopartition():
         band_names = [band.band_info.name for band in sample1.bands]
 
         with pytest.raises(ValueError):  # raise ValueError because not partition exists
-            _ = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+            _ = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
 
 
 def custom_band(value, shape=(4, 4), band_name="test_band"):
@@ -249,7 +261,13 @@ def test_dataset_statistics():
             for band in sample1.bands
         ]
 
-        task_specs = io.TaskSpecifications(dataset_name="test", patch_size=(16, 16), bands_info=bands_info)
+        task_specs = io.TaskSpecifications(
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
+        )
         task_specs.save(dataset_dir, overwrite=True)
 
         # Default partition, only train
@@ -261,14 +279,14 @@ def test_dataset_statistics():
 
         # Compute statistics : this will create all_bandstats.json
         produce_band_stats(
-            io.Dataset(dataset_dir, band_names=band_names, partition_name="default"),
+            io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default"),
             use_splits=False,
             values_per_image=None,
             samples=None,
         )
 
         # Reload dataset with statistics
-        ds2 = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds2 = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
 
         statistics = ds2.band_stats
 

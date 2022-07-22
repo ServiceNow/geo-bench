@@ -14,7 +14,7 @@
 import csv
 import re
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Set, Tuple, Union
 from warnings import warn
 
 import numpy as np
@@ -32,17 +32,17 @@ if SEGMENTATION:
 else:
     DATASET_NAME = "NeonTree_detection"
 
-SRC_DATASET_DIR = io.CCB_DIR / "source" / "NeonTree"
+SRC_DATASET_DIR = io.CCB_DIR / "source" / "NeonTree"  # type: ignore
 # ZENODO_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME + "_zenodo")
-ZENODO_DATASET_DIR = SRC_DATASET_DIR / "_zenodo"
+ZENODO_DATASET_DIR = SRC_DATASET_DIR / "_zenodo"  # type: ignore
 
 DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
 
 
 if SEGMENTATION:
-    label_type = io.SegmentationClasses("label", spatial_resolution=0.1, n_classes=2, class_names=["no tree", "tree"])
+    label_type = io.SegmentationClasses("label", spatial_resolution=0.1, n_classes=2, class_names=["no tree", "tree"])  # type: ignore
 else:
-    label_type = io.Detection()
+    label_type = io.Detection()  # type: ignore
 
 
 def read_xml(xml_path) -> List[Dict[str, int]]:
@@ -75,7 +75,7 @@ def read_xml(xml_path) -> List[Dict[str, int]]:
     return boxes
 
 
-def load_tif(tif_path) -> np.array:
+def load_tif(tif_path) -> Tuple["np.typing.NDArray[np.int_]", Any, Any, Any]:
     """Load tif file.
 
     Args:
@@ -85,14 +85,14 @@ def load_tif(tif_path) -> np.array:
         tif image data array
     """
     with rasterio.open(tif_path) as fd:
-        data = fd.read()
-        crs = fd.crs
-        transform = fd.transform
-        no_data = fd.nodata
+        data: "np.typing.NDArray[np.int_]" = fd.read()
+        crs: Any = fd.crs
+        transform: Any = fd.transform
+        no_data: Any = fd.nodata
     return np.moveaxis(data, 0, 2), crs, transform, no_data
 
 
-def to_csv(info_list: List[str], dst_dir: str) -> None:
+def to_csv(info_list: List[Tuple[Union[str, bool], ...]], dst_dir: str) -> None:
     """Save info to csv.
 
     Args:
@@ -156,8 +156,8 @@ def convert_dataset(src_dataset_dir: str, zenodo_dataset_dir: str, dataset_dir: 
     """
     sample_count = 0
 
-    info_list = []
-    file_set = set()
+    info_list: List[Tuple[Union[str, bool], ...]] = []
+    file_set: Set[Path] = set()
 
     partition = io.Partition()
     path_list = list(Path(src_dataset_dir, "annotations").iterdir())
@@ -188,16 +188,18 @@ def convert_dataset(src_dataset_dir: str, zenodo_dataset_dir: str, dataset_dir: 
 
             if np.all(exists[:3]):
                 split = "test"
-                sample_list = make_sample(name, rgb_path, chm_path, hs_path, boxes, check_shapes=True)
+                sample_list = make_sample(name, str(rgb_path), str(chm_path), str(hs_path), boxes, check_shapes=True)
 
             elif np.all(exists[3:]):
                 split = "train"
-                sample_list = make_sample(name, rgb_path_z, chm_path_z, hs_path_z, boxes, check_shapes=True, slice=True)
+                sample_list = make_sample(
+                    name, str(rgb_path_z), str(chm_path_z), str(hs_path_z), boxes, check_shapes=True, slice=True
+                )
             else:
                 split = "unk"
                 sample_list = []
 
-            info = (name, tag, len(boxes), split) + tuple(exists)
+            info = (str(name), str(tag), str(len(boxes)), str(split)) + tuple(exists)
             info_list.append(info)
 
             for sample in sample_list:
@@ -214,11 +216,11 @@ def convert_dataset(src_dataset_dir: str, zenodo_dataset_dir: str, dataset_dir: 
     partition.resplit_iid(split_names=("valid", "test"), ratios=(0.5, 0.5))
     partition.save(dataset_dir, "original", as_default=True)
 
-    to_csv(info_list, dataset_dir)
-    find_missing([zenodo_dataset_dir], file_set)
+    to_csv(info_list, str(dataset_dir))
+    find_missing([Path(zenodo_dataset_dir)], file_set)
 
 
-BAND_INFO_LIST = io.make_rgb_bands(0.1)
+BAND_INFO_LIST: List[Any] = io.make_rgb_bands(0.1)
 BAND_INFO_LIST.append(io.ElevationBand("Canopy Height Model", alt_names=("lidar", "CHM"), spatial_resolution=0.1))
 BAND_INFO_LIST.append(io.HyperSpectralBands("Neon", n_bands=369, spatial_resolution=1))
 
@@ -292,7 +294,7 @@ def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
 
 def make_sample(
     name: str, rgb_path: str, chm_path: str, hs_path: str, boxes, check_shapes: bool = True, slice: bool = False
-) -> io.Sample:
+) -> List[io.Sample]:
     """Create a sample.
 
     Args:
@@ -324,7 +326,7 @@ def make_sample(
     else:
         data_list = [(rgb_data, chm_data, hs_data, boxes, "")]
 
-    sample_list = []
+    sample_list: List[io.Sample] = []
     for rgb_data, chm_data, hs_data, new_boxes, suffix in data_list:
         for tag, data in (("rgb", rgb_data), ("chm", chm_data), ("hs", hs_data)):
             if np.any(data < 0):
@@ -387,7 +389,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     )
     task_specs.save(dataset_dir, overwrite=True)
 
-    convert_dataset(SRC_DATASET_DIR, ZENODO_DATASET_DIR, dataset_dir, max_count=max_count)
+    convert_dataset(str(SRC_DATASET_DIR), str(ZENODO_DATASET_DIR), str(dataset_dir), max_count=max_count)
 
 
 if __name__ == "__main__":

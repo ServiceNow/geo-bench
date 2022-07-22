@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Union
 from ruamel.yaml import YAML
 
 from ccb import io
+from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import ModelGenerator
 
 
@@ -27,7 +28,7 @@ def get_model_generator(module_name: str) -> ModelGenerator:
     Returns:
         a model_generator function loaded from the module with hparams
     """
-    return import_module(module_name).model_generator()
+    return import_module(module_name).model_generator()  # type: ignore[no-any-return]
 
 
 class Job:
@@ -36,7 +37,7 @@ class Job:
     Helper class to organize running of experiments.
     """
 
-    def __init__(self, dir: str) -> None:
+    def __init__(self, dir: Union[str, Path]) -> None:
         """Initialize new instance of Job.
 
         Args:
@@ -46,41 +47,11 @@ class Job:
         self.dir.mkdir(parents=True, exist_ok=True)
 
     @cached_property
-    def hparams(self):
-        """Return hyperparameters."""
-        yaml = YAML()
-        with open(self.dir / "hparams.yaml", "r") as yamlfile:
-            return yaml.load(yamlfile)
-
-    def save_hparams(
-        self, hparams: Dict[str, Union[str, float, int, List[int], List[str]]], overwrite: bool = False
-    ) -> None:
-        """Save hyperparameters in job directory.
-
-        Args:
-            hparams: set of hyperparameters to save
-            overwrite: whether to overwrite existing hparams
-        """
-        # hparams_path = self.dir / "hparams.json"
-        # if hparams_path.exists() and not overwrite:
-        #     raise Exception("hparams alread exists and overwrite is set to False.")
-        # with open(hparams_path, "w") as fd:
-        #     json.dump(hparams, fd, indent=4, sort_keys=True)
-        #     self.hparams = hparams
-
-        hparam_path = self.dir / "hparams.yaml"
-        if hparam_path.exists() and not overwrite:
-            raise Exception("hparams alread exists and overwrite is set to False.")
-        yaml = YAML()
-        with open(hparam_path, "w") as fd:
-            yaml.dump(hparams, fd)
-            self.hparams = hparams
-
-    @cached_property
-    def task_specs(self):
+    def task_specs(self) -> TaskSpecifications:
         """Return task specifications."""
         with open(self.dir / "task_specs.pkl", "rb") as fd:
-            return pickle.load(fd)
+            load_task_specs: TaskSpecifications = pickle.load(fd)
+            return load_task_specs
 
     def save_task_specs(self, task_specs: io.TaskSpecifications, overwrite: bool = False) -> None:
         """Save task specifications in job directory.
@@ -89,14 +60,15 @@ class Job:
             task_specs: task specifications
             overwrite: whether to overwrite existing task specs
         """
-        task_specs.save(self.dir, overwrite=overwrite)
+        task_specs.save(str(self.dir), overwrite=overwrite)
 
     @cached_property
-    def config(self):
+    def config(self) -> Dict[str, Any]:
         """Return config file."""
         yaml = YAML()
         with open(self.dir / "config.yaml", "r") as yamlfile:
-            return yaml.load(yamlfile)
+            loaded_yaml: Dict[str, Any] = yaml.load(yamlfile)
+            return loaded_yaml
 
     def save_config(self, config: Dict[str, Any], overwrite: bool = False) -> None:
         """Save config file in job directory.
@@ -107,26 +79,27 @@ class Job:
         """
         config_path = self.dir / "config.yaml"
         if config_path.exists() and not overwrite:
-            raise Exception("hparams alread exists and overwrite is set to False.")
+            raise Exception("config alread exists and overwrite is set to False.")
         yaml = YAML()
         with open(config_path, "w") as fd:
             yaml.dump(config, fd)
             self.config = config
 
-    def get_metrics(self):
+    def get_metrics(self) -> Dict[str, Any]:
         """Retrieve the metrics after training from job directory."""
-        if self.hparams.get("logger", "") == "wandb":
+        if "wandb" in self.config["experiment"].get("loggers", ""):
             import wandb
 
             wandb.finish()
             summary = glob.glob(str(self.dir / "wandb" / "latest-run" / "*" / "wandb-summary.json"))
+
             with open(summary[0], "r") as infile:
-                data = json.load(infile)
+                data: Dict[str, Any] = json.load(infile)
             return data
         else:
             try:
                 with open(self.dir / "lightning_logs" / "version_0" / "metrics.csv", "r") as fd:
-                    data = {}
+                    data: Dict[str, Any] = {}  # type: ignore[no-redef]
                     # FIXME: This would be more efficient if done backwards
                     for entry in csv.DictReader(fd):
                         data.update({k: v for k, v in entry.items() if v != ""})
@@ -138,25 +111,21 @@ class Job:
                 else:
                     raise e
 
-    def write_script(self, model_generator_module_name: str, job_dir: str) -> None:
+    def write_script(self, job_dir: str) -> None:
         """Write bash scrip that can be executed to run job.
 
         Args:
-            model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
         """
         script_path = self.dir / "run.sh"
         with open(script_path, "w") as fd:
             fd.write("#!/bin/bash\n")
             fd.write("# Usage: sh run.sh path/to/model_generator.py\n\n")
-            # fd.write(
-            #     f"ccb-trainer --model-generator {model_generator_module_name} --job-dir {job_dir} >log.out 2>err.out"
-            # )
             fd.write(f"ccb-trainer --job_dir {job_dir} >log.out 2>err.out")
         script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
 
     def write_wandb_sweep_cl_script(
-        self, model_generator_module_name: str, job_dir: str, base_sweep_config: str
+        self, model_generator_module_name: str, job_dir: Union[str, Path], base_sweep_config: str, name: str
     ) -> None:
         """Write final sweep_config.yaml that can be used to initialize sweep.
 
@@ -164,6 +133,7 @@ class Job:
             model_generator_module_name: what model_generator to use
             job_dir: job directory from which to run job
             base_sweep_config: path to base sweep config yaml file for wandb
+            name: wandb sweep experiment name
         """
         yaml = YAML()
         with open(base_sweep_config, "r") as yamlfile:
@@ -174,14 +144,15 @@ class Job:
             "--job_dir",
             str(job_dir),
         ]
+        config = Job(job_dir).config
 
         # sweep name that will be seen on wandb
         if model_generator_module_name != "ccb.torch_toolbox.model_generators.py_segmentation_generator":
-            backbone = get_model_generator(model_generator_module_name).base_hparams["backbone"]
+            backbone = config["model"]["backbone"]
             base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + backbone
         else:
-            encoder = get_model_generator(model_generator_module_name).base_hparams["encoder_type"]
-            decoder = get_model_generator(model_generator_module_name).base_hparams["decoder_type"]
+            encoder = config["model"]["encoder_type"]
+            decoder = config["model"]["decoder_type"]
             base_yaml["name"] = "_".join(str(job_dir).split("/")[-2:]) + "_" + encoder + "_" + decoder
 
         save_path = os.path.join(job_dir, "sweep_config.yaml")
