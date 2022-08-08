@@ -72,7 +72,7 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        benchmark_dir: str,
+        benchmark_dir: str = None,
         split: Union[str, None] = None,
         partition_name: str = "default",
         transform=None,
@@ -98,11 +98,13 @@ class TaskSpecifications:
             band_names=band_names,
         )
 
-    def get_dataset_dir(self, benchmark_dir: str):
+    def get_dataset_dir(self, benchmark_dir: Union[Path, str] = None):
         """Retrieve directory where dataset is read."""
+        if benchmark_dir is None:
+            benchmark_dir = io.CCB_DIR / self.benchmark_name  # type: ignore
         return Path(benchmark_dir) / self.dataset_name
 
-    def get_label_map(self, benchmark_dir: str) -> Union[None, Dict[str, List[str]]]:
+    def get_label_map(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
 
         Args:
@@ -120,7 +122,7 @@ class TaskSpecifications:
         else:
             return None
 
-    def label_stats(self, benchmark_dir: str) -> Union[None, Dict[str, List[Any]]]:
+    def label_stats(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[Any]]]:
         """Retriebe the label stats, a dictionary defining labels to statistics.
 
         Returns:
