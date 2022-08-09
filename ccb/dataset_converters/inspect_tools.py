@@ -1,10 +1,12 @@
 """Inspect tools."""
 import math
-from typing import Any, Callable, Dict, List, Tuple, Union
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from warnings import warn
 
 import ipyplot
 import numpy as np
+import pandas as pd
 from ipyleaflet import Map, Marker, Rectangle
 from matplotlib import cm
 from matplotlib import pyplot as plt
@@ -15,7 +17,7 @@ from tqdm import tqdm
 
 from ccb import io
 from ccb.io import dataset as io_ds
-from ccb.io.dataset import Band, CCBDataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
+from ccb.io.dataset import Band, Dataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
 
 
 def compare(a, b, name, src_a, src_b) -> None:
@@ -24,9 +26,7 @@ def compare(a, b, name, src_a, src_b) -> None:
         print(f"Consistancy error with {name} between:\n    {src_a}\n  & {src_b}.\n    {str(a)}\n != {str(b)}")
 
 
-def plot_band_stats(
-    band_values: Dict[str, "np.typing.NDArray[np.int_]"], n_cols: int = 4, n_hist_bins: int = None
-) -> None:
+def plot_band_stats(band_values: Dict[str, np.ndarray], n_cols: int = 4, n_hist_bins: int = None) -> None:
     """Plot a histogram of band values for each band.
 
     Args:
@@ -46,11 +46,11 @@ def plot_band_stats(
 
 
 def float_image_to_uint8(
-    image_list: List["np.typing.NDArray[np.float_]"],
+    images: Union[Sequence[np.ndarray], np.ndarray],
     percentile_max=99.9,
     ensure_3_channels=True,
     per_channel_scaling=False,
-) -> List["np.typing.NDArray[np.uint]"]:
+) -> np.ndarray:
     """Convert a batch of images to uint8 such that 99.9% of values fit in the range (0,255).
 
     Args:
@@ -62,9 +62,9 @@ def float_image_to_uint8(
     Returns:
         converted batch of images
     """
-    images = np.asarray(image_list)
+    images = np.asarray(images)
     if images.dtype == np.uint8:
-        return [images[idx] for idx in range(images.shape[0])]
+        return images
 
     images = images.astype(np.float64)
 
@@ -76,7 +76,7 @@ def float_image_to_uint8(
         mn = np.percentile(images, q=100 - percentile_max)
         mx = np.percentile(images, q=percentile_max)
 
-    new_images: List["np.typing.NDArray[np.uint]"] = []
+    new_images = []
     for image in images:
         image = np.clip((image - mn) * 255 / (mx - mn), 0, 255)
         if ensure_3_channels:
@@ -85,17 +85,17 @@ def float_image_to_uint8(
             if image.shape[2] == 1:
                 image = np.concatenate((image, image, image), axis=2)
         new_images.append(image.astype(np.uint8))
-    return new_images
+    return np.asarray(new_images)
 
 
 def extract_images(
     samples: List[Sample],
-    band_names: List[str] = ["red", "green", "blue"],
+    band_names: Sequence[str] = ("red", "green", "blue"),
     percentile_max: float = 99.9,
     resample: bool = False,
     fill_value: int = None,
     date_index: int = 0,
-) -> Tuple[List["np.typing.NDArray[np.uint]"], List[Union[int, Band]]]:
+) -> Tuple[np.ndarray, Any]:
     """Extract images from samples.
 
     Args:
@@ -109,13 +109,13 @@ def extract_images(
     Returns:
         images and labels extracted from sample
     """
-    images: List["np.typing.NDArray[np.uint]"] = []
-    labels: List[Union[Band, int]] = []
+    images = []
+    labels = []
     for sample in samples:
         img_data, _, _ = sample.pack_to_4d(
-            sample.dates[date_index : date_index + 1], band_names, resample=resample, fill_value=fill_value
+            sample.dates[date_index : date_index + 1], band_names=band_names, resample=resample, fill_value=fill_value
         )
-        img_data = img_data[0].astype(np.float_)
+        img_data = img_data[0].astype(np.float32)
         # TODO We should pass labelType from task specs and compare that instead of the class
         # Once we change this function, we should update all inspection notebooks
         # if isinstance(sample.label, np.ndarray):
@@ -127,8 +127,8 @@ def extract_images(
         images.append(img_data)
         labels.append(sample.label)
 
-    uint8_images = float_image_to_uint8(images, percentile_max)  # type: ignore
-    return uint8_images, labels
+    images = float_image_to_uint8(np.asarray(images), percentile_max)  # type:ignore
+    return images, labels  # type:ignore
 
 
 def callback_hyperspectral_to_rgb(
@@ -177,15 +177,11 @@ def make_rgb_extractor(center, width):
     return callback
 
 
-def hyperspectral_to_rgb(samples: List[Sample], band_name, rgb_extract, percentile_max=99.9):
+def hyperspectral_to_rgb(samples: List[Sample], band_name: str, rgb_extract, percentile_max=99.9):
     """Convert hyperspectral to rgb."""
-    images: List["np.typing.NDArray[np.float_]"] = []
+    images = []
     for sample in samples:
-        band_array, _, _ = sample.get_band_array(
-            band_names=[
-                band_name,
-            ]
-        )
+        band_array, _, _ = sample.get_band_array(band_names=(band_name,))
         assert band_array.shape == (1, 1), f"Got shape: {band_array.shape}."
         band = band_array[0, 0]
         assert isinstance(band.band_info, HyperSpectralBands), f"Got type: {type(band.band_info)}."
@@ -195,7 +191,7 @@ def hyperspectral_to_rgb(samples: List[Sample], band_name, rgb_extract, percenti
     return float_image_to_uint8(images, percentile_max, per_channel_scaling=True)
 
 
-def extract_label_as_image(samples, percentile_max=99.9):
+def extract_label_as_image(samples, rgb_images=None, opacity=0.3, percentile_max=99.9):
     """If label is a band, will convert into an image. Otherwise, will raise an error."""
     images = []
     for sample in samples:
@@ -209,7 +205,16 @@ def extract_label_as_image(samples, percentile_max=99.9):
             image = label.data
         images.append(image)
 
-    return float_image_to_uint8(images, percentile_max)
+    label_images = float_image_to_uint8(images, percentile_max)
+
+    if rgb_images is not None:
+        label_images = [
+            label_img.astype(np.float32) * opacity + rgb_img.astype(np.float32) * (1 - opacity)
+            for label_img, rgb_img in zip(label_images, rgb_images)
+        ]
+        label_images = float_image_to_uint8(label_images)
+
+    return label_images
 
 
 def overlay_label(image, label, label_patch_size, opacity=0.5):
@@ -230,31 +235,62 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
                 coord = [obj[0] - size[0], obj[1] - size[1], obj[0] + size[1], obj[1] + size[1]]
                 ctxt.rectangle(coord, outline=(255, 0, 0))
         return np.array(im) * opacity + (1 - opacity) * image
+    elif isinstance(label, io.Band):
+        label_img = map_class_id_to_color(label.data, label.band_info.n_classes)
+        (label_img,) = float_image_to_uint8([label_img])
+        return label_img * opacity + (1 - opacity) * image
     else:
         return image
 
 
-def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None, date_index=0):
+def extract_bands_with_labels(samples, band_groups=None, draw_label=False, label_patch_size=None, date_index=0):
     """Extract bands."""
     if band_groups is None:
         band_groups = [(band_name,) for band_name in samples[0].band_names]
     all_images = []
-    labels = []
+    band_names = []
+    all_labels = []
+    unique_band_names = []
     for i, band_group in enumerate(band_groups):
-        images, _ = extract_images(samples, band_names=band_group, date_index=date_index)
+
+        images, labels = extract_images(samples, band_names=band_group, date_index=date_index)
+
         if draw_label:
             images = [overlay_label(image, sample.label, label_patch_size) for image, sample in zip(images, samples)]
 
         all_images.extend(images)
+        all_labels.extend(labels)
         group_name = "-".join(band_group)
-        labels.extend((group_name,) * len(images))
+        unique_band_names.append(group_name)
+        band_names.extend((group_name,) * len(images))
 
     if isinstance(samples[0].label, Band):
-        label_images = extract_label_as_image(samples)
-        all_images.extend(label_images)
-        labels.extend(("label",) * len(label_images))
+        rgb_images, _ = extract_images(samples, band_names=("red", "green", "blue"), date_index=date_index)
+        label_images = extract_label_as_image(samples, rgb_images, percentile_max=99)
 
-    return all_images, labels
+        all_images.extend(label_images)
+        all_labels.extend((None,) * len(label_images))
+        band_names.extend(("label",) * len(label_images))
+        unique_band_names.append("label")
+
+    return all_images, band_names, all_labels, unique_band_names
+
+
+def pack_hyperspectral(img: np.ndarray, n_rows: int, n_cols: int):
+    """Extract multiple triplet of channels and concatenated them as a grid of images."""
+    height, width, n_channels = img.shape
+    assert n_rows * n_cols * 3 <= n_channels
+    offset = int((n_channels - n_rows * n_cols * 3) / 2)
+    img = img[:, :, offset : n_rows * n_cols * 3 + offset]
+    img_grid = np.reshape(np.moveaxis(img, -1, 0), (n_rows, n_cols, 3, height, width))
+    img_grid = np.moveaxis(img_grid, 2, -1)  # move the channel back to the end
+    assert img_grid.shape == (n_rows, n_cols, height, width, 3)
+    return img_grid.swapaxes(1, 2).reshape(n_rows * height, n_cols * width, 3)
+
+
+def extract_bands(samples, band_groups=None, draw_label=False, label_patch_size=None, date_index=0):
+    """For backward compatibility."""
+    return extract_bands_with_labels(samples, band_groups, draw_label, label_patch_size, date_index)[:2]
 
 
 def center_coord(band):
@@ -304,7 +340,7 @@ def leaflet_map(samples):
 
 def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
     """High level function. Loads samples, perform some statistics and plot histograms."""
-    dataset = CCBDataset(dataset_dir, split=split)
+    dataset = Dataset(dataset_dir, split=split)
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
@@ -352,9 +388,9 @@ def summarize_band_info(band_info_list: List[io.BandInfo]):
         for name in band_info.alt_names:
             resolution_dict[name.lower()] = band_info.spatial_resolution
 
-    RGB_resolution = [resolution_dict.get(color, None) for color in ("red", "green", "blue")]  # type: ignore
+    RGB_resolution: Any = [resolution_dict.get(color, None) for color in ("red", "green", "blue")]
     if RGB_resolution[0] == RGB_resolution[1] and RGB_resolution[0] == RGB_resolution[2]:
-        RGB_resolution = RGB_resolution[0]  # type: ignore
+        RGB_resolution = RGB_resolution[0]
 
     return {
         "RGB res": RGB_resolution,
@@ -366,3 +402,168 @@ def summarize_band_info(band_info_list: List[io.BandInfo]):
         "Spectral count": spectral_count,
         "Bands count": len(band_info_list),
     }
+
+
+def collect_task_info(task):
+    """Collect information for the given task."""
+    loss = task.eval_loss
+    if isinstance(loss, type):
+        loss = loss()
+    try:
+        dataset = task.get_dataset(split="train")
+        partition = dataset.active_partition.partition_dict
+        n_train = len(partition["train"])
+        n_valid = len(partition["valid"])
+        n_test = len(partition["test"])
+    except Exception as e:
+        print(e)
+        n_train, n_valid, n_test = -1, -1, -1
+
+    n_classes = getattr(task.label_type, "n_classes", -1)
+
+    task_dict = {
+        "name": task.dataset_name,
+        "img size": " x ".join([str(size) for size in task.patch_size]),
+        "loss": str(loss),
+        "label type": task.label_type.__class__.__name__,
+        "n classes": int(n_classes),
+        "n time steps": task.n_time_steps,
+        "n train": n_train,
+        "n valid": n_valid,
+        "n test": n_test,
+    }
+    task_dict.update(summarize_band_info(task.bands_info))
+    return task_dict, dataset
+
+
+def collect_benchmark_info(benchmark_name):
+    """Collect information for eacth task in the benchmark."""
+    data = []
+    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+        print(task.dataset_name)
+
+        task_dict, _ = collect_task_info(task)
+        data.append(task_dict)
+    return data
+
+
+def benchmark_data_frame(benchmark_name):
+    """Format benchmark information into panda data frame."""
+    task_dicts = collect_benchmark_info(benchmark_name)
+    column_order = (
+        "name",
+        "img size",
+        "label type",
+        "n classes",
+        "n train",
+        "n valid",
+        "n test",
+        "n time steps",
+        "Bands count",
+        "Sentinel2 count",
+        "RGB res",
+        "NIR res",
+        "HS res",
+        "Elevation res",
+    )
+    df = pd.DataFrame.from_records(task_dicts, index="name", columns=column_order)
+    pd.set_option("max_colwidth", 300)
+    return df
+
+
+def extract_classification_samples(dataset: io.CCBDataset, num_samples=8, rng=np.random):
+    """Extract `num_samples` for each class in `dataset`."""
+    label_map = dataset.task_specs.get_label_map()
+    n_classes = len(label_map)
+    n_per_class = np.ceil(num_samples / n_classes)
+    samples = []
+    for label, names in label_map.items():
+        for sample_name in rng.choice(names, size=int(n_per_class), replace=False):
+            samples.append(dataset.get_sample(sample_name))
+    return samples[:num_samples]
+
+
+def replace_str(name):
+    """Replace some strings to a more display ready version."""
+    replace_dict = {
+        "Land principally occupied by agriculture, with significant areas of natural vegetation": "Ag. and vegetation",
+        "Non-irrigated arable land": "Non-irrigated land",
+        "Complex cultivation patterns": "Cultivation patterns",
+        "Fruit trees and berry plantations": "Fruit trees and berry",
+    }
+    for key, val in replace_dict.items():
+        if name is not None:
+            name = name.replace(key, val)
+    return name
+
+
+def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
+    """Plot samples from every tasks of a given benchmark."""
+    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+
+        print(f"Task: {task.dataset_name}")
+
+        dataset = task.get_dataset(split="train")
+
+        if isinstance(task.label_type, io.label.Classification):
+            samples = extract_classification_samples(dataset, n_samples)
+        else:
+            indexes = np.random.choice(len(dataset), n_samples, replace=False)
+            samples = [dataset[idx] for idx in indexes]
+
+        band_groups = [("red", "green", "blue")] + [(band_name,) for band_name in samples[0].band_names]
+        images, band_names, labels, tabs_order = extract_bands_with_labels(samples, band_groups)
+
+        if "label" in tabs_order:
+            tabs_order.pop(tabs_order.index("label"))
+            tabs_order.insert(0, "label")
+
+        if isinstance(task.label_type, io.SegmentationClasses):
+            label_names = None
+        else:
+            label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
+
+        for i, image in enumerate(images):
+            if image.shape[2] > 3:
+                images[i] = pack_hyperspectral(image, 4, 4)
+
+        ipyplot.plot_class_tabs(
+            images=images,
+            labels=band_names,
+            custom_texts=label_names,
+            img_width=img_width,
+            max_imgs_per_tab=48,
+            tabs_order=tabs_order,
+        )
+
+
+def plot_benchmark(benchmark_name, n_samples):
+    """Plot samples of the benchmark using matplotlib for compact visualization."""
+    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+
+        print(f"Task: {task.dataset_name}")
+
+        dataset = task.get_dataset(split="train")
+
+        if isinstance(task.label_type, io.label.Classification):
+            samples = extract_classification_samples(dataset, n_samples)
+        else:
+            samples = [dataset[i] for i in range(n_samples)]
+
+        images, labels = extract_images(samples)
+        label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
+
+        plot_images(images, label_names)
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+
+        dir = Path("~/paper").expanduser()
+        plt.savefig(dir / f"{task.dataset_name}.pdf", bbox_inches="tight")
+
+
+def plot_images(images, names):
+    """Plot images using matplotlib for compact visualization."""
+    fig, axs = plt.subplots(1, len(images))
+    for image, name, ax in zip(images, names, axs):
+        ax.imshow(image)
+        ax.axis("off")
+        ax.set_title(name)
