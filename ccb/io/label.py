@@ -15,6 +15,10 @@ class LabelType(object):
         """Check if label type is valid."""
         raise NotImplementedError()
 
+    def value_to_str(self, value) -> str:
+        """Convert label to string for visualization."""
+        return ""
+
 
 class Classification(LabelType):
     """Classification label."""
@@ -194,4 +198,4 @@ class MultiLabelClassification(LabelType):
         for i, active in enumerate(value):
             if active == 1:
                 names.append(self.class_name[i])
-        return "\n".join(names)
+        return " &\n".join(names)
