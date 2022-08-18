@@ -1,0 +1,11 @@
+experiment:
+  generate_experiment_dir: /mnt/data/experiments/nils/new_partition_seeds_class
+  experiment_name: 1.00x_train # prefix
+  experiment_type: seeded_runs # standard, seeded_runs, sweew
+  partition_name: 1.00x_train_partition.json
+  benchmark_dir: /mnt/data/cc_benchmark/classification_v0.5
+model:
+  backbone: convnext_base
+wandb:
+  project: ccb # wandb project name
+  entity: climate-benchmark # user or team entity that hosts a project
