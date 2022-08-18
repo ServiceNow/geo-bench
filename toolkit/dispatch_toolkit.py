@@ -129,15 +129,21 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
             with open(config_path, "r") as yamlfile:
                 config = yaml.load(yamlfile)
 
-            ans = input(f"Launch {config['model']['backbone']} on {config_path.parents[0].name} y/n.")
+            if (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                model_name = config["model"]["backbone"]
+            else:
+                model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+
+            ans = input(f"Launch {model_name} on {config_path.parents[0].name} y/n.")
             if ans != "y":
                 continue
 
             assert "sweep_config_path" in config["wandb"]["sweep"]
 
-            sweep_name = (
-                config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + config["model"]["backbone"]
-            )
+            sweep_name = config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + model_name
             sweep_path = config_path.parents[0] / "sweep_config.yaml"
 
             cmd = ["wandb", "sweep", "--name", sweep_name, str(config_path.parents[0] / "sweep_config.yaml")]

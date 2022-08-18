@@ -10,7 +10,7 @@ from ccb.experiment.experiment_generator import experiment_generator
 from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
-    config_filepath="/mnt/home/climate-change-benchmark/ccb/configs/classification_config.yaml",
+    config_filepath="/mnt/home/climate-change-benchmark/ccb/configs/segmentation_config.yaml",
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)
