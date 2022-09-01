@@ -35,6 +35,7 @@ class Model(LightningModule):
         config,
         train_metrics=None,
         eval_metrics=None,
+        test_metrics=None,
     ) -> None:
         """Initialize a new instance of Model.
 
@@ -45,6 +46,7 @@ class Model(LightningModule):
             hyperparameters: model hyperparameters
             train_metrics: metrics used during training
             eval_metrics: metrics used during evaluation
+            test_metrics: metrics used during evaluation
 
         """
         super().__init__()
@@ -53,6 +55,7 @@ class Model(LightningModule):
         self.loss_function = loss_function
         self.train_metrics = train_metrics
         self.eval_metrics = eval_metrics
+        self.test_metrics = test_metrics
         self.config = config
 
     def forward(self, x):
@@ -109,6 +112,18 @@ class Model(LightningModule):
         self.log_dict({f"train_{k}": v for k, v in self.train_metrics.compute().items()}, logger=True)
         self.train_metrics.reset()
 
+    def validation_step(self, batch, batch_idx, loader_idx):
+        """Define steps taken during validation mode.
+
+        Args:
+            batch: input batch
+            batch_idx: index of batch
+
+        Returns:
+            validation step outputs
+        """
+        return self.eval_step(batch, batch_idx, ["val", "test"][loader_idx])
+
     def eval_step(self, batch: Tensor, batch_idx: int, prefix: str) -> Dict[str, Tensor]:
         """Define steps taken during validation and testing.
 
@@ -124,21 +139,62 @@ class Model(LightningModule):
         target = batch["label"]
         output = self(inputs)
         loss = self.loss_function(output, target)
-        self.log(f"{prefix}_loss", loss, logger=True, prog_bar=True)  # , on_step=True, on_epoch=True, logger=True)
+        self.log(
+            f"{prefix}_loss", loss, logger=True, prog_bar=True, add_dataloader_idx=False
+        )  # , on_step=True, on_epoch=True, logger=True)
 
-        return {"loss": loss.detach(), "input": inputs.detach(), "output": output.detach(), "target": target.detach()}
+        return {
+            "loss": loss.detach(),
+            "input": inputs.detach(),
+            "output": output.detach(),
+            "target": target.detach(),
+            "split": prefix,
+        }
 
-    def validation_step(self, batch, batch_idx):
-        """Define steps taken during validation mode.
+    def validation_step_end(self, outputs):
+        """Define steps after validation phase.
 
         Args:
-            batch: input batch
-            batch_idx: index of batch
-
-        Returns:
-            validation step outputs
+            outputs: outputs from :meth:`__eval_step`
         """
-        return self.eval_step(batch, batch_idx, "val")
+        self.eval_step_end(outputs)
+
+    def eval_step_end(self, outputs) -> None:
+        """Define steps after evaluation phase.
+
+        Args:
+            outputs: outputs from :meth:`__eval_step`
+        """
+        # update and log
+        prefix = outputs["split"]
+        self.log(f"{prefix}_loss", outputs["loss"], logger=True)
+        if prefix == "val":
+            self.eval_metrics.update(outputs["output"], outputs["target"])
+        elif prefix == "test":
+            self.test_metrics.update(outputs["output"], outputs["target"])
+
+    def validation_epoch_end(self, outputs):
+        """Define actions after a validation epoch.
+
+        Args:
+            outputs: outputs from :meth:`__validation_step`
+        """
+        eval_metrics = self.eval_metrics.compute()
+        self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
+        self.eval_metrics.reset()
+        outputs = outputs[0]  # 0 == validation, 1 == test
+        if self.config["model"].get("log_segmentation_masks", False):
+            import wandb
+
+            current_element = int(torch.randint(0, outputs[0]["input"].shape[0], size=(1,)))
+            image = outputs[0]["input"][current_element].permute(1, 2, 0).cpu().numpy()
+            pred_mask = outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
+            gt_mask = outputs[0]["target"][current_element].cpu().numpy()
+            image = wandb.Image(
+                image, masks={"predictions": {"mask_data": pred_mask}, "ground_truth": {"mask_data": gt_mask}}
+            )
+            wandb.log({"segmentation_images": image})
+        self.test_epoch_end(outputs[1])  # outputs[1] -> test
 
     def test_step(self, batch, batch_idx):
         """Define steps taken during test mode.
@@ -152,53 +208,13 @@ class Model(LightningModule):
         """
         return self.eval_step(batch, batch_idx, "test")
 
-    def eval_step_end(self, outputs, prefix) -> None:
-        """Define steps after evaluation phase.
-
-        Args:
-            outputs: outputs from :meth:`__eval_step`
-            prefix: prefix for logging
-        """
-        # update and log
-        self.log(f"{prefix}_loss", outputs["loss"], logger=True)
-        self.eval_metrics.update(outputs["output"], outputs["target"])
-
-    def validation_step_end(self, outputs):
-        """Define steps after validation phase.
-
-        Args:
-            outputs: outputs from :meth:`__eval_step`
-        """
-        self.eval_step_end(outputs, "val")
-
     def test_step_end(self, outputs):
         """Define steps after testing phase.
 
         Args:
             outputs: outputs from :meth:`__eval_step`
         """
-        self.eval_step_end(outputs, "test")
-
-    def validation_epoch_end(self, outputs):
-        """Define actions after a validation epoch.
-
-        Args:
-            outputs: outputs from :meth:`__validation_step`
-        """
-        eval_metrics = self.eval_metrics.compute()
-        self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
-        self.eval_metrics.reset()
-        if self.config["model"].get("log_segmentation_masks", False):
-            import wandb
-
-            current_element = int(torch.randint(0, outputs[0]["input"].shape[0], size=(1,)))
-            image = outputs[0]["input"][current_element].permute(1, 2, 0).cpu().numpy()
-            pred_mask = outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
-            gt_mask = outputs[0]["target"][current_element].cpu().numpy()
-            image = wandb.Image(
-                image, masks={"predictions": {"mask_data": pred_mask}, "ground_truth": {"mask_data": gt_mask}}
-            )
-            wandb.log({"segmentation_images": image})
+        self.eval_step_end(outputs)
 
     def test_epoch_end(self, outputs):
         """Define actions after a test epoch.
@@ -206,9 +222,9 @@ class Model(LightningModule):
         Args:
             outputs: outputs from :meth:`__test_step`
         """
-        eval_metrics = self.eval_metrics.compute()
-        self.log_dict({f"test_{k}": v for k, v in eval_metrics.items()}, logger=True)
-        self.eval_metrics.reset()
+        test_metrics = self.test_metrics.compute()
+        self.log_dict({f"test_{k}": v for k, v in test_metrics.items()}, logger=True)
+        self.test_metrics.reset()
 
     def configure_optimizers(self):
         """Configure optimizers for training."""
@@ -423,6 +439,31 @@ def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, An
 
 
 def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
+    """Return the appropriate eval function depending on the task_specs.
+
+    Args:
+        task_specs: an object describing the task to be performed
+        hyperparams: dictionary containing hyperparameters of the experiment
+
+    Returns:
+        metric collection used during evaluation
+    """
+    metrics = {
+        io.Classification: [torchmetrics.Accuracy()],
+        io.SegmentationClasses: [
+            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
+        ],
+        io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
+    }[task_specs.label_type.__class__]
+
+    # for metric_name in hparams.get("eval_metrics", ()):
+    #     metrics.extend(METRIC_MAP[metric_name])
+
+    return torchmetrics.MetricCollection(metrics)
+
+
+def test_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
     """Return the appropriate eval function depending on the task_specs.
 
     Args:
