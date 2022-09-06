@@ -841,13 +841,14 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
             label = attr_dict["label"]
         if isinstance(label, int):
             sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        elif isinstance(label, np.ndarray):  # multi class classification
+            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
         elif isinstance(label, dict):  # segmentation class
             sample = Sample(
                 bands=bands,
                 label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
                 sample_name=sample_path.stem,
             )
-
         return sample
 
 
