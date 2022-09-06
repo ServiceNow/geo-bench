@@ -137,6 +137,9 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
 
     observations_sample_path = Path(__file__).parent / "geolifeclef_scripts" / "observations_sample.csv"
     df = pd.read_csv(observations_sample_path, sep=";", index_col="observation_id")
+    species_names_path = Path(__file__).parent / "geolifeclef_scripts" / 'names.csv'
+    df_species_names = pd.read_csv(species_names_path, sep=";")
+    names = list(df_species_names['GBIF_species_name'])
 
     task_specs = io.TaskSpecifications(
         dataset_name=DATASET_NAME,
@@ -144,7 +147,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         n_time_steps=1,
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
-        label_type=io.Classification(N_LABELS),
+        label_type=io.Classification(N_LABELS, class_names=names),
         eval_loss=io.Accuracy,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
