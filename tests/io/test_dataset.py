@@ -313,10 +313,19 @@ def test_dataset_statistics():
         print("Done")
 
 
+def test_class_id():
+    from ccb import io
+    from ccb.io import dataset
+
+    assert isinstance(dataset.sentinel2_13_bands[0], io.SpectralBand)
+    assert isinstance(io.sentinel2_13_bands[0], dataset.SpectralBand)
+
+
 if __name__ == "__main__":
     # test_pack_4d_dense()
     # test_pack_4d_multi_band()
     # test_write_read()
     # test_dataset_partition()
     # test_dataset_withnopartition()
-    test_dataset_statistics()
+    # test_dataset_statistics()
+    test_class_id()

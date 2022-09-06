@@ -589,7 +589,7 @@ class Sample(object):
     def pack_to_4d(
         self,
         dates=None,
-        band_names: List[str] = None,
+        band_names: Sequence[str] = None,
         resample: bool = False,
         fill_value: float = None,
         resample_order: int = 3,
@@ -643,22 +643,22 @@ class Sample(object):
                             data_list.append(zoom(data, zoom=zoom_factor, order=resample_order))
                         else:
                             raise ValueError(
-                                f"Band {band_names[j]} has shape {data.shape:s}, max shape is {shape:s}, but resample is set to False."
+                                f"Band {band_names[j]} has shape {data.shape:s}, max shape is {shape:s}, but resample is set to False."  # type: ignore
                             )
                     else:
                         data_list.append(data)
             data_grid.append(np.concatenate(data_list, axis=2))
 
-        nand_names_ = []
-        for name in band_names:
-            nand_names_.extend(self.get_band_info(name).expand_name())
+        band_names_ = []
+        for name in band_names:  # type: ignore
+            band_names_.extend(self.get_band_info(name).expand_name())
 
         array = np.array(data_grid)
-        return array, dates, nand_names_
+        return array, dates, band_names_
 
     def get_band_array(
-        self, dates: List[Union[datetime.date, datetime.datetime]] = None, band_names: List[str] = None
-    ) -> Tuple[np.ndarray, List[datetime.date], List[str]]:
+        self, dates: List[Union[datetime.date, datetime.datetime]] = None, band_names: Sequence[str] = None
+    ) -> Any:
         """Retrieve an array for selected datase and band_names.
 
         Args:
@@ -682,7 +682,7 @@ class Sample(object):
         else:
             dates = self.dates
 
-        return band_array, dates, band_names
+        return band_array, dates, band_names  # type : ignore
 
     def pack_to_3d(
         self, band_names: List[str], resample: bool = False, fill_value=None, resample_order=3
@@ -807,7 +807,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     return sample_path
 
 
-def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool = False) -> Sample:
+def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
     """Load hdf5 sample.
 
     Args:
@@ -821,7 +821,7 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
     with h5py.File(sample_path, "r") as fp:
 
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
-        # band_names = attr_dict.get("bands_order", fp.keys())
+        band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
         label = None
         for band_name in band_names:
@@ -833,7 +833,6 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
 
             band = Band(data=np.array(h5_band), **attr_dict[band_name])
             if band_name.startswith("label"):
-                print(band.data)
                 label = band
             else:
                 bands.append(band)
@@ -850,7 +849,6 @@ def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool 
                 sample_name=sample_path.stem,
             )
         return sample
-
 
 def write_sample_npz(sample: Sample, dataset_dir: str):
     """Write a sample to npz.
@@ -1370,9 +1368,7 @@ class CCBDataset(Dataset):
             sample_name_ = sample_name + ".hdf5"
         else:
             sample_name_ = sample_name
-        sample: Sample = load_sample(
-            Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format
-        )
+        sample = load_sample(Path(self.dataset_dir, sample_name_), band_names=self.band_names, format=self.format)
         if self.transform is not None:
             return self.transform(sample)
         else:
