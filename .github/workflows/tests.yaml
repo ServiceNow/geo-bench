@@ -8,6 +8,29 @@ on:
     - main
   
 jobs:
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v2
+    - name: Set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+    - name: Install poetry
+      run: |
+        python -m ensurepip
+        python -m pip install --upgrade pip
+        python -m pip install poetry
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m poetry lock --no-update
+        python -m poetry install
+    - name: Run mypy checks
+      shell: bash
+      run: poetry run python -m mypy ccb/ --ignore-missing-imports
   pytest:
     name: pytest
     runs-on: ${{ matrix.os }}

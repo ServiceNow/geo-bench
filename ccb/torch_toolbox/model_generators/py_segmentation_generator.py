@@ -10,6 +10,7 @@ from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
 from ccb import io
+from ccb.io.dataset import Band
 from ccb.io.task import TaskSpecifications
 from ccb.torch_toolbox.model import (
     Model,
@@ -18,6 +19,7 @@ from ccb.torch_toolbox.model import (
     train_loss_generator,
     train_metrics_generator,
 )
+from ccb.torch_toolbox.modules import ClassificationHead
 
 
 class SegmentationGenerator(ModelGenerator):
@@ -113,7 +115,9 @@ class SegmentationGenerator(ModelGenerator):
             def forward(self, x):
                 return x
 
-        head = Noop()  # pytorch image models already adds a classifier on top of the UNETs
+        head = ClassificationHead(
+            num_classes=1, hidden_size=1, in_ch=1, ret_identity=True
+        )  # pytorch image models already adds a classifier on top of the UNETs
         # head = head_generator(task_specs, shapes, hparams)
         loss = train_loss_generator(task_specs, config)
         train_metrics = train_metrics_generator(task_specs, config)
@@ -162,7 +166,7 @@ class SegmentationGenerator(ModelGenerator):
             benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
         ).rgb_stats()
-        band_names = tuple(config["dataset"]["band_names"])
+        band_names = config["dataset"]["band_names"]
 
         class SegTransform:
             """Segmentation Transform.
@@ -209,7 +213,9 @@ class SegmentationGenerator(ModelGenerator):
             t_y_comp = tt.Compose(t_y)
 
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
-            x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
+            print(sample.label)
+            if isinstance(sample.label, Band):
+                x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
             return {"input": x, "label": y.long().squeeze()}
 
         return transform

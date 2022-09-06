@@ -10,7 +10,7 @@ from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
 
-def train(job_dir) -> None:
+def train(job_dir: str) -> None:
     """Train a model from the model generator on datamodule.
 
     Args:
@@ -45,7 +45,7 @@ def train(job_dir) -> None:
         format=config["dataset"]["format"],
     )
 
-    trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])
+    trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])  # type: ignore[attr-defined]
 
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)

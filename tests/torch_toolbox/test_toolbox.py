@@ -51,7 +51,7 @@ def test_toolbox_segmentation():
     with open(os.path.join("tests", "configs", "base_segmentation.yaml"), "r") as yamlfile:
         config = yaml.load(yamlfile)
 
-    train_job_on_task(config=config, task_specs=task_specs, threshold=0.05, metric_name="JaccardIndex")
+    train_job_on_task(config=config, task_specs=task_specs, threshold=0.04, metric_name="JaccardIndex")
 
 
 @pytest.mark.parametrize(
