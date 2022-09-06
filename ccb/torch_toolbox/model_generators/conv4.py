@@ -74,19 +74,15 @@ class Conv4Generator(ModelGenerator):
     ) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
-                Args:
-                    task_specs: task specs to retrieve dataset
-        <<<<<<< HEAD
-                    hparams: model hyperparameters
-        =======
-        >>>>>>> main
-                    config: config file
-                    train: train mode true or false
-                    scale: define image scale
-                    ratio: define image ratio range
+        Args:
+            task_specs: task specs to retrieve dataset
+            config: config file
+            train: train mode true or false
+            scale: define image scale
+            ratio: define image ratio range
 
-                Returns:
-                    callable function that applies transformations on input data
+        Returns:
+            callable function that applies transformations on input data
         """
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range

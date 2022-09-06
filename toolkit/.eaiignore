@@ -5,3 +5,6 @@
 .git/
 ipynb_checkpoints/
 *.ipynb
+.mypy_cache/**
+.pytest_cache/**
+tests/
