@@ -4,9 +4,9 @@ import argparse
 import os
 
 import pytorch_lightning as pl
+import wandb
 from ruamel.yaml import YAML
 
-import wandb
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
@@ -46,6 +46,7 @@ def train(job_dir) -> None:
             save_dir=str(job.dir),
             resume=True,
         )
+
         csv_logger = pl.loggers.CSVLogger(str(job.dir), name="csv_logs")
 
         loggers = [csv_logger, wandb_logger]

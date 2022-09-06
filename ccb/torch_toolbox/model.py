@@ -308,7 +308,7 @@ class ModelGenerator:
         config["wandb"]["wandb_run_id"] = run_id
 
         loggers = [
-            pl.loggers.CSVLogger(str(job.dir), name="lightning_logs"),
+            pl.loggers.CSVLogger(str(job.dir), name="csv_logs"),
             pl.loggers.WandbLogger(
                 save_dir=str(job.dir),
                 project=config["wandb"]["project"],
@@ -334,7 +334,7 @@ class ModelGenerator:
             default_root_dir=job.dir,
             callbacks=[
                 EarlyStopping(
-                    monitor="val_loss", mode="min", patience=config["pl"].get("patience", 30), min_delta=1e-5
+                    monitor="val_loss", mode="min", patience=config["pl"].get("patience", 120), min_delta=1e-5
                 ),
                 checkpoint_callback,
             ],

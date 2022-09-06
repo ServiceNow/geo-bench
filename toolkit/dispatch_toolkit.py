@@ -16,7 +16,7 @@ def _run_shell_cmd(cmd: str, hide_stderr=False):
 # Toolkit user identity (extracted automatically)
 TOOLKIT_USER_ORG = _run_shell_cmd("eai organization get --field name")
 TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
-# TOOLKIT_USER_ACCOUNT = "snow.rg_climate_benchmark.nilslehmann"
+TOOLKIT_USER_ACCOUNT = "snow.rg_climate_benchmark.nilslehmann"
 TOOLKIT_USER = f"{TOOLKIT_USER_ORG}.{TOOLKIT_USER_ACCOUNT}"
 
 # Get current git branch (used to tag code by user+branch)
@@ -67,9 +67,9 @@ def toolkit_job(script_path: Path, env_vars=()):
     cmd += ["--cpu", str(TOOLKIT_CPU)]
     cmd += ["--gpu", str(TOOLKIT_GPU)]
     cmd += ["--mem", str(TOOLKIT_MEM)]
-    cmd += ["--account", str(TOOLKIT_USER)]
+    cmd += ["--account", str(TOOLKIT_USER_ACCOUNT)]
 
-    cmd += ["--gpu-model-filter", "!A100"]
+    # cmd += ["--gpu-model-filter", "!A100"]
     # Mount data objects
     cmd += ["--data", f"{TOOLKIT_DATA}:/mnt/data"]
     cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION}:/mnt/code"]
