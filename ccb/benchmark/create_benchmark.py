@@ -76,14 +76,14 @@ def _make_split_label_maps(
     return split_label_maps
 
 
-def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]) -> DefaultDict[str, dict[int, List[str]]]:
+def _filter_for_min_size(split_label_maps, min_class_sizes: Dict[str, int]) -> DefaultDict[str, Dict[int, List[str]]]:
     """Make sure each class has statisfies `min_class_sizes`.
 
     Args:
         split_label_maps:
         min_class_sizes:
     """
-    new_split_label_maps: DefaultDict[str, dict[int, List[str]]] = defaultdict(dict)
+    new_split_label_maps: DefaultDict[str, Dict[int, List[str]]] = defaultdict(dict)
     for label in split_label_maps["train"].keys():
 
         ok = True
