@@ -15,7 +15,7 @@ def _run_shell_cmd(cmd: str, hide_stderr=False):
 
 # Toolkit user identity (extracted automatically)
 TOOLKIT_USER_ORG = _run_shell_cmd("eai organization get --field name")
-# TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
+TOOLKIT_USER_ACCOUNT = _run_shell_cmd("eai account get --field name")
 TOOLKIT_USER_ACCOUNT = "snow.rg_climate_benchmark.nilslehmann"
 TOOLKIT_USER = f"{TOOLKIT_USER_ORG}.{TOOLKIT_USER_ACCOUNT}"
 
@@ -67,7 +67,9 @@ def toolkit_job(script_path: Path, env_vars=()):
     cmd += ["--cpu", str(TOOLKIT_CPU)]
     cmd += ["--gpu", str(TOOLKIT_GPU)]
     cmd += ["--mem", str(TOOLKIT_MEM)]
+    cmd += ["--account", str(TOOLKIT_USER_ACCOUNT)]
 
+    # cmd += ["--gpu-model-filter", "!A100"]
     # Mount data objects
     cmd += ["--data", f"{TOOLKIT_DATA}:/mnt/data"]
     cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION}:/mnt/code"]
@@ -97,15 +99,19 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
     script_list = list(exp_dir.glob("**/run.sh"))
     if script_list:
         if prompt:
+            ds_scripts = list(set([str(p).split("/")[-3] for p in script_list]))
             print("Will launch all of these jobs on toolkit:")
-            for script in script_list:
-                print(str(script))
-            ans = input("Ready to proceed? y/n.")
-            if ans != "y":
-                return
-
-        for script_path in script_list:
-            toolkit_job(script_path, env_vars)
+            for ds in ds_scripts:
+                print(ds)
+                ds_scripts = [script for script in script_list if ds in str(script)]
+                for s in ds_scripts:
+                    print(str(s))
+                ans = input("Ready to proceed? y/n.")
+                if ans != "y":
+                    continue
+                else:
+                    for script_path in ds_scripts:
+                        toolkit_job(script_path, env_vars)
         return
 
     # script list for seeded_runs
@@ -123,15 +129,21 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
             with open(config_path, "r") as yamlfile:
                 config = yaml.load(yamlfile)
 
-            ans = input(f"Launch {config['model']['backbone']} on {config_path.parents[0].name} y/n.")
+            if (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                model_name = config["model"]["backbone"]
+            else:
+                model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+
+            ans = input(f"Launch {model_name} on {config_path.parents[0].name} y/n.")
             if ans != "y":
                 continue
 
             assert "sweep_config_path" in config["wandb"]["sweep"]
 
-            sweep_name = (
-                config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + config["model"]["backbone"]
-            )
+            sweep_name = config_path.parents[1].name + "_" + config_path.parents[0].name + "_" + model_name
             sweep_path = config_path.parents[0] / "sweep_config.yaml"
 
             cmd = ["wandb", "sweep", "--name", sweep_name, str(config_path.parents[0] / "sweep_config.yaml")]
@@ -176,6 +188,7 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
 def push_code(dir):
     """Push the local code to the cluster"""
     print("Pushing code...")
+    dir = ".."
     _run_shell_cmd(f"eai data branch add {TOOLKIT_CODE}@empty {TOOLKIT_CODE_VERSION}", hide_stderr=True)
     _run_shell_cmd(f"eai data content rm {TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION} .", hide_stderr=False)
 

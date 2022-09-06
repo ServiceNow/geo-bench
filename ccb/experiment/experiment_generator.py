@@ -88,9 +88,9 @@ def experiment_generator(
             )
 
         elif experiment_type == "seeded_runs":
-            NUM_SEEDS = 3
+            NUM_SEEDS = 10
 
-            with open("/mnt/data/experiments/nils/classification_results/test_seeded_runs.json", "r") as f:
+            with open("/mnt/data/experiments/nils/classification_results/seeded_runs.json", "r") as f:
                 seed_run_dict = json.load(f)
 
             back_name = config["model"]["backbone"]

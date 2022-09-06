@@ -7,8 +7,8 @@ datasets/oscd/
 *.zip
 
 # toolkit files personal changes
-climate-change-benchmark/toolkit/dispatch_toolkit.py
-climate-change-benchmark/toolkit/exp_launcher.py
+# climate-change-benchmark/toolkit/dispatch_toolkit.py
+# climate-change-benchmark/toolkit/exp_launcher.py
 
 # Logs files
 logs/*

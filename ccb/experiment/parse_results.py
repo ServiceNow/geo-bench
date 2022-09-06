@@ -1,3 +1,5 @@
+"""Parse results."""
+
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
@@ -28,12 +30,14 @@ def make_normalizer(data_frame, metrics=("test_metric",)):
 
 
 class Normalizer:
-    """Class used to normalize results beween min and max for each dataset"""
+    """Class used to normalize results beween min and max for each dataset."""
 
     def __init__(self, range_dict):
+        """Initialize a new instance of Normalizer class."""
         self.range_dict = range_dict
 
     def __call__(self, ds_name, values, scale_only=False):
+        """Call the Normalizer class."""
         mn, mx = self.range_dict[ds_name]
         range = mx - mn
         if scale_only:
@@ -42,9 +46,11 @@ class Normalizer:
             return (values - mn) / range
 
     def from_row(self, row, scale_only=False):
+        """Normalize from row."""
         return [self(ds_name, val, scale_only=scale_only) for ds_name, val in row.items()]
 
     def normalize_data_frame(self, df, metrics):
+        """Normalize the entire dataframe."""
         for metric in metrics:
             new_metric = f"normalized {metric}"
             df[new_metric] = df.apply(lambda row: self.__call__(row["dataset"], row[metric]), axis=1)
@@ -71,7 +77,7 @@ class Normalizer:
 
 
 def biqm(scores):
-    """Returns a bootstram sample of iqm."""
+    """Return a bootstram sample of iqm."""
     b_scores = np.random.choice(scores, size=len(scores), replace=True)
     return trim_mean(b_scores, proportiontocut=0.25, axis=None)
 
@@ -443,7 +449,7 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
         ax2 = None
         all_val_loss = []
-        all_val_accuarcy = []
+        # all_val_accuarcy = []
 
         metric = "val_Accuracy"
         if dataset == "bigearthnet":
@@ -453,10 +459,6 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         constants, exp_names = format_hparams(log_dirs)
 
         for log_dir in log_dirs:
-            # trace_df = pd.read_csv(Path(log_dir) / "metrics.csv")
-
-            hparams = get_hparams(Path(log_dir))
-            # print(hparams)
 
             trace_dict = collect_trace_info(log_dir)
             val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="gaussian").mean(std=1)
@@ -482,6 +484,7 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
 
 def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False)):
+    """Create a grid plot for all models and datasets."""
     models = df["model"].unique()
     datasets = df["dataset"].unique()
 
@@ -497,6 +500,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False)):
 
 
 def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True)):
+    """Plot all dataset results for a single model."""
     datasets = df["dataset"].unique()
 
     fig, axes = plt.subplots(len(datasets), 1)
