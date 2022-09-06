@@ -850,6 +850,7 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
             )
         return sample
 
+
 def write_sample_npz(sample: Sample, dataset_dir: str):
     """Write a sample to npz.
 
