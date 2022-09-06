@@ -1,9 +1,11 @@
 """Rasterize detection."""
+from typing import Dict, List, Tuple
+
 import numpy as np
 from PIL import Image, ImageDraw
 
 
-def rasterize_box(boxes, img_shape, scale=1) -> np.array:
+def rasterize_box(boxes: List[Dict[str, int]], img_shape: Tuple[int, int], scale=1) -> "np.typing.NDArray[np.int_]":
     """Rasterize box.
 
     Args:

@@ -35,7 +35,7 @@ def sequential_dispatcher(exp_dir: str, prompt: bool = True) -> None:
     print("Done.")
 
 
-def start():
+def start() -> None:
     """Start sequential dispatcher."""
     # Command line arguments
     parser = argparse.ArgumentParser(

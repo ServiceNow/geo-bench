@@ -16,7 +16,7 @@ from ccb.experiment.experiment import Job, get_model_generator
 
 def experiment_generator(
     config_filepath: str,
-):
+) -> Path:
     """Generate the directory structure for every tasks.
 
     According to model_generator.hp_search.
@@ -42,7 +42,9 @@ def experiment_generator(
 
     experiment_prefix = f"{config['experiment']['experiment_name'] or 'experiment'}_{os.path.basename(benchmark_dir)}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
     if config["experiment"]["experiment_name"] is not None:
-        experiment_dir = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
+        experiment_dir: Path = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
+    else:
+        experiment_dir: Path = Path(config["experiment"]["generate_experiment_dir"])  # type: ignore[no-redef]
 
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
         print(task_specs.dataset_name)

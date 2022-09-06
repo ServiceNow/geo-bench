@@ -76,14 +76,18 @@ def test_write_read():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
         partition = io.Partition()
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
@@ -122,7 +126,11 @@ def test_dataset_partition():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
@@ -141,7 +149,7 @@ def test_dataset_partition():
         partition.save(directory=dataset_dir, partition_name="funky")
 
         # Test 1: load partition default, no split
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "default"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -175,7 +183,7 @@ def test_dataset_partition():
         with pytest.raises(IndexError):  # default:test is empty
             ds[0]
 
-        ds = io.Dataset(dataset_dir, band_names=band_names, partition_name="funky")
+        ds = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="funky")
         assert set(ds.list_partitions()) == set(["funky", "default"])
         assert ds.active_partition_name == "funky"  # use default normally
         assert set(ds.list_splits()) == set(["train", "valid", "test"])
@@ -213,7 +221,7 @@ def test_dataset_withnopartition():
         band_names = [band.band_info.name for band in sample1.bands]
 
         with pytest.raises(ValueError):  # raise ValueError because not partition exists
-            _ = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+            _ = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
 
 
 def custom_band(value, shape=(4, 4), band_name="test_band"):
@@ -254,7 +262,11 @@ def test_dataset_statistics():
         ]
 
         task_specs = io.TaskSpecifications(
-            dataset_name="test", benchmark_name="test_bench", patch_size=(16, 16), bands_info=bands_info
+            dataset_name="test",
+            benchmark_name="test_bench",
+            patch_size=(16, 16),
+            spatial_resolution=1.0,
+            bands_info=bands_info,
         )
         task_specs.save(dataset_dir, overwrite=True)
 
@@ -267,14 +279,14 @@ def test_dataset_statistics():
 
         # Compute statistics : this will create all_bandstats.json
         produce_band_stats(
-            io.Dataset(dataset_dir, band_names=band_names, partition_name="default"),
+            io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default"),
             use_splits=False,
             values_per_image=None,
             samples=None,
         )
 
         # Reload dataset with statistics
-        ds2 = io.Dataset(dataset_dir, band_names=band_names, partition_name="default")
+        ds2 = io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default")
 
         statistics = ds2.band_stats
 

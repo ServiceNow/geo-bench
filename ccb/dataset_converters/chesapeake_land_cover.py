@@ -19,8 +19,8 @@ from ccb import io
 # 2. Extension: https://zenodo.org/record/5866525#.YlhpH27MJf0
 
 DATASET_NAME = "cvpr_chesapeake_landcover"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 # See dataset documentation for more details on below:
 # https://torchgeo.readthedocs.io/en/latest/api/datasets.html#torchgeo.datasets.ChesapeakeCVPR
 SPATIAL_RESOLUTION = 1  # meters
@@ -42,7 +42,11 @@ BAND_INFO_LIST.append(io.SpectralBand("NearInfrared", ("nir",), SPATIAL_RESOLUTI
 
 
 def make_sample(
-    image: np.array, label: np.array, sample_name: str, task_specs: io.TaskSpecifications, crs
+    image: "np.typing.NDArray[np.int_]",
+    label: "np.typing.NDArray[np.int_]",
+    sample_name: str,
+    task_specs: io.TaskSpecifications,
+    crs,
 ) -> io.Sample:
     """Create a sample from images and label.
 
@@ -79,11 +83,11 @@ def make_sample(
         )
         bands.append(band)
 
-    label = io.Band(
+    band_label = io.Band(
         data=label, band_info=LABEL_BAND, spatial_resolution=SPATIAL_RESOLUTION, transform=transform, crs=crs
     )
 
-    return io.Sample(bands, label=label, sample_name=sample_name)
+    return io.Sample(bands, label=band_label, sample_name=sample_name)
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
