@@ -837,52 +837,18 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
             else:
                 bands.append(band)
         if label is None:
-            label = attr_dict.get("label", None)
-    return Sample(bands=bands, label=label, sample_name=sample_path.stem)
-
-
-# def load_sample_hdf5(sample_path: Path, band_names: List[str], label_only: bool = False) -> Sample:
-#     """Load hdf5 sample.
-
-#     Args:
-#         sample_path: path to the sample
-#         band_names: list of bandnames to return from sample
-#         label_only: whether or not to only return the label
-
-#     Returns:
-#         loaded sample
-#     """
-#     with h5py.File(sample_path, "r") as fp:
-
-#         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
-#         # band_names = attr_dict.get("bands_order", fp.keys())
-#         bands = []
-#         label = None
-#         for band_name in band_names:
-
-#             if label_only and not band_name.startswith("label"):
-#                 continue
-
-#             h5_band = fp[band_name]
-
-#             band = Band(data=np.array(h5_band), **attr_dict[band_name])
-#             if band_name.startswith("label"):
-#                 print(band.data)
-#                 label = band
-#             else:
-#                 bands.append(band)
-#         if label is None:
-#             label = attr_dict["label"]
-#         if isinstance(label, int):
-#             sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
-#         elif isinstance(label, dict):  # segmentation class
-#             sample = Sample(
-#                 bands=bands,
-#                 label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
-#                 sample_name=sample_path.stem,
-#             )
-
-#         return sample
+            label = attr_dict["label"]
+        if isinstance(label, int):
+            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        elif isinstance(label, np.ndarray):  # multi class classification
+            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
+        elif isinstance(label, dict):  # segmentation class
+            sample = Sample(
+                bands=bands,
+                label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
+                sample_name=sample_path.stem,
+            )
+        return sample
 
 
 def write_sample_npz(sample: Sample, dataset_dir: str):

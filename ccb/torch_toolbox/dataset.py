@@ -77,19 +77,35 @@ class DataModule(pl.LightningDataModule):
 
     def val_dataloader(self) -> DataLoader:
         """Create the validation dataloader."""
-        return DataLoader(
-            self.task_specs.get_dataset(
-                split="valid",
-                partition_name=self.partition_name,
-                transform=self.eval_transform,
-                band_names=self.band_names,
-                format=self.format,
-                benchmark_dir=self.benchmark_dir,
+        return (
+            DataLoader(
+                self.task_specs.get_dataset(
+                    split="valid",
+                    partition_name=self.partition_name,
+                    transform=self.eval_transform,
+                    band_names=self.band_names,
+                    format=self.format,
+                    benchmark_dir=Path(self.benchmark_dir),
+                ),
+                batch_size=self.val_batch_size,
+                shuffle=False,
+                num_workers=self.num_workers,
+                collate_fn=self.collate_fn,
             ),
-            batch_size=self.val_batch_size,
-            shuffle=False,
-            num_workers=self.num_workers,
-            collate_fn=self.collate_fn,
+            DataLoader(
+                self.task_specs.get_dataset(
+                    split="test",
+                    partition_name=self.partition_name,
+                    transform=self.eval_transform,
+                    band_names=self.band_names,
+                    format=self.format,
+                    benchmark_dir=Path(self.benchmark_dir),
+                ),
+                batch_size=self.val_batch_size,
+                shuffle=False,
+                num_workers=self.num_workers,
+                collate_fn=self.collate_fn,
+            ),
         )
 
     def test_dataloader(self) -> DataLoader:

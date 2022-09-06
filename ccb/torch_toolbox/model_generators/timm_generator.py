@@ -16,6 +16,7 @@ from ccb.torch_toolbox.model import (
     ModelGenerator,
     eval_metrics_generator,
     head_generator,
+    test_metrics_generator,
     train_loss_generator,
     train_metrics_generator,
 )
@@ -131,6 +132,7 @@ class TIMMGenerator(ModelGenerator):
         loss = train_loss_generator(task_specs, config)
         train_metrics = train_metrics_generator(task_specs, config)
         eval_metrics = eval_metrics_generator(task_specs, config)
+        test_metrics = test_metrics_generator(task_specs, config)
 
         return Model(
             backbone=backbone,
@@ -139,6 +141,7 @@ class TIMMGenerator(ModelGenerator):
             config=config,
             train_metrics=train_metrics,
             eval_metrics=eval_metrics,
+            test_metrics=test_metrics,
         )
 
     def _initialize_additional_in_channels(

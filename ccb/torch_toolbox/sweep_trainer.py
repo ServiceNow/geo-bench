@@ -4,9 +4,9 @@ import argparse
 import os
 
 import pytorch_lightning as pl
+import wandb
 from ruamel.yaml import YAML
 
-import wandb
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
@@ -38,7 +38,7 @@ def train(job_dir: str) -> None:
         wandb_config = run.config  # wandb config now includes all variables that have been changed by sweep
         # set up W&B logger
         wandb_logger = pl.loggers.WandbLogger(
-            project="ccb",
+            project=config["wandb"]["project"],
             entity="climate-benchmark",
             id=None,
             group=wandb_config.get("wandb_group", None),
@@ -46,6 +46,7 @@ def train(job_dir: str) -> None:
             save_dir=str(job.dir),
             resume=True,
         )
+
         csv_logger = pl.loggers.CSVLogger(str(job.dir), name="csv_logs")
 
         loggers = [csv_logger, wandb_logger]
