@@ -4,6 +4,7 @@
 import argparse
 
 import pytorch_lightning as pl
+import wandb
 
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
@@ -49,6 +50,8 @@ def train(job_dir: str) -> None:
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
     trainer.test(model, datamodule)
+
+    wandb.finish()
 
 
 def start() -> None:
