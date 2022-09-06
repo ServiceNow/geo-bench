@@ -17,8 +17,8 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "forestnet_v1.0"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
+DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
 SPATIAL_RESOLUTION = 15
 PATCH_SIZE = 332
 LABELS = [
@@ -137,9 +137,9 @@ def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
         infrared_path = Path(str(visible_image_path).replace("visible", "infrared").replace("png", "npy"))
         is_composite = visible_image_path.stem == "composite"
         if not is_composite:
-            date, clouds = visible_image_path.stem.split("_cloud_")
-            date = datetime.datetime.strptime(date, "%Y_%m_%d").date()
-            clouds = int(clouds)
+            str_date, clouds = visible_image_path.stem.split("_cloud_")
+            date = datetime.datetime.strptime(str_date, "%Y_%m_%d").date()
+            n_cloud_px = int(clouds)
 
             img_year = date.year
             if img_year in seen_years:
@@ -158,7 +158,7 @@ def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
             composite_visible_img = visible_img
             composite_infrared_img = infrared_img
             continue
-        meta_info = {"n_cloud_pixels": clouds, "is_composite": False, "forest_loss_region": forest_loss_polygon.wkt}
+        meta_info = {"n_cloud_pixels": n_cloud_px, "is_composite": False, "forest_loss_region": forest_loss_polygon.wkt}
         # Visible
         for i, band_idx in enumerate([3, 2, 1]):
             band_data = get_band_data(visible_img, i, band_idx, date, SPATIAL_RESOLUTION, transform, crs, meta_info)
@@ -174,8 +174,8 @@ def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
     for year_succ in range(year + 1, year + 5):
         if year_succ not in seen_years:
             meta_info = {"n_cloud_pixels": None, "is_composite": True, "forest_loss_region": forest_loss_polygon.wkt}
-            date = f"{year_succ}_01_01"
-            date = datetime.datetime.strptime(date, "%Y_%m_%d").date()
+            str_date = f"{year_succ}_01_01"
+            date = datetime.datetime.strptime(str_date, "%Y_%m_%d").date()
             # Visible
             for i, band_idx in enumerate([3, 2, 1]):
                 band_data = get_band_data(
@@ -258,8 +258,10 @@ def decompose_time(sample: io.Sample):
         band_dict[band.date].append(band)
 
     for date, bands in band_dict.items():
-        sample_name = f"{sample.sample_name}_{date.strftime('%Y_%m_%d')}"
-        yield io.Sample(bands, label=sample.label, sample_name=sample_name)
+        if date is not None:
+            yield io.Sample(bands, label=sample.label, sample_name=f"{sample.sample_name}_{date.strftime('%Y_%m_%d')}")
+        else:
+            yield io.Sample(bands, label=sample.label, sample_name=f"{sample.sample_name}")
 
 
 if __name__ == "__main__":

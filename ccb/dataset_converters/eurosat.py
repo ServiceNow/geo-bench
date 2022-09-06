@@ -11,11 +11,11 @@ from tqdm import tqdm
 from ccb import io
 
 DATASET_NAME = "eurosat"
-SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)
-DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)
+SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
+DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
-def make_sample(images: np.array, label, sample_name: str) -> io.Sample:
+def make_sample(images: "np.typing.NDArray[np.float_]", label, sample_name: str) -> io.Sample:
     """Create a sample from images and label.
 
     Args:

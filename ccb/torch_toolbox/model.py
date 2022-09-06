@@ -4,7 +4,7 @@ import os
 import random
 import string
 import time
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 import pytorch_lightning as pl
 import torch
@@ -76,7 +76,7 @@ class Model(LightningModule):
         logits = self.head(features)
         return logits
 
-    def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
+    def training_step(self, batch: Dict[str, Tensor], batch_idx: int) -> Dict[str, Tensor]:  # type: ignore
         """Define steps taken during training mode.
 
         Args:
@@ -92,7 +92,7 @@ class Model(LightningModule):
         loss_train = self.loss_function(output, target)
         return {"loss": loss_train, "output": output.detach(), "target": target.detach()}
 
-    def training_step_end(self, outputs: Dict[str, Tensor]) -> None:
+    def training_step_end(self, outputs: Dict[str, Tensor]) -> None:  # type: ignore
         """Define steps taken after training phase.
 
         Args:
@@ -103,7 +103,7 @@ class Model(LightningModule):
         self.log("current_time", time.time(), logger=True)
         self.train_metrics.update(outputs["output"], outputs["target"])
 
-    def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:
+    def training_epoch_end(self, outputs: Dict[str, Tensor]) -> None:  # type: ignore
         """Define actions after a training epoch.
 
         Args:
@@ -118,7 +118,6 @@ class Model(LightningModule):
         Args:
             batch: input batch
             batch_idx: index of batch
-
         Returns:
             validation step outputs
         """
@@ -377,7 +376,7 @@ class ModelGenerator:
         raise NotImplementedError("Necessary to define a transform function.")
 
 
-def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], config: Dict[str, Any]):
+def head_generator(task_specs: TaskSpecifications, features_shape: List[Tuple[int, ...]], config: Dict[str, Any]):
     """Return an appropriate head based on the task specifications.
 
     We can use task_specs.task_type as follow:
@@ -410,7 +409,9 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[tuple], 
 METRIC_MAP: Dict[str, Any] = {}
 
 
-def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
+def train_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate loss function depending on the task_specs.
 
     We should implement basic loss and we can leverage the
@@ -423,22 +424,27 @@ def train_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, An
     Returns:
         metric collection used during training
     """
-    metrics = {
-        io.Classification: [torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)],
-        io.MultiLabelClassification: [
-            # torchmetrics.Accuracy(dist_sync_on_step=True),
-            torchmetrics.F1Score(task_specs.label_type.n_classes)
-        ],
-        io.SegmentationClasses: [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy(dist_sync_on_step=True, top_k=1)]),  # type: ignore
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [
+                # torchmetrics.Accuracy(dist_sync_on_step=True),
+                torchmetrics.F1Score(task_specs.label_type.n_classes)
+            ]
+        ),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [torchmetrics.JaccardIndex(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
     # for metric_name in hparams.get("train_metrics", ()):
     #     metrics.extend(METRIC_MAP[metric_name])
+    return metrics
 
-    return torchmetrics.MetricCollection(metrics)
 
-
-def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
+def eval_metrics_generator(
+    task_specs: TaskSpecifications, config: Dict[str, Any]
+) -> List[torchmetrics.MetricCollection]:
     """Return the appropriate eval function depending on the task_specs.
 
     Args:
@@ -448,19 +454,23 @@ def eval_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any
     Returns:
         metric collection used during evaluation
     """
-    metrics = {
-        io.Classification: [torchmetrics.Accuracy()],
-        io.SegmentationClasses: [
-            torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
-            torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
-        ],
-        io.MultiLabelClassification: [torchmetrics.F1Score(task_specs.label_type.n_classes)],
+    metrics: List[torchmetrics.MetricCollection] = {  # type: ignore
+        io.Classification: torchmetrics.MetricCollection([torchmetrics.Accuracy()]),
+        io.SegmentationClasses: torchmetrics.MetricCollection(
+            [
+                torchmetrics.JaccardIndex(task_specs.label_type.n_classes),
+                torchmetrics.FBetaScore(task_specs.label_type.n_classes, beta=2, mdmc_average="samplewise"),
+            ]
+        ),
+        io.MultiLabelClassification: torchmetrics.MetricCollection(
+            [torchmetrics.F1Score(task_specs.label_type.n_classes)]
+        ),
     }[task_specs.label_type.__class__]
 
     # for metric_name in hparams.get("eval_metrics", ()):
     #     metrics.extend(METRIC_MAP[metric_name])
 
-    return torchmetrics.MetricCollection(metrics)
+    return metrics
 
 
 def test_metrics_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> torchmetrics.MetricCollection:
@@ -503,7 +513,7 @@ def _balanced_binary_cross_entropy_with_logits(outputs: Tensor, targets: Tensor)
     return loss
 
 
-def train_loss_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> Dict:
+def train_loss_generator(task_specs: TaskSpecifications, config: Dict[str, Any]) -> Callable[[Tensor], Tensor]:
     """Return the appropriate loss function depending on the task_specs.
 
     Args:
@@ -519,7 +529,7 @@ def train_loss_generator(task_specs: TaskSpecifications, config: Dict[str, Any])
         io.SegmentationClasses: F.cross_entropy,
     }[task_specs.label_type.__class__]
 
-    return loss
+    return loss  # type: ignore
 
 
 class BackBone(torch.nn.Module):
@@ -543,11 +553,11 @@ class BackBone(torch.nn.Module):
         self.task_specs = task_specs
         self.config = config
 
-    def forward(self, data_dict: Dict[str, Tensor]) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         """Forward input through backbone.
 
         Args:
-            data_dict:  is a collection of tensors returned by the data loader.
+            x: input tensor to backbone
 
         Returns:
             the encoded representation or a list of representations for
