@@ -4,8 +4,8 @@
 import argparse
 
 import pytorch_lightning as pl
-
 import wandb
+
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
 
