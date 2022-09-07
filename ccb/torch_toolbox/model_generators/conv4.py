@@ -18,6 +18,7 @@ from ccb.torch_toolbox.model import (
     ModelGenerator,
     eval_metrics_generator,
     head_generator,
+    test_metrics_generator,
     train_loss_generator,
     train_metrics_generator,
 )
@@ -50,7 +51,8 @@ class Conv4Generator(ModelGenerator):
         loss = train_loss_generator(task_specs, config)
         train_metrics = train_metrics_generator(task_specs, config)
         eval_metrics = eval_metrics_generator(task_specs, config)
-        return Model(backbone, head, loss, config, train_metrics, eval_metrics)
+        test_metrics = test_metrics_generator(task_specs, config)
+        return Model(backbone, head, loss, config, train_metrics, eval_metrics, test_metrics)
 
     def get_collate_fn(self, task_specs: TaskSpecifications, config: Dict[str, Any]) -> Any:
         """Define a collate function to batch input tensors.
