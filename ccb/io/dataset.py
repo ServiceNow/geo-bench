@@ -838,16 +838,9 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
                 bands.append(band)
         if label is None:
             label = attr_dict["label"]
-        if isinstance(label, int):
-            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
-        elif isinstance(label, np.ndarray):  # multi class classification
-            sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
-        elif isinstance(label, dict):  # segmentation class
-            sample = Sample(
-                bands=bands,
-                label=Band(data=np.array(fp["label"]), **attr_dict["label"]),
-                sample_name=sample_path.stem,
-            )
+
+        sample = Sample(bands=bands, label=label, sample_name=sample_path.stem)
+
         return sample
 
 
@@ -1133,7 +1126,7 @@ class GeneratorWithLength(object):
         return self.generator
 
 
-class CCBDataset(Dataset):
+class CCBDataset:
     """CCBDataset."""
 
     def __init__(
