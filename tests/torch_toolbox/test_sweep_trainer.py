@@ -7,11 +7,13 @@ import tempfile
 from pathlib import Path
 from subprocess import PIPE
 
+import pytest
 from ruamel.yaml import YAML
 
 from ccb.experiment.experiment import Job
 
 
+@pytest.mark.skip(reason="have to come up with a better way of testing the sweep")
 def test_sweep():
 
     with open(
