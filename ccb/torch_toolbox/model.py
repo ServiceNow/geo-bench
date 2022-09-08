@@ -123,7 +123,7 @@ class Model(LightningModule):
         """
         return self.eval_step(batch, batch_idx, ["val", "test"][loader_idx])
 
-    def eval_step(self, batch: Tensor, batch_idx: int, prefix: str) -> Dict[str, Tensor]:
+    def eval_step(self, batch: Dict[str, Tensor], batch_idx: int, prefix: str) -> Dict[str, Tensor]:
         """Define steps taken during validation and testing.
 
         Args:
@@ -327,14 +327,18 @@ class ModelGenerator:
         checkpoint_callback = ModelCheckpoint(
             dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
         )
+        early_stopping_callback = EarlyStopping(
+            monitor=config["model"].get("early_stopping_metric", "val_loss"),
+            mode=config["model"].get("early_stopping_mode", "min"),
+            patience=config["model"].get("early_stopping_patience", 20),
+            min_delta=1e-5,
+        )
 
         trainer = pl.Trainer(
             **config["pl"],
             default_root_dir=job.dir,
             callbacks=[
-                EarlyStopping(
-                    monitor="val_loss", mode="min", patience=config["pl"].get("patience", 120), min_delta=1e-5
-                ),
+                early_stopping_callback,
                 checkpoint_callback,
             ],
             logger=loggers,
