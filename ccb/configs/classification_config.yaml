@@ -13,10 +13,10 @@ wandb:
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
     num_trials_per_agent: 3 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
+  model_generator_module_name: ccb.torch_toolbox.model_generators.ssl_moco
   head_type: linear # classification
   loss_type: crossentropy
-  backbone: swinv2_tiny_window16_256  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+  backbone: resnet18  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
   pretrained: True
   new_channel_init_method: random
   image_size: 256 # desired image input dimension to model
