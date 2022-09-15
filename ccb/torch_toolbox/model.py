@@ -324,13 +324,41 @@ class ModelGenerator:
         job.save_config(config, overwrite=True)
 
         ckpt_dir = os.path.join(job.dir, "checkpoint")
+
+        ds_name = job.task_specs.dataset_name
+        if "Accuracy" in config["model"].get("early_stopping_metric", "val_loss"):
+            if ds_name in [
+                "eurosat",
+                "brick_kiln_v1.0",
+                "pv4ger_classification",
+                "so2sat",
+                "forestnet_v1.0",
+                "geolifeclef-2022",
+            ]:
+                track_metric = "val_Accuracy"
+            elif ds_name == "bigearthnet":
+                track_metric = "val_F1Score"
+            elif ds_name in [
+                "pv4ger_segmentation",
+                "nz_cattle_segmentation",
+                "smallholder_cashew",
+                "southAfricaCropType",
+                "cvpr_chesapeake_landcover",
+            ]:
+                track_metric = "val_JaccardIndex"
+            mode = "max"
+        else:
+            track_metric = config["model"].get("early_stopping_metric", "val_loss")
+            mode = "min"
+
         checkpoint_callback = ModelCheckpoint(
-            dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
+            dirpath=ckpt_dir, save_top_k=1, monitor=track_metric, mode=mode, every_n_epochs=1
         )
+        patience = (1 / config["pl"]["val_check_interval"]) * 20
         early_stopping_callback = EarlyStopping(
-            monitor=config["model"].get("early_stopping_metric", "val_loss"),
-            mode=config["model"].get("early_stopping_mode", "min"),
-            patience=config["model"].get("early_stopping_patience", 20),
+            monitor=track_metric,
+            mode=mode,
+            patience=patience,
             min_delta=1e-5,
         )
 

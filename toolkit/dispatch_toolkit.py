@@ -69,7 +69,7 @@ def toolkit_job(script_path: Path, env_vars=()):
     cmd += ["--mem", str(TOOLKIT_MEM)]
     cmd += ["--account", str(TOOLKIT_USER_ACCOUNT)]
 
-    # cmd += ["--gpu-model-filter", "!A100"]
+    cmd += ["--gpu-model-filter", "!A100"]
     # Mount data objects
     cmd += ["--data", f"{TOOLKIT_DATA}:/mnt/data"]
     cmd += ["--data", f"{TOOLKIT_CODE}@{TOOLKIT_CODE_VERSION}:/mnt/code"]
@@ -137,9 +137,9 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
             else:
                 model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
 
-            ans = input(f"Launch {model_name} on {config_path.parents[0].name} y/n.")
-            if ans != "y":
-                continue
+            # ans = input(f"Hello tony, {model_name} on {config_path.parents[0].name} y/n.")
+            # if ans != "y":
+            #     continue
 
             assert "sweep_config_path" in config["wandb"]["sweep"]
 

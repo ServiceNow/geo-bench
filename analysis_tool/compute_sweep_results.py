@@ -69,10 +69,19 @@ def compute_results(args):
         eval_df = eval_df.groupby("epoch").mean().reset_index()
         train_loss_df = orig_df[orig_df["train_loss"].notnull()]
         train_loss_df = train_loss_df.groupby("epoch").mean().reset_index()
+
         metric_name = str(task_specs.eval_loss).split(".")[-1].split("'")[0]
         if metric_name == "MultilabelAccuracy":
             metric_name = "F1Score"
+
+        if metric_name == "SegmentationAccuracy":
+            metric_name = "JaccardIndex"
+
+        if metric_name == "Accuracy" and "NeonTree_segmentation" in str(csv_logger_dir):
+            metric_name = "JaccardIndex"
+
         train_metric_df = orig_df[orig_df["train_" + metric_name].notnull()]
+
         train_metric_df = train_metric_df.groupby("epoch").mean().reset_index()
 
         eval_df.update(train_loss_df)
@@ -81,18 +90,7 @@ def compute_results(args):
         step_to_time = eval_df[["step", "current_time"]].drop_duplicates(subset="step")
         step_to_time = dict(zip(step_to_time.step, step_to_time.current_time))
 
-        metric_name = str(task_specs.eval_loss).split(".")[-1].split("'")[0].lower()
-
-        if metric_name == "multilabelaccuracy":
-            metric_name = "f1score"
-
-        if metric_name == "segmentationaccuracy":
-            metric_name = "jaccardindex"
-
-        if metric_name == "accuracy" and os.path.basename(config["experiment"]["benchmark_dir"]).startswith(
-            "segmentation"
-        ):
-            metric_name = "jaccardindex"
+        metric_name = metric_name.lower()
 
         # new column names to be universal as specific metric name might differ with tasks
         new_columns = []
@@ -162,7 +160,7 @@ def compute_results(args):
     # remove duplicates sweeps and keep the ones with 12 trials
     count_df = all_trials_df.groupby(["model", "dataset", "partition_name", "exp_dir"]).size().reset_index()
     count_df.rename(columns={0: "count"}, inplace=True)
-    count_df = count_df[count_df["count"] == 12]
+
     # extract latest date from string
     count_df["date"] = count_df["exp_dir"].str.split("/", 0, expand=True)[6].str.split("_", 4, expand=True)[4]
     count_df["date"] = pd.to_datetime(count_df["date"], format="%m-%d-%Y_%H:%M:%S")
@@ -178,7 +176,7 @@ def compute_results(args):
         # remove duplicates sweeps and keep the ones with 12 trials
         count_df = all_trials_df.groupby(["model", "dataset", "partition_name", "exp_dir"]).size().reset_index()
         count_df.rename(columns={0: "count"}, inplace=True)
-        count_df = count_df[count_df["count"] == 12]
+        # count_df = count_df[count_df["count"] == 12]
         # extract latest date from string
         count_df["date"] = count_df["exp_dir"].str.split("/", 0, expand=True)[6].str.split("_", 4, expand=True)[4]
         count_df["date"] = pd.to_datetime(count_df["date"], format="%m-%d-%Y_%H:%M:%S")
