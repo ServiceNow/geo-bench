@@ -1,14 +1,21 @@
 experiment:
-  generate_experiment_dir: /mnt/data/experiments/nils/segmentation_sweeps
-  experiment_name: 0.50x_train # prefix
+  generate_experiment_dir: /mnt/data/experiments/nils/new_segmentation_sweeps
+  experiment_name: 1.00x_train # prefix
   experiment_type: sweep # standard, seeded_runs, sweep
   benchmark_dir: /mnt/data/cc_benchmark/segmentation_v0.2
-  partition_name: 0.50x_train
+  partition_name: 1.00x_train
+wandb:
+  project: ccb # wandb project name
+  entity: climate-benchmark # user or team entity that hosts a project
+  sweep:
+    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml # or maybe define the entire sweep here?
+    num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
+    num_trials_per_agent: 3 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   new_channel_init_method: random
-  encoder_type: resnet50  # resnet18,
-  decoder_type: Unet
+  encoder_type: resnet101  # resnet18,
+  decoder_type: DeepLabV3
   encoder_weights: imagenet
   image_size: 224 # desired image input dimension to model
   pretrained: True
@@ -22,13 +29,6 @@ dataset:
   format: hdf5
 dataloader:
   num_workers: 4
-wandb:
-  project: ccb # wandb project name
-  entity: climate-benchmark # user or team entity that hosts a project
-  sweep:
-    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet50_unet.yaml # or maybe define the entire sweep here?
-    num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
-    num_trials_per_agent: 3 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 pl: # all flags for pytorch lightning Trainer module, see https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
   gpus: 1
   accelerator: gpu
@@ -36,7 +36,7 @@ pl: # all flags for pytorch lightning Trainer module, see https://pytorch-lightn
   max_steps: -1
   limit_val_batches: 1.0
   limit_test_batches: 1.0
-  val_check_interval: 1.0
+  val_check_interval: 0.25
   deterministic: False
   log_every_n_steps: 10
   enable_progress_bar: False

@@ -48,6 +48,7 @@ def train(job_dir: str) -> None:
         )
 
         csv_logger = pl.loggers.CSVLogger(str(job.dir), name="csv_logs")
+        csv_logger_dir = csv_logger.log_dir
 
         loggers = [csv_logger, wandb_logger]
 
@@ -85,10 +86,12 @@ def train(job_dir: str) -> None:
         trainer.test(model, datamodule)
 
         # save updated configs in csv_logger one directories are created
-        csv_logger_dir = csv_logger.log_dir
         yaml = YAML()
         with open(os.path.join(csv_logger_dir, "config.yaml"), "w") as fd:
             yaml.dump(config, fd)
+
+        with open(os.path.join(csv_logger_dir, "status.txt"), "w") as fd:
+            fd.write("Done")
 
 
 def start() -> None:
