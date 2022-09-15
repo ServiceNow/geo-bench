@@ -14,9 +14,16 @@ from ruamel.yaml import YAML
 from tqdm import tqdm
 
 
-def retrieve_runs(experiment_dir):
-    """Compute results for a sweep."""
-    sweep_exps = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+def retrieve_runs(sweep_experiment_dir):
+    """Compute results for a sweep.
+
+    Args:
+        experiment_dir: diretory where all sweeps are stored
+
+    Returns:
+        df with sweep summaries per individual run
+    """
+    sweep_exps = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
 
     csv_run_dirs = [Path(path).parent for path in sweep_exps]
     all_trials_df = pd.DataFrame(
@@ -154,3 +161,14 @@ def retrieve_runs(experiment_dir):
     all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
 
     return all_trials_df
+
+
+def find_missing_runs(df):
+    """Find missing runs for dataset and model combinations.
+
+    Args:
+        df: dataframe results of above retrieve runs function
+
+    Returns:
+        dict that shows missing runs
+    """

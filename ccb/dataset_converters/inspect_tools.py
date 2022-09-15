@@ -395,18 +395,53 @@ def summarize_band_info(band_info_list: List[io.BandInfo]):
     return {
         "RGB res": RGB_resolution,
         "NIR res": resolution_dict.get("nir", None),
-        "Sentinel2 count": sentinel2_count,
-        "Sentinel1 count": sentinel1_count,
+        "# Sentinel2": sentinel2_count,
+        "# Sentinel1": sentinel1_count,
         "Elevation res": elevation_resolution,
         "HS res": hs_resolution,
-        "Spectral count": spectral_count,
-        "Bands count": len(band_info_list),
+        "# Spectral": spectral_count,
+        "# Bands": len(band_info_list),
     }
+
+
+# Temporary structure mapping task to sensor type (For display)
+SENSORS = {
+    "forestnet_v1.0": "Landsat",
+    "eurosat": "Sentinel-2",
+    "brick_kiln_v1.0": "Sentinel-2",
+    "so2sat": "Sentinel-2, Sentinel-1",
+    "pv4ger_classification": "RGB",
+    "geolifeclef-2022": "RGBN, Elevation",
+    "bigearthnet": "Sentinel-2, Sentinel-1",
+    "pv4ger_segmentation": "RGB",
+    "nz_cattle_segmentation": "RGB",
+    "NeonTree_segmentation": "RGB, Hyperspectral (Neon), Elevation (Lidar)",
+    "smallholder_cashew": "Sentinel-2",
+    "southAfricaCropType": "Sentinel-2",
+    "cvpr_chesapeake_landcover": "RGBN",
+}
+
+DISPLAY_NAMES = {
+    "forestnet_v1.0": "m-forestnet",
+    "eurosat": "m-eurosat",
+    "brick_kiln_v1.0": "m-brick-kiln",
+    "so2sat": "m-so2sat",
+    "pv4ger_classification": "m-pv4ger",
+    "geolifeclef-2022": "m-geolifeclef",
+    "bigearthnet": "m-bigearthnet",
+    "pv4ger_segmentation": "m-pv4ger-seg",
+    "nz_cattle_segmentation": "m-nz-cattle",
+    "NeonTree_segmentation": "m-NeonTree",
+    "smallholder_cashew": "m-cashew-plantation",
+    "southAfricaCropType": "m-SA-crop-type",
+    "cvpr_chesapeake_landcover": "m-chesapeake-landcover",
+}
 
 
 def collect_task_info(task):
     """Collect information for the given task."""
     loss = task.eval_loss
+
     if isinstance(loss, type):
         loss = loss()
     try:
@@ -422,15 +457,16 @@ def collect_task_info(task):
     n_classes = getattr(task.label_type, "n_classes", -1)
 
     task_dict = {
-        "name": task.dataset_name,
-        "img size": " x ".join([str(size) for size in task.patch_size]),
-        "loss": str(loss),
-        "label type": task.label_type.__class__.__name__,
-        "n classes": int(n_classes),
-        "n time steps": task.n_time_steps,
-        "n train": n_train,
-        "n valid": n_valid,
-        "n test": n_test,
+        "Name": task.dataset_name,
+        "Image Size": " x ".join([str(size) for size in task.patch_size]),
+        "Loss": str(loss),
+        "Label Type": task.label_type.__class__.__name__,
+        "# Classes": int(n_classes),
+        "# Time Steps": task.n_time_steps,
+        "Train Size": n_train,
+        "Val Size": n_valid,
+        "Test Size": n_test,
+        "Sensors": SENSORS.get(task.dataset_name, None),
     }
     task_dict.update(summarize_band_info(task.bands_info))
     return task_dict, dataset
@@ -451,22 +487,23 @@ def benchmark_data_frame(benchmark_name):
     """Format benchmark information into panda data frame."""
     task_dicts = collect_benchmark_info(benchmark_name)
     column_order = (
-        "name",
-        "img size",
-        "label type",
-        "n classes",
-        "n train",
-        "n valid",
-        "n test",
-        "n time steps",
-        "Bands count",
-        "Sentinel2 count",
+        "Name",
+        "Image Size",
+        "Label Type",
+        "# Classes",
+        "Train Size",
+        "Val Size",
+        "Test Size",
+        "# Time Steps",
+        "# Bands",
+        "# Sentinel2",
         "RGB res",
         "NIR res",
         "HS res",
         "Elevation res",
+        "Sensors",
     )
-    df = pd.DataFrame.from_records(task_dicts, index="name", columns=column_order)
+    df = pd.DataFrame.from_records(task_dicts, columns=column_order)
     pd.set_option("max_colwidth", 300)
     return df
 
@@ -537,7 +574,7 @@ def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
         )
 
 
-def plot_benchmark(benchmark_name, n_samples):
+def plot_benchmark(benchmark_name, n_samples, save_dir=Path.home() / "figures"):
     """Plot samples of the benchmark using matplotlib for compact visualization."""
     for task in io.task_iterator(io.CCB_DIR / benchmark_name):
 
@@ -556,8 +593,8 @@ def plot_benchmark(benchmark_name, n_samples):
         plot_images(images, label_names)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
-        dir = Path("~/paper").expanduser()
-        plt.savefig(dir / f"{task.dataset_name}.pdf", bbox_inches="tight")
+        if save_dir is not None:
+            plt.savefig(save_dir / f"{task.dataset_name}.pdf", bbox_inches="tight")
 
 
 def plot_images(images, names):
