@@ -11,10 +11,11 @@ from ccb.experiment.experiment_generator import experiment_generator
 from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
-    config_filepath=str(Path(__file__).parent.parent / "ccb/configs/classification_config.yaml"),
+    config_filepath=str(Path(__file__).parent.parent / "ccb/configs/segmentation_config.yaml"),
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)
 
 # you may want to change to your WANDB_API_KEY."
+os.environ["WANDB_API_KEY"] = "def8d0fad10d1479d79ab4c7e68530d59be04cf5"
 dispatch_toolkit.toolkit_dispatcher(experiment_dir, env_vars=(f"WANDB_API_KEY={os.environ['WANDB_API_KEY']}",))

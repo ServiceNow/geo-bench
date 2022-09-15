@@ -20,10 +20,9 @@ parameters:
 # hidden size of classifier
   hidden_size:
     distribution: categorical
-    values: [128, 256, 512]
+    values: [0, 256]
   batch_size:
-    distribution: categorical
-    values: [16, 32]
+    value: 32
   optimizer:
     value: adamw
 
