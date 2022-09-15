@@ -7,6 +7,7 @@ import pickle
 from datetime import datetime
 from email.quoprimime import unquote
 from pathlib import Path
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -163,12 +164,85 @@ def retrieve_runs(sweep_experiment_dir):
     return all_trials_df
 
 
-def find_missing_runs(df):
+partition_names = [
+    "0.01x_train",
+    "0.02x_train",
+    "0.05x_train",
+    "0.10x_train",
+    "0.20x_train",
+    "0.50x_train",
+    "1.00x_train",
+    "default",
+]
+classification_dataset_names = [
+    "bigearthnet",
+    "brick_kiln_v1.0",
+    "eurosat",
+    "pv4ger_classification",
+    "so2sat",
+    "forestnet_v1.0",
+    "geolifeclef-2022",
+]
+
+classification_models = [
+    "conv4",
+    "resnet18",
+    "resnet50",
+    "convnext_base",
+    "vit_tiny_patch16_224",
+    "vit_small_patch16_224",
+    "swinv2_tiny_window16_256",
+]
+
+segmentation_dataset_names = [
+    "pv4ger_segmentation",
+    "nz_cattle_segmentation",
+    "smallholder_cashew",
+    "southAfricaCropType",
+    "cvpr_chesapeake_landcover",
+]
+
+segmentation_models = [
+    "resnet18_Unet",
+    "resnet50_Unet",
+    "resnet101_Unet",
+    "resnet18_DeepLabV3",
+    "resnet50_DeepLabV3",
+    "resnet101_DeepLabV3",
+]
+
+
+def find_missing_runs(df, num_run_thresh: int = 10, task: str = "classification"):
     """Find missing runs for dataset and model combinations.
 
     Args:
         df: dataframe results of above retrieve runs function
+        num_run_thresh: number of runs to consider as a combination to be not complete
+        task: segmentation or classification
 
     Returns:
         dict that shows missing runs
     """
+    if task == "classification":
+        dataset_names = classification_dataset_names
+    elif task == "segmentation":
+        dataset_names = segmentation_dataset_names
+    else:
+        print("Task is not defined.")
+
+    # each model and dataset and partition is present:
+    miss_dict: Dict[str, Dict[str, List]] = {}
+    for model in df["model"].unique():
+        model_df = df[df["model"] == model]
+        miss_dict[model] = {}
+        for part in partition_names:
+            part_df = model_df[model_df["partition_name"] == part]
+            miss_dict[model][part] = []
+            for ds in dataset_names:
+                ds_df = part_df[part_df["dataset"] == ds]
+                for exp_dir in ds_df["exp_dir"].unique():
+                    exp_df = ds_df[ds_df["exp_dir"] == exp_dir]
+                    if len(exp_df) < num_run_thresh:
+                        miss_dict[model][part].append(ds)
+
+    return miss_dict
