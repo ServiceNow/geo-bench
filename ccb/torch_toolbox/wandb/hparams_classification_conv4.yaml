@@ -21,7 +21,7 @@ parameters:
     distribution: categorical
     values: [0, 256]
   batch_size:
-    value: 256
+    value: 128
   optimizer:
     value: adamw
 

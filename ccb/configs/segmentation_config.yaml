@@ -1,9 +1,9 @@
 experiment:
   generate_experiment_dir: /mnt/data/experiments/nils/new_segmentation_sweeps
-  experiment_name: 1.00x_train # prefix
+  experiment_name: 0.01x_train # prefix
   experiment_type: sweep # standard, seeded_runs, sweep
   benchmark_dir: /mnt/data/cc_benchmark/segmentation_v0.2
-  partition_name: 1.00x_train
+  partition_name: 0.01x_train
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
@@ -15,7 +15,7 @@ model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   new_channel_init_method: random
   encoder_type: resnet101  # resnet18,
-  decoder_type: DeepLabV3
+  decoder_type: Unet
   encoder_weights: imagenet
   image_size: 224 # desired image input dimension to model
   pretrained: True
@@ -24,6 +24,7 @@ model:
   optimizer: sgd
   hidden_size: 512
   batch_size: 2
+  log_segmentation_masks: True
 dataset:
   band_names: ["red", "green", "blue"]
   format: hdf5
