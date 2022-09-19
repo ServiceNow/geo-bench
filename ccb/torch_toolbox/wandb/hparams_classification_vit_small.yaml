@@ -19,10 +19,9 @@ parameters:
 # hidden size of classifier
   hidden_size:
     distribution: categorical
-    values: [128, 256, 512]
+    values: [0, 256]
   batch_size:
-    distribution: categorical
-    values: [32, 64]
+    value: 64
   optimizer:
     value: sgd
 

@@ -14,7 +14,7 @@ from matplotlib.ticker import FormatStrFormatter
 from scipy.stats import trim_mean
 
 
-def make_normalizer(data_frame, metrics=("test_metric",)):
+def make_normalizer(data_frame, metrics=("test metric",)):
     """Extract min and max from data_frame to build Normalizer object for all datasets."""
     datasets = data_frame["dataset"].unique()
     range_dict = {}
@@ -111,7 +111,7 @@ def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
     return new_df
 
 
-def plot_bootstrap_aggregate(df, metric, model_order, repeat=100):
+def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None):
     """Add aggregated data as a new dataset."""
     bootstrapped_iqm = pd.concat(
         (
@@ -119,7 +119,7 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100):
             bootstrap_iqm(df, metric=metric, repeat=repeat),
         )
     )
-    plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric)
+    plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size)
 
 
 # def unstack_runs(df: pd.DataFrame, metric):
@@ -149,10 +149,22 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100):
 #         )
 
 
-def plot_per_dataset_3(df, model_order, metric="test_metric", aggregated_name="aggregated", sharey=True, inner="box"):
+def plot_per_dataset_3(
+    df,
+    model_order,
+    metric="test metric",
+    aggregated_name="aggregated",
+    sharey=True,
+    inner="box",
+    fig_size=None,
+    n_legend_rows=1,
+):
     """Violin plots for each datasets and each models."""
-    datasets = df["dataset"].unique()
-    fig, axes = plt.subplots(1, len(datasets), sharey=sharey)
+    datasets = sorted(df["dataset"].unique())
+    if fig_size is None:
+        fig_width = len(datasets) * 2
+        fig_size = (fig_width, 5)
+    fig, axes = plt.subplots(1, len(datasets), sharey=sharey, figsize=fig_size)
 
     for dataset, ax in zip(datasets, axes):
         sns.set_style("dark")
@@ -164,7 +176,7 @@ def plot_per_dataset_3(df, model_order, metric="test_metric", aggregated_name="a
             hue="model",
             data=sub_df,
             hue_order=model_order,
-            linewidth=0.5,
+            linewidth=0.1,
             saturation=0.9,
             scale="count",
             inner=inner,
@@ -181,7 +193,8 @@ def plot_per_dataset_3(df, model_order, metric="test_metric", aggregated_name="a
         if dataset != datasets[int((len(datasets) - 1) / 2)]:
             ax.get_legend().remove()
         else:
-            sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=7, title="")
+            ncols = int(np.ceil(len(model_order) / n_legend_rows))
+            sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=ncols, title="")
 
         if dataset != datasets[0]:
             if sharey:
@@ -189,8 +202,13 @@ def plot_per_dataset_3(df, model_order, metric="test_metric", aggregated_name="a
             else:
                 ax.set(ylabel=None)
 
-        # y_ticks = ax.get_yticks()
-        # print(y_ticks)
+    if sharey:
+        fig.subplots_adjust(wspace=0.01)
+    else:
+        fig.subplots_adjust(wspace=0.3)
+
+    # y_ticks = ax.get_yticks()
+    # print(y_ticks)
     # fig.tight_layout()
 
 
@@ -224,23 +242,27 @@ def plot_per_dataset_3(df, model_order, metric="test_metric", aggregated_name="a
 
 def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=True):
     """Plot the time (in number of steps) of each experiment as a function of the training set size."""
-    df["train_ratio"] = [get_train_ratio(part_name) for part_name in df["partition_name"]]
+    df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
 
-    mean_1x_time = df[df["train_ratio"] == 0.1].groupby(["dataset", "model"])[time_metric].mean()
-    df["mean_1x_time"] = df.apply(lambda row: mean_1x_time[(row.dataset, row.model)], axis=1)
+    if time_metric == "step":
+        df["n observation"] = df["step"] * df["batch size"]
+        time_metric = "n observation"
+
+    mean_1x_time = df[df["train ratio"] == 0.1].groupby(["dataset", "model"])[time_metric].mean()
+    df["mean 1x time"] = df.apply(lambda row: mean_1x_time[(row.dataset, row.model)], axis=1)
     normalized_name = f"{time_metric} normalized"
-    df[normalized_name] = df.apply(lambda row: row[time_metric] / row["mean_1x_time"], axis=1)
+    df[normalized_name] = df.apply(lambda row: row[time_metric] / row["mean 1x time"], axis=1)
 
     if average_seeds:
-        df = df.groupby(["dataset", "train_ratio"]).mean()
+        df = df.groupby(["dataset", "train ratio"]).mean()
         df = df.reset_index()
         noise_level = 0.05
     else:
         noise_level = 0.1
 
-    df["train_ratio_noisy"] = df.apply(lambda row: row["train_ratio"] * np.exp(np.random.randn() * noise_level), axis=1)
+    df["train ratio noisy"] = df.apply(lambda row: row["train ratio"] * np.exp(np.random.randn() * noise_level), axis=1)
     # print(df.keys())
-    ax = sns.scatterplot(data=df, x="train_ratio_noisy", y=normalized_name, hue="dataset")
+    ax = sns.scatterplot(data=df, x="train ratio noisy", y=normalized_name, hue="dataset")
     ax.set_xscale("log")
     ax.set_yscale("log")
 
@@ -293,7 +315,7 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
 
 def get_train_ratio(part_name):
     """Parse train ratio from partition name."""
-    return float(part_name.split("x_")[0])
+    return float(part_name.split("x ")[0])
 
 
 def clean_names(val):
@@ -304,8 +326,10 @@ def clean_names(val):
             ("vit_small_patch16_224", "vit_small"),
             ("vit_tiny_patch16_224", "vit_tiny"),
             ("swinv2_tiny_window16_256", "swinv2"),
+            ("_", " "),
         ):
             val = val.replace(src, tgt)
+
     return val
 
 
@@ -382,12 +406,13 @@ def collect_trace_info_raw(log_dir: str) -> pd.DataFrame:
     return df
 
 
-def get_best_logs(log_dirs, metric, top_k=4, lower_is_better=True):
+def get_best_logs(log_dirs, metric, filt_size, top_k, lower_is_better=True):
     """Find the `top_k` best experiments based on maximum validation accuracy."""
     max_accuracies = []
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
-        val_accuracy = trace_dict[metric].rolling(5, win_type="gaussian").mean(std=1)
+
+        val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
         max_accuracies.append(np.nanmax(val_accuracy.to_numpy()))
 
     max_accuracies = np.array(max_accuracies)
@@ -397,6 +422,7 @@ def get_best_logs(log_dirs, metric, top_k=4, lower_is_better=True):
     return np.array(log_dirs)[idx]
 
 
+@cache
 def get_hparams(log_dir: Path):
     """Load the hyper parameters from the yaml file."""
     with open(Path(log_dir) / "hparams.yaml", "r") as stream:
@@ -436,7 +462,6 @@ def format_hparams(log_dirs):
         hparams = get_hparams(log_dir)
 
         exp_names[log_dir] = ", ".join([format_hparam(key, hparams[key]) for key in variables])
-
     return str(constants), exp_names
 
 
@@ -454,7 +479,17 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         metric = "val_Accuracy"
         if dataset == "bigearthnet":
             metric = "val_F1Score"
-        log_dirs = get_best_logs(log_dirs, metric, top_k=top_k)
+        if dataset in [
+            "pv4ger_segmentation",
+            "nz_cattle_segmentation",
+            "smallholder_cashew",
+            "southAfricaCropType",
+            "cvpr_chesapeake_landcover",
+            "NeonTree_segmentation",
+        ]:
+            metric = "val_JaccardIndex"
+
+        log_dirs = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
 
         constants, exp_names = format_hparams(log_dirs)
 
@@ -473,8 +508,8 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
                 ax2 = ax.twinx()
             sns.lineplot(data=val_accuracy, ax=ax2, linestyle=":")
 
-        mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 95])
-        ax.set_ylim(bottom=mn, top=mx)
+        # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
+        # ax.set_ylim(bottom=mn, top=mx)
 
         if legend:
             ax.legend()
@@ -483,32 +518,34 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
     return plot_sweep
 
 
-def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False)):
+def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size=None):
     """Create a grid plot for all models and datasets."""
     models = df["model"].unique()
     datasets = df["dataset"].unique()
 
-    fig, axes = plt.subplots(len(datasets), len(models))
+    fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size)
     # fig.suptitle(metric, fontsize=20)
 
     for i, dataset in enumerate(datasets):
         print(dataset)
         for j, model in enumerate(models):
-            axes[i, j].set_title(f"{model} on {dataset}")
             sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
+            axes[i, j].set_title(f"{len(sub_df)} runs of {model} on {dataset} ")
+
             plot_fn(sub_df, axes[i, j], dataset, model)
 
 
-def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True)):
+def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=None):
     """Plot all dataset results for a single model."""
     datasets = df["dataset"].unique()
 
-    fig, axes = plt.subplots(len(datasets), 1)
+    fig, axes = plt.subplots(len(datasets), 1, figsize=fig_size)
     # fig.suptitle(metric, fontsize=20)
 
     for i, dataset in enumerate(datasets):
         print(dataset)
 
-        axes[i].set_title(f"{model} on {dataset}")
         sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
+        axes[i].set_title(f"{len(sub_df)} runs of {model} on {dataset} ")
+
         plot_fn(sub_df, axes[i], dataset, model)
