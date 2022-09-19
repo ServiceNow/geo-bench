@@ -1,5 +1,6 @@
 """Inspect tools."""
 import math
+from bdb import Breakpoint
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from warnings import warn
@@ -587,20 +588,34 @@ def plot_benchmark(benchmark_name, n_samples, save_dir=Path.home() / "figures"):
         else:
             samples = [dataset[i] for i in range(n_samples)]
 
-        images, labels = extract_images(samples)
-        label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
+        if isinstance(task.label_type, io.SegmentationClasses):
+            images, band_names, all_labels, unique_band_names = extract_bands_with_labels(samples, [])
+            label_names = [None] * len(images)
+        else:
+            images, labels = extract_images(samples)
+            label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
 
-        plot_images(images, label_names)
+        plot_images(images, label_names, DISPLAY_NAMES[task.dataset_name])
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
         if save_dir is not None:
-            plt.savefig(save_dir / f"{task.dataset_name}.pdf", bbox_inches="tight")
+            plt.savefig(save_dir / f"{task.dataset_name}.png", bbox_inches="tight")
 
 
-def plot_images(images, names):
+def plot_images(images, names, title):
     """Plot images using matplotlib for compact visualization."""
     fig, axs = plt.subplots(1, len(images))
     for image, name, ax in zip(images, names, axs):
+        if name is not None:
+            for sub_name in name.split(" &\n"):
+                ax.plot(np.nan, np.nan, ".", color="k", label=sub_name)
         ax.imshow(image)
         ax.axis("off")
-        ax.set_title(name)
+        # ax.set_title(name)
+        if name is not None:
+            ax.legend()
+        # ax.text(5, 5, name, bbox={"facecolor": "white", "pad": 10})
+
+    fig.suptitle(title, fontsize=18, y=0.9)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.85)
