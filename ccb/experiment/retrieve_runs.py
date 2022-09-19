@@ -240,9 +240,13 @@ def find_missing_runs(df, num_run_thresh: int = 10, task: str = "classification"
             miss_dict[model][part] = []
             for ds in dataset_names:
                 ds_df = part_df[part_df["dataset"] == ds]
-                for exp_dir in ds_df["exp_dir"].unique():
-                    exp_df = ds_df[ds_df["exp_dir"] == exp_dir]
-                    if len(exp_df) < num_run_thresh:
-                        miss_dict[model][part].append(ds)
-
+                exp_dirs = ds_df["exp_dir"].unique()
+                if len(exp_dirs) == 0:
+                    # miss_dict[model][part].append(ds)
+                    continue
+                else:
+                    for exp_dir in exp_dirs:
+                        exp_df = ds_df[ds_df["exp_dir"] == exp_dir]
+                        if len(exp_df) < num_run_thresh:
+                            miss_dict[model][part].append(ds)
     return miss_dict

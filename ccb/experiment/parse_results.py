@@ -411,6 +411,7 @@ def get_best_logs(log_dirs, metric, filt_size, top_k, lower_is_better=True):
     max_accuracies = []
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
+
         val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
         max_accuracies.append(np.nanmax(val_accuracy.to_numpy()))
 
@@ -478,6 +479,15 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         metric = "val_Accuracy"
         if dataset == "bigearthnet":
             metric = "val_F1Score"
+        if dataset in [
+            "pv4ger_segmentation",
+            "nz_cattle_segmentation",
+            "smallholder_cashew",
+            "southAfricaCropType",
+            "cvpr_chesapeake_landcover",
+            "NeonTree_segmentation",
+        ]:
+            metric = "val_JaccardIndex"
 
         log_dirs = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
 
@@ -498,8 +508,8 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
                 ax2 = ax.twinx()
             sns.lineplot(data=val_accuracy, ax=ax2, linestyle=":")
 
-        mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
-        ax.set_ylim(bottom=mn, top=mx)
+        # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
+        # ax.set_ylim(bottom=mn, top=mx)
 
         if legend:
             ax.legend()

@@ -238,6 +238,7 @@ class Model(LightningModule):
         weight_decay = self.config["model"].get("weight_decay", 1e-4)
         optimizer_type = self.config["model"].get("optimizer", "sgd").lower()
         to_optimize = []
+        print(f"lr in configuration: {lr_backbone}, {lr_head}")
         for params, lr in [(backbone_parameters, lr_backbone), (head_parameters, lr_head)]:
             if lr > 0:
                 to_optimize.append({"params": params, "lr": lr})
@@ -326,26 +327,27 @@ class ModelGenerator:
         ckpt_dir = os.path.join(job.dir, "checkpoint")
 
         ds_name = job.task_specs.dataset_name
-        if "Accuracy" in config["model"].get("early_stopping_metric", "val_loss"):
-            if ds_name in [
-                "eurosat",
-                "brick_kiln_v1.0",
-                "pv4ger_classification",
-                "so2sat",
-                "forestnet_v1.0",
-                "geolifeclef-2022",
-            ]:
-                track_metric = "val_Accuracy"
-            elif ds_name == "bigearthnet":
-                track_metric = "val_F1Score"
-            elif ds_name in [
-                "pv4ger_segmentation",
-                "nz_cattle_segmentation",
-                "smallholder_cashew",
-                "southAfricaCropType",
-                "cvpr_chesapeake_landcover",
-            ]:
-                track_metric = "val_JaccardIndex"
+        # if "Accuracy" in config["model"].get("early_stopping_metric", "val_loss"):
+        if ds_name in [
+            "eurosat",
+            "brick_kiln_v1.0",
+            "pv4ger_classification",
+            "so2sat",
+            "forestnet_v1.0",
+            "geolifeclef-2022",
+        ]:
+            track_metric = "val_Accuracy"
+        elif ds_name == "bigearthnet":
+            track_metric = "val_F1Score"
+        elif ds_name in [
+            "pv4ger_segmentation",
+            "nz_cattle_segmentation",
+            "smallholder_cashew",
+            "southAfricaCropType",
+            "cvpr_chesapeake_landcover",
+            "NeonTree_segmentation",
+        ]:
+            track_metric = "val_JaccardIndex"
             mode = "max"
         else:
             track_metric = config["model"].get("early_stopping_metric", "val_loss")
