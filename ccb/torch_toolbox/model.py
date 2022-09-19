@@ -123,7 +123,7 @@ class Model(LightningModule):
         """
         return self.eval_step(batch, batch_idx, ["val", "test"][loader_idx])
 
-    def eval_step(self, batch: Tensor, batch_idx: int, prefix: str) -> Dict[str, Tensor]:
+    def eval_step(self, batch: Dict[str, Tensor], batch_idx: int, prefix: str) -> Dict[str, Tensor]:
         """Define steps taken during validation and testing.
 
         Args:
@@ -238,6 +238,7 @@ class Model(LightningModule):
         weight_decay = self.config["model"].get("weight_decay", 1e-4)
         optimizer_type = self.config["model"].get("optimizer", "sgd").lower()
         to_optimize = []
+        print(f"lr in configuration: {lr_backbone}, {lr_head}")
         for params, lr in [(backbone_parameters, lr_backbone), (head_parameters, lr_head)]:
             if lr > 0:
                 to_optimize.append({"params": params, "lr": lr})
@@ -324,17 +325,50 @@ class ModelGenerator:
         job.save_config(config, overwrite=True)
 
         ckpt_dir = os.path.join(job.dir, "checkpoint")
+
+        ds_name = job.task_specs.dataset_name
+        # if "Accuracy" in config["model"].get("early_stopping_metric", "val_loss"):
+        if ds_name in [
+            "eurosat",
+            "brick_kiln_v1.0",
+            "pv4ger_classification",
+            "so2sat",
+            "forestnet_v1.0",
+            "geolifeclef-2022",
+        ]:
+            track_metric = "val_Accuracy"
+        elif ds_name == "bigearthnet":
+            track_metric = "val_F1Score"
+        elif ds_name in [
+            "pv4ger_segmentation",
+            "nz_cattle_segmentation",
+            "smallholder_cashew",
+            "southAfricaCropType",
+            "cvpr_chesapeake_landcover",
+            "NeonTree_segmentation",
+        ]:
+            track_metric = "val_JaccardIndex"
+            mode = "max"
+        else:
+            track_metric = config["model"].get("early_stopping_metric", "val_loss")
+            mode = "min"
+
         checkpoint_callback = ModelCheckpoint(
-            dirpath=ckpt_dir, save_top_k=1, monitor="val_loss", mode="min", every_n_epochs=1
+            dirpath=ckpt_dir, save_top_k=1, monitor=track_metric, mode=mode, every_n_epochs=1
+        )
+        patience = (1 / config["pl"]["val_check_interval"]) * 20
+        early_stopping_callback = EarlyStopping(
+            monitor=track_metric,
+            mode=mode,
+            patience=patience,
+            min_delta=1e-5,
         )
 
         trainer = pl.Trainer(
             **config["pl"],
             default_root_dir=job.dir,
             callbacks=[
-                EarlyStopping(
-                    monitor="val_loss", mode="min", patience=config["pl"].get("patience", 120), min_delta=1e-5
-                ),
+                early_stopping_callback,
                 checkpoint_callback,
             ],
             logger=loggers,
