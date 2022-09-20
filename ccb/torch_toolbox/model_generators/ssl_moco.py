@@ -48,12 +48,12 @@ class SSLMocoGenerator(ModelGenerator):
         """
         # this part comes from model loading from their script
         if "resnet50" in config["model"]["backbone"]:
-            backbone = models.resnet50(pretrained=False)
+            backbone = models.resnet50(weights=None)
             backbone.fc = torch.nn.Linear(2048, 19)
             shapes = [(2048, 1, 1)]
             ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn50_moco_0099_ckpt.pth"
         elif "resnet18" in config["model"]["backbone"]:
-            backbone = models.resnet18(pretrained=False)
+            backbone = models.resnet18(weights=None)
             backbone.fc = torch.nn.Linear(512, 19)
             shapes = [(512, 1, 1)]
             ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn18_moco_0199_ckpt.pth"
@@ -79,7 +79,7 @@ class SSLMocoGenerator(ModelGenerator):
 
         post_sample_weight = backbone.layer4[0].conv1.weight
 
-        assert torch.equal(prev_sample_weight, post_sample_weight) == False
+        assert torch.equal(prev_sample_weight, post_sample_weight) is False
 
         config["model"]["input_size"] = (
             len(config["dataset"]["band_names"]),
