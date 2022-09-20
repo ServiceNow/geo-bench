@@ -3,7 +3,8 @@
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
-from typing import Dict
+from textwrap import wrap
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,8 @@ import yaml
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from scipy.stats import trim_mean
+
+from ccb.dataset_converters import inspect_tools
 
 
 def make_normalizer(data_frame, metrics=("test metric",)):
@@ -163,7 +166,7 @@ def plot_per_dataset_3(
     datasets = sorted(df["dataset"].unique())
     if fig_size is None:
         fig_width = len(datasets) * 2
-        fig_size = (fig_width, 5)
+        fig_size = (fig_width, 3)
     fig, axes = plt.subplots(1, len(datasets), sharey=sharey, figsize=fig_size)
 
     for dataset, ax in zip(datasets, axes):
@@ -260,11 +263,15 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
     else:
         noise_level = 0.1
 
-    df["train ratio noisy"] = df.apply(lambda row: row["train ratio"] * np.exp(np.random.randn() * noise_level), axis=1)
+    df["train ratio +noise"] = df.apply(
+        lambda row: row["train ratio"] * np.exp(np.random.randn() * noise_level), axis=1
+    )
     # print(df.keys())
-    ax = sns.scatterplot(data=df, x="train ratio noisy", y=normalized_name, hue="dataset")
+    ax = sns.scatterplot(data=df, x="train ratio +noise", y=normalized_name, hue="dataset")
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_ylabel("Normalized Training Time")
+    ax.set_xlabel("Train Size Ratio")
 
 
 # def plot_normalized_time2(df: pd.DataFrame, time_metric="step", average_seeds=True):
@@ -320,6 +327,7 @@ def get_train_ratio(part_name):
 
 def clean_names(val):
     """Rename a few strings for more compact formatting."""
+    val = inspect_tools.DISPLAY_NAMES.get(val, val)
     if isinstance(val, str):
         for src, tgt in (
             ("_classification", ""),
@@ -406,11 +414,25 @@ def collect_trace_info_raw(log_dir: str) -> pd.DataFrame:
     return df
 
 
-def get_best_logs(log_dirs, metric, filt_size, top_k, lower_is_better=True):
+def find_metric(keys: List[str]):
+    """Find metric based on a key.
+
+    Args:
+        keys: List of metrics
+    """
+    for key in keys:
+        if key in ("val_JaccardIndex", "val_Accuracy", "val_F1Score"):
+            return key
+
+
+def get_best_logs(log_dirs, metric=None, filt_size=5, top_k=4, lower_is_better=True):
     """Find the `top_k` best experiments based on maximum validation accuracy."""
     max_accuracies = []
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
+
+        if metric is None:
+            metric = find_metric(trace_dict.keys())
 
         val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
         max_accuracies.append(np.nanmax(val_accuracy.to_numpy()))
@@ -419,14 +441,26 @@ def get_best_logs(log_dirs, metric, filt_size, top_k, lower_is_better=True):
     if lower_is_better:
         max_accuracies *= -1
     idx = np.argsort(max_accuracies)[:top_k]
-    return np.array(log_dirs)[idx]
+    return np.array(log_dirs)[idx], metric
+
+
+@cache
+def get_hparams_old(log_dir: Path):
+    """Load the hyper parameters from the yaml file."""
+    with open(Path(log_dir) / "hparams.yaml", "r") as stream:
+        hparams = yaml.safe_load(stream)
+    return hparams
 
 
 @cache
 def get_hparams(log_dir: Path):
     """Load the hyper parameters from the yaml file."""
-    with open(Path(log_dir) / "hparams.yaml", "r") as stream:
-        hparams = yaml.safe_load(stream)
+    with open(Path(log_dir) / "config.yaml", "r") as stream:
+        hparams = yaml.safe_load(stream)["model"]
+
+    for key in ("input_size", "model_generator_module_name"):
+        hparams.pop(key, None)
+
     return hparams
 
 
@@ -462,7 +496,9 @@ def format_hparams(log_dirs):
         hparams = get_hparams(log_dir)
 
         exp_names[log_dir] = ", ".join([format_hparam(key, hparams[key]) for key in variables])
-    return str(constants), exp_names
+    cst_str = str(constants)
+    cst_str = "\n".join(wrap(cst_str, 100))
+    return cst_str, exp_names
 
 
 def make_plot_sweep(filt_size=5, top_k=6, legend=False):
@@ -493,8 +529,10 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
         constants, exp_names = format_hparams(log_dirs)
 
-        for log_dir in log_dirs:
+        if len(log_dirs) == 0:
+            return
 
+        for log_dir in log_dirs:
             trace_dict = collect_trace_info(log_dir)
             val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="gaussian").mean(std=1)
             val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
@@ -513,7 +551,7 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
         if legend:
             ax.legend()
-            sns.move_legend(ax, loc="upper left", bbox_to_anchor=(1.05, 1), title=constants)
+            sns.move_legend(ax, loc="upper left", bbox_to_anchor=(1.2, 1), title=constants)
 
     return plot_sweep
 

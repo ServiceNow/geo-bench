@@ -2,14 +2,15 @@
 
 from collections import Counter
 from itertools import combinations
-from typing import List
+from typing import Any, List, Sequence
 
 import numpy as np
+from numpy.typing import ArrayLike
 from scipy.stats import entropy
 from sklearn.metrics import pair_confusion_matrix
 
 
-def prob_higher(scores_a: List[float], scores_b: List[float]):
+def prob_higher(scores_a: ArrayLike, scores_b: ArrayLike):
     """Compute the probability that a is higher than b from two list of samples."""
     scores_a = np.asarray(scores_a).reshape(-1, 1)
     scores_b = np.asarray(scores_b).reshape(1, -1)
