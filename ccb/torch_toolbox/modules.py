@@ -25,9 +25,14 @@ class ClassificationHead(torch.nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.hidden_size = hidden_size
-        self.linear = torch.nn.Sequential(
-            torch.nn.Linear(in_ch, hidden_size), torch.nn.Linear(hidden_size, num_classes)
-        )
+
+        if hidden_size == 0:
+            self.linear = torch.nn.Sequential(torch.nn.Linear(in_ch, num_classes))
+        else:
+            self.linear = torch.nn.Sequential(
+                torch.nn.Linear(in_ch, hidden_size), torch.nn.Linear(hidden_size, num_classes)
+            )
+
         self.ret_identity = ret_identity
 
     def forward(self, x: Union[Tensor, List[Tensor]]) -> Union[Tensor, List[Tensor]]:
