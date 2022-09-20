@@ -11,7 +11,7 @@ from ccb.experiment.experiment_generator import experiment_generator
 from toolkit import dispatch_toolkit
 
 experiment_dir = experiment_generator(
-    config_filepath=str(Path(__file__).parent.parent / "ccb/configs/segmentation_config.yaml"),
+    config_filepath=str(Path(__file__).parent.parent / "ccb/configs/classification_config.yaml"),
 )
 
 dispatch_toolkit.push_code(Path(__file__).parent.parent)
