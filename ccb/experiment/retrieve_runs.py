@@ -115,8 +115,10 @@ def retrieve_runs(sweep_experiment_dir):
             ]
         ]
 
-        if os.path.basename(config["experiment"]["benchmark_dir"]).startswith("segmentation"):
+        if "segmentation" in config["model"]["model_generator_module_name"]:
             model = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+        elif "ssl_moco" in config["model"]["model_generator_module_name"]:
+            model = "ssl_moco_" + config["model"]["backbone"]
         else:
             model = config["model"]["backbone"]
 
@@ -192,6 +194,8 @@ classification_models = [
     "vit_tiny_patch16_224",
     "vit_small_patch16_224",
     "swinv2_tiny_window16_256",
+    "ssl_moco_resnet18",
+    "ssl_moco_resnet50",
 ]
 
 segmentation_dataset_names = [
