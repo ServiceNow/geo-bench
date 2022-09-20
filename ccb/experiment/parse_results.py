@@ -561,7 +561,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     models = df["model"].unique()
     datasets = df["dataset"].unique()
 
-    fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size)
+    fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size, sharey="row")
     # fig.suptitle(metric, fontsize=20)
 
     for i, dataset in enumerate(datasets):
