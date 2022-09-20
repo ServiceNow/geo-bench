@@ -4,7 +4,7 @@ from collections import defaultdict
 from functools import cache
 from pathlib import Path
 from textwrap import wrap
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -414,7 +414,12 @@ def collect_trace_info_raw(log_dir: str) -> pd.DataFrame:
     return df
 
 
-def find_metric(keys):
+def find_metric(keys: List[str]):
+    """Find metric based on a key.
+
+    Args:
+        keys: List of metrics
+    """
     for key in keys:
         if key in ("val_JaccardIndex", "val_Accuracy", "val_F1Score"):
             return key
@@ -507,7 +512,20 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         all_val_loss = []
         # all_val_accuarcy = []
 
-        log_dirs, metric = get_best_logs(log_dirs, filt_size=filt_size, top_k=top_k)
+        metric = "val_Accuracy"
+        if dataset == "bigearthnet":
+            metric = "val_F1Score"
+        if dataset in [
+            "pv4ger_segmentation",
+            "nz_cattle_segmentation",
+            "smallholder_cashew",
+            "southAfricaCropType",
+            "cvpr_chesapeake_landcover",
+            "NeonTree_segmentation",
+        ]:
+            metric = "val_JaccardIndex"
+
+        log_dirs, metric = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
 
         constants, exp_names = format_hparams(log_dirs)
 
@@ -528,8 +546,8 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
                 ax2 = ax.twinx()
             sns.lineplot(data=val_accuracy, ax=ax2, linestyle=":")
 
-        mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
-        ax.set_ylim(bottom=mn, top=mx)
+        # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
+        # ax.set_ylim(bottom=mn, top=mx)
 
         if legend:
             ax.legend()
