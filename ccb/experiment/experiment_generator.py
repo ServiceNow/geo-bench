@@ -71,6 +71,9 @@ def experiment_generator(
                 != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
             ):
                 name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
+
+            elif config["model"]["model_generator_module_name"] != "ccb.torch_toolbox.model_generators.ssl_moco":
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_ssl_moco_" + config["model"]["backbone"]
             else:
                 name = (
                     "_".join(str(job_dir).split("/")[-2:])
