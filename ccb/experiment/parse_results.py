@@ -525,7 +525,7 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         ]:
             metric = "val_JaccardIndex"
 
-        log_dirs = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
+        log_dirs, metric = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
 
         constants, exp_names = format_hparams(log_dirs)
 
