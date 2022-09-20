@@ -337,8 +337,10 @@ class ModelGenerator:
             "geolifeclef-2022",
         ]:
             track_metric = "val_Accuracy"
+            mode = "max"
         elif ds_name == "bigearthnet":
             track_metric = "val_F1Score"
+            mode = "max"
         elif ds_name in [
             "pv4ger_segmentation",
             "nz_cattle_segmentation",
