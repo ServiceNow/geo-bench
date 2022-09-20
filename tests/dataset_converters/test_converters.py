@@ -158,4 +158,5 @@ if __name__ == "__main__":
     # test_nz_cattle_detection()
     # test_xview2()
     # test_bigearthnet()
-    test_south_africa_crop_type()
+    # test_south_africa_crop_type()
+    test_chesapeake()
