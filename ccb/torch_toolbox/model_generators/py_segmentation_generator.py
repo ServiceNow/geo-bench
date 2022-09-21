@@ -2,9 +2,11 @@
 
 from typing import Any, Dict
 
+import albumentations as A
 import segmentation_models_pytorch as smp
 import torch
 import torchvision.transforms.functional as TF
+from albumentations.pytorch.transforms import ToTensorV2
 from torch import Tensor
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
@@ -130,6 +132,11 @@ class SegmentationGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = config["model"]["input_size"]
+        h, w = task_specs.patch_size
+        if h != w:
+            raise (RuntimeError("Only square patches are supported in this version"))
+        h = w = int(32 * (h // 32))  # make input res multiple of 32
+
         mean, std = task_specs.get_dataset(
             split="train",
             format=config["dataset"]["format"],
@@ -139,55 +146,23 @@ class SegmentationGenerator(ModelGenerator):
         ).rgb_stats()
         band_names = config["dataset"]["band_names"]
 
-        class SegTransform:
-            """Segmentation Transform.
-
-            This is a helper class for applying the same transformation
-            to input images and segmentation masks.
-            """
-
-            def __call__(self, x: Tensor, resample: bool = True, train: bool = True):
-                """Apply data augmentation to input and segmentation mask.
-
-                Args:
-                    x: input image or segmentation mask
-                    resample: whether to resample (True) or reuse (False) previous transforms.
-                                               Defaults to True.
-                    train: whether in training mode. No aug during validation. Defaults to True.
-
-                Returns:
-                    transformed input image or segmentation mask
-                """
-                if train:
-                    if resample:
-                        self.crop_params = tt.RandomResizedCrop.get_params(
-                            x, scale=(0.08, 1.0), ratio=(0.75, 1.3333333333333333)
-                        )
-                        self.flip = bool(torch.randint(0, 2, size=(1,)))
-                    x = TF.resized_crop(x, *self.crop_params, size=(h, w))
-                    if self.flip:
-                        x = TF.hflip(x)
-                else:
-                    x = TF.resize(x, (h, w))
-                return x
+        t = []
+        t.append(A.RandomCrop(h, w))
+        if train:
+            t.append(A.ColorJitter())
+            t.append(A.RandomRotate90())
+            t.append(A.Flip())
+        t.append(ToTensorV2())
+        t_comp = A.Compose(t)
 
         def transform(sample: io.Sample):
-            t_x = []
-            st = SegTransform()
-            t_x.append(tt.ToTensor())
-            t_x.append(tt.Normalize(mean=mean, std=std))
-            t_x.append(lambda x: st(x, resample=True, train=train))
-            t_x_comp = tt.Compose(t_x)
-            t_y = []
-            t_y.append(tt.ToTensor())
-            t_y.append(lambda x: st(x, resample=False, train=train))
-            t_y_comp = tt.Compose(t_y)
-
             x = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
 
             if isinstance(sample.label, Band):
-                x, y = t_x_comp(x), t_y_comp(sample.label.data.astype("float32"))
-            return {"input": x, "label": y.long().squeeze()}
+                x, y = x, sample.label.data.astype("float32")
+                transformed = t_comp(image=x, mask=y)
+
+            return {"input": transformed["image"], "label": transformed["mask"].long()}
 
         return transform
 
