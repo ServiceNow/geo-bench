@@ -1,35 +1,35 @@
 {
     "conv4": {
-        "bigearthnet":512,
-        "brick_kiln_v1.0":512,
-        "eurosat":512,
-        "forestnet_v1.0":128,
-        "pv4ger_classification":128,
-        "so2sat":512
-    },
-    "resnet18": {
-        "bigearthnet":1024,
-        "brick_kiln_v1.0":1024,
-        "eurosat":1024,
-        "forestnet_v1.0":128,
-        "pv4ger_classification":128,
-        "so2sat":1024
-    },
-    "resnet50": {
-        "bigearthnet":512,
-        "brick_kiln_v1.0":512,
-        "eurosat":512,
-        "forestnet_v1.0":64,
-        "pv4ger_classification":64,
-        "so2sat":512
-    },
-    "convnext": {
         "bigearthnet":128,
         "brick_kiln_v1.0":128,
         "eurosat":128,
+        "forestnet_v1.0":128,
+        "pv4ger_classification":128,
+        "so2sat":128
+    },
+    "resnet18": {
+        "bigearthnet":128,
+        "brick_kiln_v1.0":128,
+        "eurosat":128,
+        "forestnet_v1.0":128,
+        "pv4ger_classification":128,
+        "so2sat":128
+    },
+    "resnet50": {
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
+        "so2sat":64
+    },
+    "convnext": {
+        "bigearthnet":32,
+        "brick_kiln_v1.0":32,
+        "eurosat":32,
         "forestnet_v1.0":32,
         "pv4ger_classification":32,
-        "so2sat":128
+        "so2sat":32
     },
     "vit_tiny_patch16_224": {
         "bigearthnet":128,
@@ -56,20 +56,20 @@
         "so2sat":16
     },
     "ssl_moco_resnet18": {
-        "bigearthnet":1024,
-        "brick_kiln_v1.0":1024,
-        "eurosat":1024,
+        "bigearthnet":128,
+        "brick_kiln_v1.0":128,
+        "eurosat":128,
         "forestnet_v1.0":128,
         "pv4ger_classification":128,
-        "so2sat":1024
+        "so2sat":128
     },
     "ssl_moco_resnet50": {
-        "bigearthnet":512,
-        "brick_kiln_v1.0":512,
-        "eurosat":512,
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
         "forestnet_v1.0":64,
         "pv4ger_classification":64,
-        "so2sat":512
+        "so2sat":64
     },
     "resnet18_Unet": {
         "cvpr_chesapeake_landcover":32,
