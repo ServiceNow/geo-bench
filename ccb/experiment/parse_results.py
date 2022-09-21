@@ -425,23 +425,27 @@ def find_metric(keys: List[str]):
             return key
 
 
-def get_best_logs(log_dirs, metric=None, filt_size=5, top_k=4, lower_is_better=True):
+def get_best_logs(log_dirs, metric=None, filt_size=5, lower_is_better=False):
     """Find the `top_k` best experiments based on maximum validation accuracy."""
-    max_accuracies = []
+    max_scores = []
+    best_points = {}
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
 
         if metric is None:
             metric = find_metric(trace_dict.keys())
 
-        val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
-        max_accuracies.append(np.nanmax(val_accuracy.to_numpy()))
+        metric_trace = trace_dict[metric].rolling(filt_size, win_type="triang").mean()
+        if lower_is_better:
+            metric_trace *= -1
+        max_val = metric_trace.max()
+        max_scores.append(max_val)
+        best_points[log_dir] = (metric_trace.idxmax(), max_val)
 
-    max_accuracies = np.array(max_accuracies)
-    if lower_is_better:
-        max_accuracies *= -1
-    idx = np.argsort(max_accuracies)[:top_k]
-    return np.array(log_dirs)[idx], metric
+    max_scores = np.array(max_scores)
+
+    idx = np.argsort(max_scores)[::-1]
+    return np.array(log_dirs)[idx], metric, best_points
 
 
 @cache
@@ -525,27 +529,30 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         ]:
             metric = "val_JaccardIndex"
 
-        log_dirs, metric = get_best_logs(log_dirs, metric, filt_size=filt_size, top_k=top_k)
+        log_dirs, metric, best_points = get_best_logs(log_dirs, metric, filt_size=filt_size)
 
         constants, exp_names = format_hparams(log_dirs)
 
         if len(log_dirs) == 0:
             return
 
-        for log_dir in log_dirs:
+        colors = sns.color_palette("tab10")
+        for i, log_dir in enumerate(log_dirs[:top_k]):
             trace_dict = collect_trace_info(log_dir)
-            val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="gaussian").mean(std=1)
-            val_accuracy = trace_dict[metric].rolling(filt_size, win_type="gaussian").mean(std=1)
+            val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="triang").mean()
+            val_metric = trace_dict[metric].rolling(filt_size, win_type="triang").mean()
             # print(np.min(trace_dict["val_loss"].keys().to_numpy()))
             all_val_loss.append(val_loss.to_numpy())
 
             label = exp_names[log_dir] if legend else None
 
-            sns.lineplot(data=val_loss, ax=ax, label=label)
+            sns.lineplot(data=val_loss, ax=ax, label=label, color=colors[i])
             if ax2 is None:
                 ax2 = ax.twinx()
-            sns.lineplot(data=val_accuracy, ax=ax2, linestyle=":")
+            sns.lineplot(data=val_metric, ax=ax2, linestyle=":", color=colors[i])
 
+            x_best, y_best = best_points[log_dir]
+            sns.lineplot(x=[x_best], y=[y_best], marker="*", markersize="15", color=colors[i])
         # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
         # ax.set_ylim(bottom=mn, top=mx)
 
@@ -561,7 +568,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     models = df["model"].unique()
     datasets = df["dataset"].unique()
 
-    fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size, sharey="row")
+    fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size)
     # fig.suptitle(metric, fontsize=20)
 
     for i, dataset in enumerate(datasets):
@@ -584,6 +591,6 @@ def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=
         print(dataset)
 
         sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
-        axes[i].set_title(f"{len(sub_df)} runs of {model} on {dataset} ")
+        axes[i].set_title(f"{len(sub_df)} runs of {model[:15]} on {dataset[:10]} ")
 
         plot_fn(sub_df, axes[i], dataset, model)
