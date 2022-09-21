@@ -186,10 +186,10 @@ class Model(LightningModule):
         if self.config["model"].get("log_segmentation_masks", False):
             import wandb
 
-            current_element = int(torch.randint(0, val_outputs["input"].shape[0], size=(1,)))
-            image = val_outputs["input"][current_element].permute(1, 2, 0).cpu().numpy()
-            pred_mask = val_outputs["output"].argmax(1)[current_element].cpu().numpy()
-            gt_mask = val_outputs["target"][current_element].cpu().numpy()
+            current_element = int(torch.randint(0, val_outputs[0]["input"].shape[0], size=(1,)))
+            image = val_outputs[0]["input"][current_element].permute(1, 2, 0).cpu().numpy()
+            pred_mask = val_outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
+            gt_mask = val_outputs[0]["target"][current_element].cpu().numpy()
             image = wandb.Image(
                 image, masks={"predictions": {"mask_data": pred_mask}, "ground_truth": {"mask_data": gt_mask}}
             )
