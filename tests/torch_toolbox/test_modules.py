@@ -18,6 +18,6 @@ IN_CHANNEL = 5
 )
 def test_new_channel_init(x):
 
-    cls_head = ClassificationHead(in_ch=IN_CHANNEL, num_classes=NUM_CLASSES, hidden_size=10)
+    cls_head = ClassificationHead(in_ch=IN_CHANNEL, num_classes=NUM_CLASSES)
     output = cls_head(x)
     assert output.shape == (BATCH_SIZE, NUM_CLASSES)
