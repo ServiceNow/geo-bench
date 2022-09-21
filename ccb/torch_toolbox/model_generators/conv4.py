@@ -97,7 +97,7 @@ class Conv4Generator(ModelGenerator):
         t.append(tt.ToTensor())
         t.append(tt.Normalize(mean=mean, std=std))
         if train:
-            t.append(tt.RandomRotation(degrees=(90, 90)))
+            t.append(tt.RandomApply(tt.RandomRotation(degrees=(90, 90)), p=0.5))
             t.append(tt.RandomHorizontalFlip())
             t.append(tt.RandomVerticalFlip())
             t.append(tt.ColorJitter(0.1))
