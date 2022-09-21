@@ -413,7 +413,7 @@ SENSORS = {
     "so2sat": "Sentinel-2, Sentinel-1",
     "pv4ger_classification": "RGB",
     "geolifeclef-2022": "RGBN, Elevation",
-    "bigearthnet": "Sentinel-2, Sentinel-1",
+    "bigearthnet": "Sentinel-2",
     "pv4ger_segmentation": "RGB",
     "nz_cattle_segmentation": "RGB",
     "NeonTree_segmentation": "RGB, Hyperspectral (Neon), Elevation (Lidar)",
@@ -439,7 +439,7 @@ DISPLAY_NAMES = {
 }
 
 
-def collect_task_info(task):
+def collect_task_info(task, fix_task_shape=False):
     """Collect information for the given task."""
     loss = task.eval_loss
 
@@ -456,6 +456,18 @@ def collect_task_info(task):
         n_train, n_valid, n_test = -1, -1, -1
 
     n_classes = getattr(task.label_type, "n_classes", -1)
+
+    # shapes = [band.data.shape for band in dataset[0].bands]
+    largest_shape = dataset[0].largest_shape()
+
+    if task.patch_size != largest_shape:
+        print(f" *WARNING* task.patch_size = {task.patch_size} != dataset[0].largest_shape() = {largest_shape}.")
+        if fix_task_shape:
+            dataset_dir = io.CCB_DIR / task.benchmark_name / task.dataset_name
+
+            print(f"Overwritint task_info.pkl to {dataset_dir}.")
+            task.patch_size = largest_shape
+            task.save(dataset_dir, overwrite=True)
 
     task_dict = {
         "Name": task.dataset_name,
@@ -575,18 +587,40 @@ def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
         )
 
 
-def plot_benchmark(benchmark_name, n_samples, save_dir=Path.home() / "figures"):
+def plot_benchmark(benchmark_name, n_samples, save_dir: Path = Path.home() / "figures", fig_size=None):
     """Plot samples of the benchmark using matplotlib for compact visualization."""
+
+    if save_dir is not None:
+        save_dir = save_dir / benchmark_name
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+    path_list = []
+
+    # cherry picked to avoid images that are not representative
+    seed_dict = {
+        "forestnet_v1.0": 0,  # 0
+        "eurosat": 4,
+        "brick_kiln_v1.0": 4,  # 1
+        "so2sat": 0,
+        "pv4ger_classification": 0,
+        "geolifeclef-2022": 0,
+        "bigearthnet": 2,
+    }
     for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+
+        if task.dataset_name.startswith("geolifeclef"):
+            continue
 
         print(f"Task: {task.dataset_name}")
 
         dataset = task.get_dataset(split="train")
 
+        rng = np.random.RandomState(seed_dict.get(task.dataset_name, 0))
+
         if isinstance(task.label_type, io.label.Classification):
-            samples = extract_classification_samples(dataset, n_samples)
+            samples = extract_classification_samples(dataset, n_samples, rng=rng)
         else:
-            samples = [dataset[i] for i in range(n_samples)]
+            samples = [dataset[i] for i in rng.choice(len(dataset), size=n_samples)]
 
         if isinstance(task.label_type, io.SegmentationClasses):
             images, band_names, all_labels, unique_band_names = extract_bands_with_labels(samples, [])
@@ -595,16 +629,19 @@ def plot_benchmark(benchmark_name, n_samples, save_dir=Path.home() / "figures"):
             images, labels = extract_images(samples)
             label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
 
-        plot_images(images, label_names, DISPLAY_NAMES[task.dataset_name])
+        plot_images(images, label_names, DISPLAY_NAMES[task.dataset_name], fig_size=fig_size)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-
         if save_dir is not None:
-            plt.savefig(save_dir / f"{task.dataset_name}.png", bbox_inches="tight")
+            path = save_dir / f"{task.dataset_name}.png"
+            plt.savefig(path, bbox_inches="tight")
+            path_list.append(path)
+
+    return path_list
 
 
-def plot_images(images, names, title):
+def plot_images(images, names, title, fig_size):
     """Plot images using matplotlib for compact visualization."""
-    fig, axs = plt.subplots(1, len(images))
+    fig, axs = plt.subplots(1, len(images), figsize=fig_size)
     for image, name, ax in zip(images, names, axs):
         if name is not None:
             for sub_name in name.split(" &\n"):
@@ -616,6 +653,6 @@ def plot_images(images, names, title):
             ax.legend()
         # ax.text(5, 5, name, bbox={"facecolor": "white", "pad": 10})
 
-    fig.suptitle(title, fontsize=18, y=0.9)
+    fig.suptitle(title, fontsize=18, y=1.1)
     fig.tight_layout()
     fig.subplots_adjust(top=0.85)
