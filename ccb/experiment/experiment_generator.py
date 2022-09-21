@@ -67,10 +67,9 @@ def experiment_generator(
             # create a unique model name
             if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
                 model_name = "ssl_moco_" + config["model"]["backbone"]
-            elif (
-                config["model"]["model_generator_module_name"]
-                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
-            ):
+            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
+                model_name = config["model"]["backbone"]
+            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
                 model_name = config["model"]["backbone"]
             else:
                 model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
@@ -86,13 +85,11 @@ def experiment_generator(
             job.save_task_specs(task_specs)
 
             # sweep name that will be seen on wandb
-            if (
-                config["model"]["model_generator_module_name"]
-                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
-            ):
+            if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
                 name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
-
-            elif config["model"]["model_generator_module_name"] != "ccb.torch_toolbox.model_generators.ssl_moco":
+            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
+                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
+            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
                 name = "_".join(str(job_dir).split("/")[-2:]) + "_ssl_moco_" + config["model"]["backbone"]
             else:
                 name = (
