@@ -476,6 +476,22 @@ class Band:
 
         return file_path
 
+    def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
+        shape = np.array(self.data.shape[:2])
+        start = np.round(shape * np.array(start_ratio)).astype(np.int)
+        size = np.round(shape * np.array(size_ratio)).astype(np.int)
+        self.crop(start, size)
+
+    def crop(self, start: Union[tuple, np.ndarray], size: Union[tuple, np.ndarray]):
+        """Crop the band to a different size."""
+        x_start, y_start = np.array(start)
+        x_end, y_end = np.array(start) + np.array(size)
+        self.data = self.data[x_start:x_end, y_start:y_end, ...]
+
+        # TODO recalculate the new transform. Meanwhile, set to None to avoid silent errors.
+        self.transform = None
+        self.crs = None
+
 
 def load_band_tif(file_path) -> Band:
     """Load a tif band object at a given filepath.
@@ -585,6 +601,13 @@ class Sample(object):
     def is_time_series(self) -> bool:
         """Check if sample is a time series."""
         return len(self.dates) > 1
+
+    def largest_shape(self):
+        """Return the height and width of the largest band, including label"""
+        bands: List[Any] = self.bands
+        if isinstance(self.label, Band):
+            bands.append(self.label)
+        return _largest_shape(np.array(bands))
 
     def pack_to_4d(
         self,

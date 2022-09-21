@@ -45,6 +45,14 @@ def test_pack_4d_dense():
     assert tuple(band_names) == ("band_1", "band_2")
 
 
+def test_crop_from_ratio():
+    band = random_band(shape=(10, 10))
+    old_data = band.data
+    band.crop_from_ratio((0.1, 0.1), (0.8, 0.8))
+    assert band.data.shape == (8, 8)
+    np.testing.assert_equal(old_data[1:9, 1:9], band.data)
+
+
 def test_pack_4d_multi_band():
     bands = [
         random_band((3, 4, 5), "band_1", ("alt_band_1",)),
@@ -328,4 +336,5 @@ if __name__ == "__main__":
     # test_dataset_partition()
     # test_dataset_withnopartition()
     # test_dataset_statistics()
-    test_class_id()
+    # test_class_id()
+    test_crop_from_ratio()
