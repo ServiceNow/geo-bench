@@ -47,7 +47,7 @@ def experiment_generator(
         experiment_dir: Path = Path(config["experiment"]["generate_experiment_dir"])  # type: ignore[no-redef]
 
     # find the batch size for the model/dataset combination
-    with open("/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/batch_sizes.json", "r") as f:
+    with open(str(Path(__file__).parent.parent / "torch_toolbox/wandb/batch_sizes.json"), "r") as f:
         batch_size_dict = json.load(f)
 
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
