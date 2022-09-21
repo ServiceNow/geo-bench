@@ -259,10 +259,23 @@ class TIMMGenerator(ModelGenerator):
             t.append(tt.RandomGrayscale(0.1))
 
         # vit architectures require fixed input size
-        if config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]:
+        if (
+            config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]
+            and task_specs.patch_size[0] <= 224
+        ):
             t.append(tt.Resize((224, 224)))
-        elif config["model"]["backbone"] == "swin2_tiny_window16_256":
+        elif (
+            config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]
+            and task_specs.patch_size[0] > 224
+        ):
+            t.append(tt.RandomCrop((224, 224)))
+        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] <= 224:
             t.append(tt.Resize((256, 256)))
+        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] > 224:
+            t.append(tt.RandomCrop((224, 224)))
+        # all convolutional architectures
+        else:
+            t.append(tt.Resize((224, 224)))
 
         transform_comp = tt.Compose(t)
 
