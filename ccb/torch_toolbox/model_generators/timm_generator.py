@@ -114,15 +114,15 @@ class TIMMGenerator(ModelGenerator):
                 current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, config=config
             )
 
-        config["model"]["input_size"] = (
+        test_input_for_feature_dim = (
             len(config["dataset"]["band_names"]),
-            config["model"]["image_size"],
-            config["model"]["image_size"],
+            256 if config["model"]["backbone"] == "swinv2_tiny_window16_256" else 224,
+            256 if config["model"]["backbone"] == "swinv2_tiny_window16_256" else 224,
         )
 
         with torch.no_grad():
             backbone.eval()
-            features = torch.zeros(config["model"]["input_size"]).unsqueeze(0)
+            features = torch.zeros(test_input_for_feature_dim).unsqueeze(0)
             features = backbone(features)
         shapes = [tuple(features.shape[1:])]  # get the backbone's output features
 
@@ -240,10 +240,6 @@ class TIMMGenerator(ModelGenerator):
         Returns:
             callable function that applies transformations on input data
         """
-        scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
-        ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
-        _, h, w = config["model"]["input_size"]
-
         mean, std = task_specs.get_dataset(
             split="train",
             format=config["dataset"]["format"],
@@ -251,14 +247,22 @@ class TIMMGenerator(ModelGenerator):
             benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
+
         t = []
         t.append(tt.ToTensor())
         t.append(tt.Normalize(mean=mean, std=std))
         if train:
+            t.append(tt.RandomApply(tt.RandomRotation(degrees=(90, 90)), p=0.5))
             t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
+            t.append(tt.RandomVerticalFlip())
+            t.append(tt.ColorJitter(0.1))
+            t.append(tt.RandomGrayscale(0.1))
 
-        t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
+        # vit architectures require fixed input size
+        if config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]:
+            t.append(tt.Resize((224, 224)))
+        elif config["model"]["backbone"] == "swin2_tiny_window16_256":
+            t.append(tt.Resize((256, 256)))
 
         transform_comp = tt.Compose(t)
 

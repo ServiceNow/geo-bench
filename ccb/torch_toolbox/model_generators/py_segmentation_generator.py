@@ -86,7 +86,7 @@ class SegmentationGenerator(ModelGenerator):
                 return x
 
         head = ClassificationHead(
-            num_classes=1, hidden_size=1, in_ch=1, ret_identity=True
+            num_classes=1, in_ch=1, ret_identity=True
         )  # pytorch image models already adds a classifier on top of the UNETs
         # head = head_generator(task_specs, shapes, hparams)
         loss = train_loss_generator(task_specs, config)
