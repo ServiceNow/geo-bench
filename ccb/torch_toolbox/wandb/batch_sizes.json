@@ -19,8 +19,8 @@
         "bigearthnet":512,
         "brick_kiln_v1.0":512,
         "eurosat":512,
-        "forestnet_v1.0":128,
-        "pv4ger_classification":128,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
         "so2sat":512
     },
     "convnext": {
@@ -67,8 +67,8 @@
         "bigearthnet":512,
         "brick_kiln_v1.0":512,
         "eurosat":512,
-        "forestnet_v1.0":128,
-        "pv4ger_classification":128,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
         "so2sat":512
     },
     "resnet18_Unet": {
