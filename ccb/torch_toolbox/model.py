@@ -361,6 +361,7 @@ class ModelGenerator:
             dirpath=ckpt_dir, save_top_k=1, monitor=track_metric, mode=mode, every_n_epochs=1
         )
         patience = int((1 / config["pl"]["val_check_interval"]) * (config["pl"]["max_epochs"] / 4))
+        print(f"patience: {patience}")
         early_stopping_callback = EarlyStopping(
             monitor=track_metric,
             mode=mode,
