@@ -180,19 +180,21 @@ class Model(LightningModule):
         """
         eval_metrics = self.eval_metrics.compute()
         self.log_dict({f"val_{k}": v for k, v in eval_metrics.items()}, logger=True)
+
         self.eval_metrics.reset()
-        outputs = outputs[0]  # 0 == validation, 1 == test
+        val_outputs = outputs[0]  # 0 == validation, 1 == test
         if self.config["model"].get("log_segmentation_masks", False):
             import wandb
 
-            current_element = int(torch.randint(0, outputs[0]["input"].shape[0], size=(1,)))
-            image = outputs[0]["input"][current_element].permute(1, 2, 0).cpu().numpy()
-            pred_mask = outputs[0]["output"].argmax(1)[current_element].cpu().numpy()
-            gt_mask = outputs[0]["target"][current_element].cpu().numpy()
+            current_element = int(torch.randint(0, val_outputs["input"].shape[0], size=(1,)))
+            image = val_outputs["input"][current_element].permute(1, 2, 0).cpu().numpy()
+            pred_mask = val_outputs["output"].argmax(1)[current_element].cpu().numpy()
+            gt_mask = val_outputs["target"][current_element].cpu().numpy()
             image = wandb.Image(
                 image, masks={"predictions": {"mask_data": pred_mask}, "ground_truth": {"mask_data": gt_mask}}
             )
             wandb.log({"segmentation_images": image})
+
         self.test_epoch_end(outputs[1])  # outputs[1] -> test
 
     def test_step(self, batch, batch_idx):
@@ -358,7 +360,7 @@ class ModelGenerator:
         checkpoint_callback = ModelCheckpoint(
             dirpath=ckpt_dir, save_top_k=1, monitor=track_metric, mode=mode, every_n_epochs=1
         )
-        patience = (1 / config["pl"]["val_check_interval"]) * 20
+        patience = int((1 / config["pl"]["val_check_interval"]) * (config["pl"]["max_epochs"] / 4))
         early_stopping_callback = EarlyStopping(
             monitor=track_metric,
             mode=mode,
