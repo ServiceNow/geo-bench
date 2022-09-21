@@ -23,7 +23,7 @@ from ccb.torch_toolbox.model import (
     train_metrics_generator,
 )
 from ccb.torch_toolbox.modules import ClassificationHead
-
+import cv2
 
 class SegmentationGenerator(ModelGenerator):
     """SegmentationGenerator.
@@ -132,10 +132,10 @@ class SegmentationGenerator(ModelGenerator):
         scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
         ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = config["model"]["input_size"]
-        h, w = task_specs.patch_size
-        if h != w:
+        patch_h, patch_w = task_specs.patch_size
+        if h != w or patch_h != patch_w:
             raise (RuntimeError("Only square patches are supported in this version"))
-        h = w = int(32 * (h // 32))  # make input res multiple of 32
+        h32 = w32 = int(32 * (h // 32))  # make input res multiple of 32
 
         mean, std = task_specs.get_dataset(
             split="train",
@@ -147,7 +147,9 @@ class SegmentationGenerator(ModelGenerator):
         band_names = config["dataset"]["band_names"]
 
         t = []
-        t.append(A.RandomCrop(h, w))
+        if h < patch_h:
+            t.append(A.SmallestMaxSize(max_size=h))
+        t.append(A.RandomCrop(h32, w32))
         if train:
             t.append(A.ColorJitter())
             t.append(A.RandomRotate90())
