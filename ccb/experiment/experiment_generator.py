@@ -46,9 +46,14 @@ def experiment_generator(
     else:
         experiment_dir: Path = Path(config["experiment"]["generate_experiment_dir"])  # type: ignore[no-redef]
 
+    # find the batch size for the model/dataset combination
+    with open("/mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/batch_sizes.json", "r") as f:
+        batch_size_dict = json.load(f)
+
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
         print(task_specs.dataset_name)
         experiment_type = config["experiment"]["experiment_type"]
+
         if experiment_type == "sweep":
             model_generator = get_model_generator(config["model"]["model_generator_module_name"])
 
@@ -58,6 +63,21 @@ def experiment_generator(
             # there might be other params added during the generate process,
             # continue with hyperparameters from initialized model
             config = model.config
+
+            # create a unique model name
+            if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
+                model_name = "ssl_moco_" + config["model"]["backbone"]
+            elif (
+                config["model"]["model_generator_module_name"]
+                != "ccb.torch_toolbox.model_generators.py_segmentation_generator"
+            ):
+                model_name = config["model"]["backbone"]
+            else:
+                model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+
+            config["model"]["model_name"] = model_name
+
+            config["model"]["batch_size"] = batch_size_dict[model_name][task_specs.dataset_name]
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
