@@ -435,11 +435,11 @@ def head_generator(task_specs: TaskSpecifications, features_shape: List[Tuple[in
     if isinstance(task_specs.label_type, io.Classification):
         in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
-        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
+        return ClassificationHead(in_ch, out_ch)
     elif isinstance(task_specs.label_type, io.MultiLabelClassification):
         in_ch, *other_dims = features_shape[-1]
         out_ch = task_specs.label_type.n_classes
-        return ClassificationHead(in_ch, out_ch, hidden_size=config["model"]["hidden_size"])
+        return ClassificationHead(in_ch, out_ch)
     else:
         raise ValueError(f"Unrecognized task: {task_specs.label_type}")
 
