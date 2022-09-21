@@ -6,22 +6,14 @@ metric:
   goal: minimize
   name: val_loss
 parameters:
-# lr_head sample between 1e-1 (-2.3025850929940455) and 1e-4 (-9.210340371976182)
   lr_head:
     distribution: log_uniform_values
     max: 1.0e-2
     min: 1.0e-4
-# lr_backbone sample between 1e-2 (-4.60517019) and 1e-5 (-11.512925465)
   lr_backbone:
     distribution: log_uniform_values
     max: 1.0e-2
-    min: 1.0e-5
-# hidden size of classifier
-  hidden_size:
-    distribution: categorical
-    values: [0, 256]
-  batch_size:
-    value: 16
+    min: 1.0e-6
   optimizer:
     value: sgd
 

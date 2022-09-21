@@ -86,11 +86,6 @@ class Conv4Generator(ModelGenerator):
         Returns:
             callable function that applies transformations on input data
         """
-        scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
-        ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
-
-        _, h, w = (len(config["dataset"]["band_names"]), config["model"]["image_size"], config["model"]["image_size"])
-
         mean, std = task_specs.get_dataset(
             split="train",
             format=config["dataset"]["format"],
@@ -102,10 +97,11 @@ class Conv4Generator(ModelGenerator):
         t.append(tt.ToTensor())
         t.append(tt.Normalize(mean=mean, std=std))
         if train:
+            t.append(tt.RandomRotation(degrees=(90, 90)))
             t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomResizedCrop((h, w), scale=scale, ratio=ratio))
-
-        t.append(tt.Resize((config["model"]["image_size"], config["model"]["image_size"])))
+            t.append(tt.RandomVerticalFlip())
+            t.append(tt.ColorJitter(0.1))
+            t.append(tt.RandomGrayscale(0.1))
 
         transform_comp = tt.Compose(t)
 
