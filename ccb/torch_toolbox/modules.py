@@ -12,26 +12,19 @@ class ClassificationHead(torch.nn.Module):
     Define a two layer classification head that can be attached to model backbone.
     """
 
-    def __init__(self, in_ch: int, num_classes: int, hidden_size: int, ret_identity: bool = False) -> None:
+    def __init__(self, in_ch: int, num_classes: int, ret_identity: bool = False) -> None:
         """Initialize new instance of Classification Head.
 
         Args:
             in_ch: number of input channels
             num_classes: number of classes to predict
-            hidden_size: hidden size of linear layer
             ret_identy: whether or not just return the feature input
                 (for example smp models have their own classification head)
         """
         super().__init__()
         self.num_classes = num_classes
-        self.hidden_size = hidden_size
 
-        if hidden_size == 0:
-            self.linear = torch.nn.Sequential(torch.nn.Linear(in_ch, num_classes))
-        else:
-            self.linear = torch.nn.Sequential(
-                torch.nn.Linear(in_ch, hidden_size), torch.nn.Linear(hidden_size, num_classes)
-            )
+        self.linear = torch.nn.Sequential(torch.nn.Linear(in_ch, num_classes))
 
         self.ret_identity = ret_identity
 

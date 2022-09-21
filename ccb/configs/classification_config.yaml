@@ -22,7 +22,6 @@ model:
   lr_backbone: 1.0e-6
   lr_head: 1.0e-4
   optimizer: sgd
-  hidden_size: 512
   head_type: linear # classification
   loss_type: crossentropy
   batch_size: 2
