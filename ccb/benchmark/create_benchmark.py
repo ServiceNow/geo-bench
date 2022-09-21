@@ -4,7 +4,7 @@ from collections import defaultdict
 from locale import nl_langinfo
 from math import floor
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Tuple, Union
+from typing import Any, DefaultDict, Dict, List, Tuple, Union
 
 import numpy as np
 from tqdm import tqdm
@@ -251,6 +251,47 @@ def resample_from_stats(
         return new_partition
 
 
+def max_shape_center_crop(max_shape):
+    """Ensure that the largest band has `max_shape` or less. If not, all bands will be center-cropped proportionnally
+    e.g., a band that is half the size of the max band will have a crop that is half the size of max_shape"""
+    max_shape = np.array(max_shape)
+
+    def sample_converter(sample: io.Sample) -> io.Sample:
+
+        # # include label if it is a band
+        # band_label = isinstance(sample.label, io.Band)
+        # bands: List[Any] = sample.bands
+        # if band_label:
+        #     bands.append(sample.label)
+
+        # find max shape
+        max_band_shape = np.array(sample.largest_shape())
+
+        # nothing to do in that case
+        if np.all(max_band_shape <= np.array(max_shape)):
+            return sample
+
+        elif np.all(max_band_shape > np.array(max_shape)):
+
+            size_ratio = max_shape / max_band_shape
+            start_ratio = (1.0 - size_ratio) / 2.0
+
+            for band in sample.bands:
+                band.crop_from_ratio(start_ratio, size_ratio)
+
+            if isinstance(sample.label, io.Band):
+                sample.label.crop_from_ratio(start_ratio, size_ratio)
+
+            return sample
+
+        else:
+            raise ValueError(
+                "`max_shape` has one dimension smaller and one dimension bigger than then the max shape of all bands."
+            )
+
+    return sample_converter
+
+
 def transform_dataset(
     dataset_dir: Path,
     new_benchmark_dir: Path,
@@ -297,15 +338,19 @@ def transform_dataset(
     for split_name, sample_names in new_partition.partition_dict.items():
         print(f"  Converting {len(sample_names)} samples from {split_name} split.")
         for sample_name in tqdm(sample_names):
+            if hdf5:
+                sample_name += ".hdf5"
 
             if sample_converter is None:
                 if hdf5:
-                    sample_name += ".hdf5"
                     shutil.copyfile(dataset_dir / sample_name, new_dataset_dir / sample_name)
                 else:
                     shutil.copytree(dataset_dir / sample_name, new_dataset_dir / sample_name, dirs_exist_ok=True)
             else:
-                raise NotImplementedError()
+                format = "hdf5" if hdf5 else "tif"
+                sample = io.load_sample(dataset_dir / sample_name, format=format)
+                new_sample = sample_converter(sample)
+                new_sample.write(new_dataset_dir, format=format)
 
     new_partition.save(new_dataset_dir, "default")
     return new_dataset_dir
@@ -335,19 +380,18 @@ def make_classification_benchmark():
     """Enrtypoint for creating the classification benchmark."""
     max_sizes = {"train": 20000, "valid": 1000, "test": 1000}
     # max_sizes = {"train": 10, "valid": 100, "test": 100}
-
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
-        "forestnet_v1.0": (default_resampler, None),
+        "forestnet_v1.0": (default_resampler, max_shape_center_crop((256, 256))),
         "eurosat": (default_resampler, None),
-        "brick_kiln_v1.0": (default_resampler, None),
-        "so2sat": (default_resampler, None),
-        "pv4ger_classification": (default_resampler, None),
-        # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
-        "geolifeclef-2022": (default_resampler, None),
-        "bigearthnet": (make_resampler_from_stats(max_sizes), None),
+        # "brick_kiln_v1.0": (default_resampler, None),
+        # "so2sat": (default_resampler, None),
+        "pv4ger_classification": (default_resampler, max_shape_center_crop((256, 256))),
+        # # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
+        # "geolifeclef-2022": (default_resampler, None),
+        # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
     }
-    _make_benchmark("classification_v0.6", specs)
+    _make_benchmark("classification_v0.7", specs)
 
 
 def make_segmentation_benchmark():
