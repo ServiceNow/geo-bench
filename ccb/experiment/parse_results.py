@@ -531,6 +531,8 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
         log_dirs, metric, best_points = get_best_logs(log_dirs, metric, filt_size=filt_size)
 
+        print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
+
         constants, exp_names = format_hparams(log_dirs)
 
         if len(log_dirs) == 0:
