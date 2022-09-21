@@ -75,14 +75,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     sample_id = 0
     for split_name in ["train", "val", "test"]:
         eurosat_dataset = EuroSAT(
-            root=SRC_DATASET_DIR, split=split_name, transforms=None, download=False, checksum=True
+            root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True
         )
         for tg_sample in tqdm(eurosat_dataset):
             sample_name = f"id_{sample_id:04d}"
 
             images = np.array(tg_sample["image"])
             label = tg_sample["label"]
-
             sample = make_sample(images, int(label), sample_name)
             sample.write(dataset_dir)
             _split_name = {"val": "valid"}.get(split_name, split_name)
