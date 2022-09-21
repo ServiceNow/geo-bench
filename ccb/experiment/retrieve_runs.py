@@ -15,7 +15,7 @@ from ruamel.yaml import YAML
 from tqdm import tqdm
 
 
-def retrieve_runs(sweep_experiment_dir):
+def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
     """Compute results for a sweep.
 
     Args:
@@ -24,6 +24,11 @@ def retrieve_runs(sweep_experiment_dir):
     Returns:
         df with sweep summaries per individual run
     """
+
+    csv_path = Path(sweep_experiment_dir) / "cached_results.csv"
+    if use_cached_csv and csv_path.exists():
+        return pd.read_csv(csv_path)
+
     sweep_exps = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
 
     csv_run_dirs = [Path(path).parent for path in sweep_exps]
@@ -163,6 +168,7 @@ def retrieve_runs(sweep_experiment_dir):
     exp_dirs_to_keep = count_df["exp_dir"].tolist()
     all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
 
+    all_trials_df.to_csv(csv_path)
     return all_trials_df
 
 
