@@ -20,7 +20,8 @@ from ccb.torch_toolbox.model import (
     train_loss_generator,
     train_metrics_generator,
 )
-
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 class TIMMGenerator(ModelGenerator):
     """Timm Model Generator.
@@ -49,7 +50,7 @@ class TIMMGenerator(ModelGenerator):
             config["model"]["backbone"], pretrained=config["model"]["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-
+        config["model"]["default_input_size"] = backbone.default_cfg['input_size']
         new_in_channels = len(config["dataset"]["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if config["model"]["backbone"] in ["resnet18", "resnet50"] and new_in_channels > 3:
@@ -249,43 +250,28 @@ class TIMMGenerator(ModelGenerator):
         ).normalization_stats()
 
         t = []
-        t.append(tt.ToTensor())
-        t.append(tt.Normalize(mean=mean, std=std))
+        color_jitter = config['model'].get('aug_color_jitter', 0.5)
+        to_gray = config['model'].get('aug_grayscale', 0.1)
+        rotate = config['model'].get('aug_rotation', 1.0)
+        after_crop_size = config["model"]["default_input_size"][1]
+        if after_crop_size < task_specs.patch_size[0]:
+            before_crop_size = int(config["model"]["default_input_size"][1] * 256 / 224)
+            t.append(A.Resize(before_crop_size, before_crop_size))
+        t.append(A.RandomCrop(after_crop_size, after_crop_size))
+        t.append(A.Normalize(mean=mean, std=std))
         if train:
-            t.append(tt.RandomApply(torch.nn.ModuleList([tt.RandomRotation((90, 90))]), p=0.5))
-            t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomVerticalFlip())
-            t.append(tt.ColorJitter(0.1))
-            t.append(tt.RandomGrayscale(0.1))
-
-        # vit architectures require fixed input size
-        if (
-            config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]
-            and task_specs.patch_size[0] <= 224
-        ):
-            t.append(tt.Resize((224, 224)))
-        elif (
-            config["model"]["backbone"] in ["vit_tiny_patch16_224", "vit_small_patch16_224"]
-            and task_specs.patch_size[0] > 224
-        ):
-            t.append(tt.RandomCrop((224, 224)))
-        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] <= 256:
-            t.append(tt.Resize((256, 256)))
-        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] > 256:
-            t.append(tt.RandomCrop((256, 256)))
-        # all convolutional architectures imagenet pretrained on 224
-        elif task_specs.patch_size[0] <= 224:
-            t.append(tt.Resize((224, 224)))
-        elif task_specs.patch_size[0] > 224:
-            t.append(tt.RandomCrop((224, 224)))
-
-        transform_comp = tt.Compose(t)
+            t.append(A.ColorJitter(p=color_jitter))
+            t.append(A.ToGray(p=to_gray))
+            t.append(A.RandomRotate90(rotate))
+            t.append(A.Flip())
+        t.append(ToTensorV2())
+        transform_comp = A.Compose(t)
 
         def transform(sample: io.Sample):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(x)
+            x = transform_comp(image=x)['image']
             return {"input": x, "label": sample.label}
 
         return transform
