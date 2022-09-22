@@ -269,13 +269,15 @@ class TIMMGenerator(ModelGenerator):
             and task_specs.patch_size[0] > 224
         ):
             t.append(tt.RandomCrop((224, 224)))
-        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] <= 224:
+        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] <= 256:
             t.append(tt.Resize((256, 256)))
-        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] > 224:
-            t.append(tt.RandomCrop((224, 224)))
-        # all convolutional architectures
-        else:
+        elif config["model"]["backbone"] == "swin2_tiny_window16_256" and task_specs.patch_size[0] > 256:
+            t.append(tt.RandomCrop((256, 256)))
+        # all convolutional architectures imagenet pretrained on 224
+        elif task_specs.patch_size[0] <= 224:
             t.append(tt.Resize((224, 224)))
+        elif task_specs.patch_size[0] > 224:
+            t.append(tt.RandomCrop((224, 224)))
 
         transform_comp = tt.Compose(t)
 
