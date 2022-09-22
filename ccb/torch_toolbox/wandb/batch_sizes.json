@@ -23,7 +23,7 @@
         "pv4ger_classification":64,
         "so2sat":64
     },
-    "convnext": {
+    "convnext_base": {
         "bigearthnet":32,
         "brick_kiln_v1.0":32,
         "eurosat":32,
