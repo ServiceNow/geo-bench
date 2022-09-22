@@ -144,6 +144,12 @@ class SSLMocoGenerator(ModelGenerator):
             t.append(tt.ColorJitter(0.1))
             t.append(tt.RandomGrayscale(0.1))
 
+        # all convolutional architectures
+        if task_specs.patch_size[0] <= 224:
+            t.append(tt.Resize((224, 224)))
+        elif task_specs.patch_size[0] > 224:
+            t.append(tt.RandomCrop((224, 224)))
+
         transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
