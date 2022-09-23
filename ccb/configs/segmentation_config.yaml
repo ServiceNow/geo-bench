@@ -10,7 +10,7 @@ wandb:
   sweep:
     sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_unet.yaml # or maybe define the entire sweep here?
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
-    num_trials_per_agent: 4 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
+    num_trials_per_agent: 1 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   new_channel_init_method: random
