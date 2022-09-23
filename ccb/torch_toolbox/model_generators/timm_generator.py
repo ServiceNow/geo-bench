@@ -3,9 +3,11 @@
 import random
 from typing import Any, Callable, Dict
 
+import albumentations as A
 import numpy as np
 import timm
 import torch
+from albumentations.pytorch import ToTensorV2
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
 
@@ -20,8 +22,7 @@ from ccb.torch_toolbox.model import (
     train_loss_generator,
     train_metrics_generator,
 )
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+
 
 class TIMMGenerator(ModelGenerator):
     """Timm Model Generator.
@@ -50,7 +51,7 @@ class TIMMGenerator(ModelGenerator):
             config["model"]["backbone"], pretrained=config["model"]["pretrained"], features_only=False
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
-        config["model"]["default_input_size"] = backbone.default_cfg['input_size']
+        config["model"]["default_input_size"] = backbone.default_cfg["input_size"]
         new_in_channels = len(config["dataset"]["band_names"])
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if config["model"]["backbone"] in ["resnet18", "resnet50"] and new_in_channels > 3:
@@ -250,20 +251,21 @@ class TIMMGenerator(ModelGenerator):
         ).normalization_stats()
 
         t = []
-        color_jitter = config['model'].get('aug_color_jitter', 0.5)
-        to_gray = config['model'].get('aug_grayscale', 0.1)
-        rotate = config['model'].get('aug_rotation', 1.0)
-        after_crop_size = config["model"]["default_input_size"][1]
-        if after_crop_size < task_specs.patch_size[0]:
-            before_crop_size = int(config["model"]["default_input_size"][1] * 256 / 224)
-            t.append(A.Resize(before_crop_size, before_crop_size))
-        t.append(A.RandomCrop(after_crop_size, after_crop_size))
-        t.append(A.Normalize(mean=mean, std=std))
+
+        desired_input_size = config["model"]["default_input_size"][1]
+
+        if desired_input_size >= task_specs.patch_size[0]:
+            inflated_size = desired_input_size + 32
+            t.append(A.Resize(inflated_size, inflated_size))
+            t.append(A.RandomCrop(desired_input_size, desired_input_size))
+        else:
+            t.append(A.RandomCrop(desired_input_size, desired_input_size))
+
         if train:
-            t.append(A.ColorJitter(p=color_jitter))
-            t.append(A.ToGray(p=to_gray))
-            t.append(A.RandomRotate90(rotate))
             t.append(A.Flip())
+            t.append(A.RandomRotate90(0.5))
+
+        t.append(A.Normalize(mean=mean, std=std))
         t.append(ToTensorV2())
         transform_comp = A.Compose(t)
 
@@ -271,7 +273,8 @@ class TIMMGenerator(ModelGenerator):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(image=x)['image']
+            x = transform_comp(image=x)["image"]
+            assert x.shape[1] in [224, 256]
             return {"input": x, "label": sample.label}
 
         return transform
