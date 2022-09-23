@@ -30,6 +30,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
         return pd.read_csv(csv_path)
 
     sweep_exps = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+    print(sweep_exps)
 
     csv_run_dirs = [Path(path).parent for path in sweep_exps]
     all_trials_df = pd.DataFrame(
