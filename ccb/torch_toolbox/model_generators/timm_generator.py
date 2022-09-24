@@ -254,15 +254,13 @@ class TIMMGenerator(ModelGenerator):
 
         desired_input_size = config["model"]["default_input_size"][1]
 
-        if desired_input_size >= task_specs.patch_size[0]:
-            inflated_size = desired_input_size + 32
+        inflated_size = desired_input_size + 32
+        if inflated_size >= task_specs.patch_size[0]:
             t.append(A.Resize(inflated_size, inflated_size))
-            t.append(A.RandomCrop(desired_input_size, desired_input_size))
-        else:
-            t.append(A.RandomCrop(desired_input_size, desired_input_size))
+        t.append(A.RandomCrop(desired_input_size, desired_input_size))
 
         if train:
-            t.append(A.Flip())
+            t.append(A.Flip(0.5))
             t.append(A.RandomRotate90(0.5))
 
         t.append(A.Normalize(mean=mean, std=std))
