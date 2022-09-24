@@ -531,12 +531,12 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
 
         log_dirs, metric, best_points = get_best_logs(log_dirs, metric, filt_size=filt_size)
 
+        if len(log_dirs) == 0:
+            return
+
         print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
 
         constants, exp_names = format_hparams(log_dirs)
-
-        if len(log_dirs) == 0:
-            return
 
         colors = sns.color_palette("tab10")
         for i, log_dir in enumerate(log_dirs[:top_k]):
@@ -572,11 +572,12 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
 
     fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size)
     # fig.suptitle(metric, fontsize=20)
-
     for i, dataset in enumerate(datasets):
         print(dataset)
         for j, model in enumerate(models):
             sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
+            # if len(sub_df) == 0:
+            #     continue
             axes[i, j].set_title(f"{len(sub_df)} runs of {model} on {dataset} ")
 
             plot_fn(sub_df, axes[i, j], dataset, model)
