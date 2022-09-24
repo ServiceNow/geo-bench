@@ -9,14 +9,14 @@ wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
   sweep:
-    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_resnet18.yaml # or maybe define the entire sweep here?
+    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_classification_conv4.yaml # or maybe define the entire sweep here?
     num_agents: 4 # how many agents participate in sweep, one agent usually corresponds to one gpu
     num_trials_per_agent: 4 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
+  model_generator_module_name: ccb.torch_toolbox.model_generators.conv4
   head_type: linear # classification
   loss_type: crossentropy
-  backbone: resnet18  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
+  backbone: conv4  # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
   default_input_size: [224, 224]
   pretrained: True
   new_channel_init_method: random

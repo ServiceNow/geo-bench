@@ -146,18 +146,16 @@ class SegmentationGenerator(ModelGenerator):
             partition_name=config["experiment"]["partition_name"],
         ).rgb_stats()
         band_names = config["dataset"]["band_names"]
-        color_jitter = config["model"].get("aug_color_jitter", 0.5)
-        to_gray = config["model"].get("aug_grayscale", 0.1)
-        rotate = config["model"].get("aug_rotation", 1.0)
+
         t = []
         if h < patch_h:
             t.append(A.SmallestMaxSize(max_size=h))
         t.append(A.RandomCrop(h32, w32))
         if train:
-            t.append(A.ColorJitter(p=color_jitter))
-            t.append(A.ToGray(p=to_gray))
-            t.append(A.RandomRotate90(rotate))
+            t.append(A.RandomRotate90(0.5))
             t.append(A.Flip())
+
+        t.append(A.Normalize(mean=mean, std=std))
         t.append(ToTensorV2())
         t_comp = A.Compose(t)
 

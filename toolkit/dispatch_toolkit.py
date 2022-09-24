@@ -131,9 +131,9 @@ def toolkit_dispatcher(exp_dir, prompt=True, env_vars=()) -> None:
 
             model_name = config["model"]["model_name"]
 
-            ans = input(f"Launch, {model_name} on {config_path.parents[0].name} y/n.")
-            if ans != "y":
-                continue
+            # ans = input(f"Launch, {model_name} on {config_path.parents[0].name} y/n.")
+            # if ans != "y":
+            #     continue
 
             assert "sweep_config_path" in config["wandb"]["sweep"]
 
