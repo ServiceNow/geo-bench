@@ -250,28 +250,36 @@ class TIMMGenerator(ModelGenerator):
             partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
 
-        t = []
+        # t = []
 
         desired_input_size = config["model"]["default_input_size"][1]
 
-        inflated_size = desired_input_size + 32
-        if inflated_size >= task_specs.patch_size[0]:
-            t.append(A.Resize(inflated_size, inflated_size))
-        t.append(A.RandomCrop(desired_input_size, desired_input_size))
+        # inflated_size = desired_input_size + 32
+        # if inflated_size >= task_specs.patch_size[0]:
+        #     t.append(A.Resize(inflated_size, inflated_size))
+        # t.append(A.RandomCrop(desired_input_size, desired_input_size))
 
+        # if train:
+        #     t.append(A.Flip(0.5))
+
+        # t.append(A.Normalize(mean=mean, std=std))
+        # t.append(A.Resize(224,224))
+        # t.append(ToTensorV2())
+        # transform_comp = A.Compose(t)
+        t = []
+        t.append(tt.ToTensor())
+        t.append(tt.Normalize(mean=mean, std=std))
         if train:
-            t.append(A.Flip(0.5))
-            t.append(A.RandomRotate90(0.5))
+            t.append(tt.RandomHorizontalFlip())
 
-        t.append(A.Normalize(mean=mean, std=std))
-        t.append(ToTensorV2())
-        transform_comp = A.Compose(t)
+        t.append(tt.Resize((desired_input_size, desired_input_size)))
+        transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(image=x)["image"]
+            x = transform_comp(x)
             assert x.shape[1] in [224, 256]
             return {"input": x, "label": sample.label}
 
