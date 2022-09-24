@@ -87,6 +87,8 @@ class Model(LightningModule):
             training step outputs
         """
         inputs = batch["input"]
+        if batch_idx < 1:
+            print(inputs.shape)
         target = batch["label"]
         output = self(inputs)
         loss_train = self.loss_function(output, target)
