@@ -154,6 +154,7 @@ def retrieve_runs(args):
         ]
 
         all_trials_df = pd.concat([all_trials_df, pd.DataFrame(best_scores, columns=all_trials_df.columns)])
+        all_trials_df["partition_name"].replace({"default": "1.00x_train"}, inplace=True)
 
     all_trials_df.reset_index(drop=True, inplace=True)
 
