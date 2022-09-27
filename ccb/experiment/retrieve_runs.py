@@ -72,7 +72,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
             config = yaml.load(fd)
 
         # load metric_csv
-        if os.path.exists(os.path.join(str(csv_logger_dir), "metrics")):
+        if os.path.exists(os.path.join(str(csv_logger_dir), "metrics.csv")):
             orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
         else:
             continue
