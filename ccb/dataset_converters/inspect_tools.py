@@ -224,6 +224,7 @@ def overlay_label(image, label, label_patch_size, opacity=0.5):
         scale = np.array(image.shape[:2]) / np.array(label_patch_size)
     else:
         scale = np.array([1.0, 1.0])
+
     if isinstance(label, (list, tuple)):  # TODO hack tha needs to change
         im = Image.fromarray(image)
         ctxt = ImageDraw.Draw(im)
@@ -589,7 +590,6 @@ def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
 
 def plot_benchmark(benchmark_name, n_samples, save_dir: Path = Path.home() / "figures", fig_size=None):
     """Plot samples of the benchmark using matplotlib for compact visualization."""
-
     if save_dir is not None:
         save_dir = save_dir / benchmark_name
         save_dir.mkdir(parents=True, exist_ok=True)

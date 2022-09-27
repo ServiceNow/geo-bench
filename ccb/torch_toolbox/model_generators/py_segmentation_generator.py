@@ -75,8 +75,8 @@ class SegmentationGenerator(ModelGenerator):
         # hparams.update({"std": backbone.default_cfg["std"]})
         config["model"]["input_size"] = (
             len(config["dataset"]["band_names"]),
-            config["model"]["image_size"],
-            config["model"]["image_size"],
+            config["model"]["desired_input_size"],
+            config["model"]["desired_input_size"],
         )
 
         with torch.no_grad():
