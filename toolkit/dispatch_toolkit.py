@@ -37,7 +37,7 @@ TOOLKIT_ENVS = (
 # Computational requirements
 TOOLKIT_CPU = 4
 TOOLKIT_GPU = 1
-TOOLKIT_MEM = 12
+TOOLKIT_MEM = 32
 
 
 def _load_envs():
