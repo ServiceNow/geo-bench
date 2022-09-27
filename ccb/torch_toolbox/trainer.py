@@ -2,9 +2,11 @@
 """Train the model using job information contained in the current directory."""
 
 import argparse
+import os
 
 import pytorch_lightning as pl
 import wandb
+from ruamel.yaml import YAML
 
 from ccb.experiment.experiment import Job, get_model_generator
 from ccb.torch_toolbox.dataset import DataModule
@@ -50,6 +52,11 @@ def train(job_dir: str) -> None:
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
     trainer.test(model, datamodule)
+
+    # save updated configs in csv_logger one directories are created
+    yaml = YAML()
+    with open(os.path.join(trainer.loggers[0].save_dir, "config.yaml"), "w") as fd:
+        yaml.dump(config, fd)
 
     wandb.finish()
 

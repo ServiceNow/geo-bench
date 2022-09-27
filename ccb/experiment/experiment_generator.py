@@ -40,7 +40,16 @@ def experiment_generator(
 
     benchmark_dir = config["experiment"]["benchmark_dir"]
 
-    experiment_prefix = f"{config['experiment']['experiment_name'] or 'experiment'}_{os.path.basename(benchmark_dir)}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}"
+    if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
+        model_name = "ssl_moco_" + config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
+        model_name = config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
+        model_name = config["model"]["backbone"]
+    else:
+        model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+
+    experiment_prefix = f"{config['experiment']['experiment_name'] or 'experiment'}_{os.path.basename(benchmark_dir)}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}_{model_name}"
     if config["experiment"]["experiment_name"] is not None:
         experiment_dir: Path = Path(config["experiment"]["generate_experiment_dir"]) / experiment_prefix
     else:
@@ -64,16 +73,6 @@ def experiment_generator(
             # continue with hyperparameters from initialized model
             config = model.config
 
-            # create a unique model name
-            if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
-                model_name = "ssl_moco_" + config["model"]["backbone"]
-            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
-                model_name = config["model"]["backbone"]
-            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
-                model_name = config["model"]["backbone"]
-            else:
-                model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
-
             config["model"]["model_name"] = model_name
 
             config["model"]["batch_size"] = batch_size_dict[model_name][task_specs.dataset_name]
@@ -85,32 +84,18 @@ def experiment_generator(
             job.save_task_specs(task_specs)
 
             # sweep name that will be seen on wandb
-            if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
-                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
-            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
-                name = "_".join(str(job_dir).split("/")[-2:]) + "_" + config["model"]["backbone"]
-            elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
-                name = "_".join(str(job_dir).split("/")[-2:]) + "_ssl_moco_" + config["model"]["backbone"]
-            else:
-                name = (
-                    "_".join(str(job_dir).split("/")[-2:])
-                    + "_"
-                    + config["model"]["encoder_type"]
-                    + "_"
-                    + config["model"]["decoder_type"]
-                )
+            wandb_name = "_".join(str(job_dir).split("/")[-2:]) + "_" + model_name
 
             job.write_wandb_sweep_cl_script(
                 config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
                 base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
-                name=name,
+                name=wandb_name,
             )
 
         elif experiment_type == "seeded_runs":
-            NUM_SEEDS = 10
 
-            with open("/mnt/data/experiments/nils/classification_results/seeded_runs.json", "r") as f:
+            with open(config["experiment"]["best_hparam_config"], "r") as f:
                 seed_run_dict = json.load(f)
 
             back_name = config["model"]["backbone"]
@@ -129,7 +114,10 @@ def experiment_generator(
 
             best_config["wandb"]["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
 
-            for i in range(NUM_SEEDS):
+            print(best_config["model"]["batch_size"])
+            print(exp_dir)
+
+            for i in range(config["experiment"]["num_seeds"]):
                 # set seed to be used in experiment
                 best_config["experiment"]["seed"] = i
 

@@ -15,23 +15,29 @@ from ruamel.yaml import YAML
 from tqdm import tqdm
 
 
-def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
+def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
     """Compute results for a sweep.
 
     Args:
         experiment_dir: diretory where all sweeps are stored
+        use_cached_csv: cached csv
+        exp_type: 'sweep', 'seeds'
 
     Returns:
         df with sweep summaries per individual run
     """
-
     csv_path = Path(sweep_experiment_dir) / "cached_results.csv"
     if use_cached_csv and csv_path.exists():
         return pd.read_csv(csv_path)
 
-    sweep_exps = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+    if exp_type == "sweep":
+        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+    elif exp_type == "seeds":
+        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+    else:
+        raise ValueError("exp_type not valid, should be 'sweep' or 'seeds'")
 
-    csv_run_dirs = [Path(path).parent for path in sweep_exps]
+    csv_run_dirs = [Path(path).parent for path in run_dirs]
     all_trials_df = pd.DataFrame(
         columns=[
             "train_loss",
@@ -52,6 +58,8 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
         ]
     )
 
+    import shutil
+
     for csv_logger_dir in tqdm(csv_run_dirs):
 
         # load task_specs
@@ -64,7 +72,10 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
             config = yaml.load(fd)
 
         # load metric_csv
-        orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
+        if os.path.exists(os.path.join(str(csv_logger_dir), "metrics")):
+            orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
+        else:
+            continue
         # keep track of steps to epoch and use trick to remove stacked nans
         step_to_epoch = orig_df[["step", "epoch"]].drop_duplicates(subset="step")
         step_to_epoch = dict(zip(step_to_epoch.step, step_to_epoch.epoch))
@@ -164,7 +175,8 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False):
 
     # keep the most recent version
     count_df.sort_values(by=["model", "dataset", "partition_name", "exp_dir", "date"], inplace=True, ascending=False)
-    count_df.drop_duplicates(subset=["model", "dataset", "partition_name"], inplace=True, keep="first")
+    if exp_type == "sweep":
+        count_df.drop_duplicates(subset=["model", "dataset", "partition_name"], inplace=True, keep="first")
     exp_dirs_to_keep = count_df["exp_dir"].tolist()
     all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
 
@@ -260,3 +272,6 @@ def find_missing_runs(df, num_run_thresh: int = 10, task: str = "classification"
                         if len(exp_df) < num_run_thresh:
                             miss_dict[model][part].append(ds)
     return miss_dict
+
+
+# retrieve_runs("/mnt/data/experiments/nils/new_classification_seeded_runs")
