@@ -71,8 +71,6 @@ class Conv4Generator(ModelGenerator):
         task_specs: TaskSpecifications,
         config: Dict[str, Any],
         train: bool = True,
-        scale: Union[None, Sequence[float]] = None,
-        ratio: Union[None, Sequence[float]] = None,
     ) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
@@ -80,8 +78,6 @@ class Conv4Generator(ModelGenerator):
             task_specs: task specs to retrieve dataset
             config: config file
             train: train mode true or false
-            scale: define image scale
-            ratio: define image ratio range
 
         Returns:
             callable function that applies transformations on input data
