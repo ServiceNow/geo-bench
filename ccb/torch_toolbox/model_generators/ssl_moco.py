@@ -4,9 +4,10 @@ import copy
 import random
 from typing import Any, Callable, Dict
 
+import albumentations as A
 import numpy as np
-import timm
 import torch
+from albumentations.pytorch import ToTensorV2
 from torch.utils.data.dataloader import default_collate
 from torchvision import models
 from torchvision import transforms as tt
@@ -131,22 +132,24 @@ class SSLMocoGenerator(ModelGenerator):
             partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
         t = []
-        t.append(tt.ToTensor())
-        t.append(tt.Normalize(mean=mean, std=std))
         if train:
-            t.append(tt.RandomApply(torch.nn.ModuleList([tt.RandomRotation((90, 90))]), p=0.5))
-            t.append(tt.RandomHorizontalFlip())
-            t.append(tt.RandomVerticalFlip())
+            t.append(A.RandomRotate90(0.5))
+            t.append(A.HorizontalFlip(0.5))
+            t.append(A.VerticalFlip(0.5))
+            t.append(A.Transpose(0.5))
 
-        t.append(tt.Resize((224, 224)))
+        t.append(A.Resize((224, 224)))
 
-        transform_comp = tt.Compose(t)
+        # max_pixel_value = 1 is essential for us
+        t.append(A.Normalize(mean=mean, std=std, max_pixel_value=1))
+        t.append(ToTensorV2())
+        transform_comp = A.Compose(t)
 
         def transform(sample: io.Sample):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(x)
+            x = transform_comp(x)["image"]
             return {"input": x, "label": sample.label}
 
         return transform
