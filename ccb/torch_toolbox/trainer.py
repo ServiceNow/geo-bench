@@ -25,6 +25,9 @@ def train(job_dir: str) -> None:
     if seed is not None:
         pl.seed_everything(seed, workers=True)
 
+    if config["dataset"]["band_names"] == "all":
+        config["dataset"]["band_names"] = [band_info.name for band_info in task_specs.bands_info]
+
     # Load the user-specified model generator
     model_gen = get_model_generator(config["model"]["model_generator_module_name"])
 
