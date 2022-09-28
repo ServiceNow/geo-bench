@@ -477,6 +477,7 @@ class Band:
         return file_path
 
     def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
+        """Crop image from ratio."""
         shape = np.array(self.data.shape[:2])
         start = np.round(shape * np.array(start_ratio)).astype(np.int)
         size = np.round(shape * np.array(size_ratio)).astype(np.int)
@@ -603,7 +604,7 @@ class Sample(object):
         return len(self.dates) > 1
 
     def largest_shape(self):
-        """Return the height and width of the largest band, including label"""
+        """Return the height and width of the largest band, including label."""
         bands: List[Any] = self.bands
         if isinstance(self.label, Band):
             bands.append(self.label)
@@ -1182,6 +1183,8 @@ class CCBDataset:
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         assert format in ["hdf5", "tif"], f"Invalid file format {format}"
+        print("in ccb dataset")
+        print(band_names)
 
         if band_names is None:
             band_names = [band_info.name for band_info in self.task_specs.bands_info]
