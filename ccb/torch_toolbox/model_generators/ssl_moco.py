@@ -112,17 +112,13 @@ class SSLMocoGenerator(ModelGenerator):
         """
         return default_collate
 
-    def get_transform(
-        self, task_specs, config: Dict[str, Any], train=True, scale=None, ratio=None
-    ) -> Callable[[io.Sample], Dict[str, Any]]:
+    def get_transform(self, task_specs, config: Dict[str, Any], train=True) -> Callable[[io.Sample], Dict[str, Any]]:
         """Define data transformations specific to the models generated.
 
         Args:
             task_specs: task specs to retrieve dataset
             config: config file for dataset specifics
             train: train mode true or false
-            scale: define image scale
-            ratio: define image ratio range
 
         Returns:
             callable function that applies transformations on input data
@@ -141,14 +137,8 @@ class SSLMocoGenerator(ModelGenerator):
             t.append(tt.RandomApply(torch.nn.ModuleList([tt.RandomRotation((90, 90))]), p=0.5))
             t.append(tt.RandomHorizontalFlip())
             t.append(tt.RandomVerticalFlip())
-            t.append(tt.ColorJitter(0.1))
-            t.append(tt.RandomGrayscale(0.1))
 
-        # all convolutional architectures
-        if task_specs.patch_size[0] <= 224:
-            t.append(tt.Resize((224, 224)))
-        elif task_specs.patch_size[0] > 224:
-            t.append(tt.RandomCrop((224, 224)))
+        t.append(tt.Resize((224, 224)))
 
         transform_comp = tt.Compose(t)
 
