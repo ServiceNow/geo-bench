@@ -1183,8 +1183,6 @@ class CCBDataset:
         self._load_partitions(partition_name)
         assert split is None or split in self.list_splits(), "Invalid split {}".format(split)
         assert format in ["hdf5", "tif"], f"Invalid file format {format}"
-        print("in ccb dataset")
-        print(band_names)
 
         if band_names is None:
             band_names = [band_info.name for band_info in self.task_specs.bands_info]
