@@ -2,9 +2,11 @@
 
 from typing import Any, Callable, Dict, Sequence, Tuple, Union
 
+import albumentations as A
 import numpy as np
 import torch
 import torch.nn.functional as F
+from albumentations.pytorch import ToTensorV2
 from torch import Tensor
 from torch.utils.data.dataloader import default_collate
 from torchvision import transforms as tt
@@ -92,19 +94,24 @@ class Conv4Generator(ModelGenerator):
             partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
         t = []
-        t.append(tt.ToTensor())
-        t.append(tt.Normalize(mean=mean, std=std))
         if train:
-            t.append(tt.RandomHorizontalFlip())
+            t.append(A.RandomRotate90(0.5))
+            t.append(A.HorizontalFlip(0.5))
+            t.append(A.VerticalFlip(0.5))
+            t.append(A.Transpose(0.5))
 
-        t.append(tt.Resize(224))
-        transform_comp = tt.Compose(t)
+        t.append(A.Resize((224, 224)))
 
-        def transform(
-            sample: io.Sample,
-        ) -> Dict[str, Union["np.typing.NDArray[np.float_]", Band, int]]:
-            x = sample.pack_to_3d(band_names=(config["dataset"]["band_names"]))[0].astype("float32")
-            x = transform_comp(x)
+        # max_pixel_value = 1 is essential for us
+        t.append(A.Normalize(mean=mean, std=std, max_pixel_value=1))
+        t.append(ToTensorV2())
+        transform_comp = A.Compose(t)
+
+        def transform(sample: io.Sample):
+            x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
+                "float32"
+            )
+            x = transform_comp(x)["image"]
             return {"input": x, "label": sample.label}
 
         return transform

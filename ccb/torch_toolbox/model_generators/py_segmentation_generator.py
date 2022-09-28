@@ -147,9 +147,12 @@ class SegmentationGenerator(ModelGenerator):
         t.append(A.RandomCrop(h32, w32))
         if train:
             t.append(A.RandomRotate90(0.5))
-            t.append(A.Flip())
+            t.append(A.HorizontalFlip(0.5))
+            t.append(A.VerticalFlip(0.5))
+            t.append(A.Transpose(0.5))
 
-        t.append(A.Normalize(mean=mean, std=std))
+        # max_pixel_value = 1 is essential for us
+        t.append(A.Normalize(mean=mean, std=std, max_pixel_value=1))
         t.append(ToTensorV2())
         t_comp = A.Compose(t)
 
