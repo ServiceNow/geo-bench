@@ -46,6 +46,8 @@ class Conv4Generator(ModelGenerator):
         Returns:
             model instance from task_specs and hyperparameters
         """
+        if config["dataset"]["band_names"] == "all":
+            config["dataset"]["band_names"] = [band_info.name for band_info in task_specs.bands_info]
         backbone = Conv4(self.model_path, task_specs, config)
         head = head_generator(task_specs, [(64,)], config)
         loss = train_loss_generator(task_specs, config)

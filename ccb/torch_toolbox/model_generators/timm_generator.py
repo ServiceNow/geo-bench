@@ -52,7 +52,11 @@ class TIMMGenerator(ModelGenerator):
         )
         setattr(backbone, backbone.default_cfg["classifier"], torch.nn.Identity())
         config["model"]["default_input_size"] = backbone.default_cfg["input_size"]
-        new_in_channels = len(config["dataset"]["band_names"])
+        if config["dataset"]["band_names"] == "all":
+            new_in_channels = len([band_info.name for band_info in task_specs.bands_info])
+        else:
+            new_in_channels = len(config["dataset"]["band_names"])
+
         # if we go beyond RGB channels need to initialize other layers, otherwise keep the same
         if config["model"]["backbone"] in ["resnet18", "resnet50"] and new_in_channels > 3:
             current_layer = backbone.conv1
@@ -117,7 +121,7 @@ class TIMMGenerator(ModelGenerator):
             )
 
         test_input_for_feature_dim = (
-            len(config["dataset"]["band_names"]),
+            new_in_channels,
             256 if config["model"]["backbone"] == "swinv2_tiny_window16_256" else 224,
             256 if config["model"]["backbone"] == "swinv2_tiny_window16_256" else 224,
         )
@@ -168,9 +172,14 @@ class TIMMGenerator(ModelGenerator):
         """
         method = config["model"]["new_channel_init_method"]
 
+        if config["dataset"]["band_names"] == "all":
+            band_names = [band_info.name for band_info in task_specs.bands_info]
+        else:
+            band_names = config["dataset"]["band_names"]
+
         dataset = task_specs.get_dataset(
             split="train",
-            band_names=config["dataset"]["band_names"],
+            band_names=band_names,
             format=config["dataset"]["format"],
             benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
@@ -238,10 +247,15 @@ class TIMMGenerator(ModelGenerator):
         Returns:
             callable function that applies transformations on input data
         """
+        if config["dataset"]["band_names"] == "all":
+            band_names = [band_info.name for band_info in task_specs.bands_info]
+        else:
+            band_names = config["dataset"]["band_names"]
+
         mean, std = task_specs.get_dataset(
             split="train",
             format=config["dataset"]["format"],
-            band_names=tuple(config["dataset"]["band_names"]),
+            band_names=tuple(band_names),
             benchmark_dir=config["experiment"]["benchmark_dir"],
             partition_name=config["experiment"]["partition_name"],
         ).normalization_stats()
@@ -258,9 +272,7 @@ class TIMMGenerator(ModelGenerator):
         transform_comp = tt.Compose(t)
 
         def transform(sample: io.Sample):
-            x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
-                "float32"
-            )
+            x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=band_names)[0].astype("float32")
             x = transform_comp(x)
             assert x.shape[1] in [224, 256]
             return {"input": x, "label": sample.label}
