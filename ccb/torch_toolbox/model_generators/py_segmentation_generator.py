@@ -115,8 +115,6 @@ class SegmentationGenerator(ModelGenerator):
         task_specs: TaskSpecifications,
         config: Dict[str, Any],
         train=True,
-        scale=None,
-        ratio=None,
     ):
         """Define data transformations specific to the models generated.
 
@@ -124,14 +122,10 @@ class SegmentationGenerator(ModelGenerator):
             task_specs: task specs to retrieve dataset
             hparams: model hyperparameters
             train: train mode true or false
-            scale: define image scale
-            ratio: define image ratio range
 
         Returns:
             callable function that applies transformations on input data
         """
-        scale = tuple(scale or (0.08, 1.0))  # default imagenet scale range
-        ratio = tuple(ratio or (3.0 / 4.0, 4.0 / 3.0))  # default imagenet ratio range
         c, h, w = config["model"]["input_size"]
         patch_h, patch_w = task_specs.patch_size
         if h != w or patch_h != patch_w:
