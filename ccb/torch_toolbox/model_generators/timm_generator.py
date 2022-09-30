@@ -241,20 +241,24 @@ class TIMMGenerator(ModelGenerator):
         desired_input_size = config["model"]["default_input_size"][1]
 
         t = []
-        t.append(tt.ToTensor())
-        t.append(tt.Normalize(mean=mean, std=std))
         if train:
-            t.append(tt.RandomHorizontalFlip())
+            t.append(A.RandomRotate90(0.5))
+            t.append(A.HorizontalFlip(0.5))
+            t.append(A.VerticalFlip(0.5))
+            t.append(A.Transpose(0.5))
 
-        t.append(tt.Resize((desired_input_size, desired_input_size)))
-        transform_comp = tt.Compose(t)
+        t.append(A.Resize((desired_input_size, desired_input_size)))
+
+        # max_pixel_value = 1 is essential for us
+        t.append(A.Normalize(mean=mean, std=std, max_pixel_value=1))
+        t.append(ToTensorV2())
+        transform_comp = A.Compose(t)
 
         def transform(sample: io.Sample):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(x)
-            assert x.shape[1] in [224, 256]
+            x = transform_comp(x)["image"]
             return {"input": x, "label": sample.label}
 
         return transform
