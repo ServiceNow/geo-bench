@@ -11,6 +11,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+from pandas.errors import EmptyDataError
 from ruamel.yaml import YAML
 from tqdm import tqdm
 
@@ -58,8 +59,6 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
         ]
     )
 
-    import shutil
-
     for csv_logger_dir in tqdm(csv_run_dirs):
 
         # load task_specs
@@ -73,7 +72,10 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
 
         # load metric_csv
         if os.path.exists(os.path.join(str(csv_logger_dir), "metrics.csv")):
-            orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
+            try:
+                orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
+            except EmptyDataError:
+                continue
         else:
             continue
         # keep track of steps to epoch and use trick to remove stacked nans
@@ -170,7 +172,9 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
     count_df.rename(columns={0: "count"}, inplace=True)
 
     # extract latest date from string
-    count_df["date"] = count_df["exp_dir"].str.split("/", 0, expand=True)[6].str.split("_", 4, expand=True)[4]
+    count_df["date"] = (
+        count_df["exp_dir"].str.split("_", expand=True)[6] + "_" + count_df["exp_dir"].str.split("_", expand=True)[7]
+    )
     count_df["date"] = pd.to_datetime(count_df["date"], format="%m-%d-%Y_%H:%M:%S")
 
     # keep the most recent version
