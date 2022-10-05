@@ -247,7 +247,7 @@ class TIMMGenerator(ModelGenerator):
             t.append(A.VerticalFlip(0.5))
             t.append(A.Transpose(0.5))
 
-        t.append(A.Resize((desired_input_size, desired_input_size)))
+        t.append(A.Resize(desired_input_size, desired_input_size))
 
         # max_pixel_value = 1 is essential for us
         t.append(A.Normalize(mean=mean, std=std, max_pixel_value=1))
@@ -258,7 +258,7 @@ class TIMMGenerator(ModelGenerator):
             x: "np.typing.NDArray[np.float_]" = sample.pack_to_3d(band_names=config["dataset"]["band_names"])[0].astype(
                 "float32"
             )
-            x = transform_comp(x)["image"]
+            x = transform_comp(image=x)["image"]
             return {"input": x, "label": sample.label}
 
         return transform
