@@ -58,27 +58,6 @@ class Normalizer:
             new_metric = f"normalized {metric}"
             df[new_metric] = df.apply(lambda row: self.__call__(row["dataset"], row[metric]), axis=1)
 
-
-# def plot_1x_result(df, metric="test_metric", partition_name="1.00x_train"):
-#     models = df["model"].unique()
-#     datasets = df["dataset"].unique()
-#     partition_names = np.sort(df["partition_name"].unique())
-#     df = df[df["partition_name"] == partition_name]
-
-#     fig, axes = plt.subplots(1, len(datasets))
-#     for dataset, ax in zip(datasets, axes):
-#         data_list = []
-#         for i, model in enumerate(models):
-#             color = sns.color_palette("colorblind")[i]
-
-#             sub_df = df[(df["dataset"] == dataset) & (df["partition_name"] == partition_name) & (df["model"] == model)]
-#             data_list.append(sub_df[metric].to_numpy())
-
-#             ax.violinplot(data_list)
-#         ax.set_xlabel(dataset)
-#     plt.plot()
-
-
 def biqm(scores):
     """Return a bootstram sample of iqm."""
     b_scores = np.random.choice(scores, size=len(scores), replace=True)
@@ -125,31 +104,6 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None)
     plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size)
 
 
-# def unstack_runs(df: pd.DataFrame, metric):
-#     val_list = []
-#     for df_dataset in df.groupby("dataset"):
-#         val_list.append(df_dataset[metric].to_numpy())
-#     return np.stack(val_list)
-
-
-# def plot_per_dataset_1(df, model_order, metric="test_metric", add_points=False):
-
-#     sns.violinplot(
-#         x="dataset",
-#         y=metric,
-#         hue="model",
-#         data=df,
-#         hue_order=model_order,
-#         linewidth=0.5,
-#         saturation=0.9,
-#         scale="count",
-#         cut=0,
-#     )
-
-#     if add_points:
-#         sns.stripplot(
-#             x="dataset", y="test_metric", hue="model", data=df, hue_order=model_order, dodge=True, color="0.3"
-#         )
 
 
 def plot_per_dataset_3(
@@ -210,39 +164,6 @@ def plot_per_dataset_3(
     else:
         fig.subplots_adjust(wspace=0.3)
 
-    # y_ticks = ax.get_yticks()
-    # print(y_ticks)
-    # fig.tight_layout()
-
-
-# def plot_per_dataset_4(df, model_order, metric="test_metric"):
-#     sns.set_style("darkgrid")
-
-#     ax = sns.violinplot(
-#         x="dataset",
-#         y=metric,
-#         hue="model",
-#         data=df,
-#         hue_order=model_order,
-#         linewidth=0.5,
-#         saturation=0.9,
-#         scale="count",
-#         inner="box",
-#     )
-#     ax.set(xlabel=None)
-#     ax.xaxis.grid(False)  # Hide the horizontal gridlines
-
-#     sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=7, title="")
-
-
-# def plot_per_dataset_2(df, model_order, metric="test_metric"):
-
-#     sns.boxplot(
-#         x="dataset", y=metric, hue="model", data=df, width=0.5, hue_order=model_order, linewidth=0.5, saturation=0.9
-#     )
-#     # sns.stripplot(x="dataset", y="test_metric", hue="model", data=df, hue_order=model_order, dodge=True, color="0.3")
-
-
 def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=True):
     """Plot the time (in number of steps) of each experiment as a function of the training set size."""
     df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
@@ -274,50 +195,6 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
     ax.set_xlabel("Train Size Ratio")
 
 
-# def plot_normalized_time2(df: pd.DataFrame, time_metric="step", average_seeds=True):
-#     df["train_ratio"] = [get_train_ratio(part_name) for part_name in df["partition_name"]]
-
-#     mean_1x_time = df[df["train_ratio"] == 0.1].groupby(["dataset", "model"])[time_metric].mean()
-#     df["mean_1x_time"] = df.apply(lambda row: mean_1x_time[(row.dataset, row.model)], axis=1)
-#     normalized_name = f"{time_metric} normalized"
-#     df[normalized_name] = df.apply(lambda row: row[time_metric] / row["mean_1x_time"], axis=1)
-
-#     if average_seeds:
-#         df = df.groupby(["model", "dataset", "train_ratio"]).mean()
-#         df = df.reset_index()
-
-#     df["train_ratio_noisy"] = df.apply(lambda row: row["train_ratio"] * np.exp(np.random.randn() * 0.1), axis=1)
-#     # print(df.keys())
-#     fg = sns.lmplot(data=df, x="train_ratio_noisy", y=normalized_name, hue="dataset", row="model", logx=True)
-#     for ax in fg.axes.flatten():
-#         ax.set_xscale("log")
-#         ax.set_yscale("log")
-
-
-# def plot_over_train_size(df, metric="test_metric", log_y=False, n_largest=4, min_results=3):
-#     models = df["model"].unique()
-#     datasets = df["dataset"].unique()
-#     train_ratios = np.sort(df["train_ratio"].unique())
-
-#     fig, axes = plt.subplots(len(datasets), len(models))
-#     fig.suptitle(metric, fontsize=20)
-
-#     for i, dataset in enumerate(datasets):
-#         for j, model in enumerate(models):
-#             axes[i, j].set_title(f"{model} on {dataset}")
-#             for k, train_ratio in enumerate(train_ratios):
-#                 sub_df = df[(df["dataset"] == dataset) & (df["train_ratio"] == train_ratio) & (df["model"] == model)]
-#                 if len(sub_df) < min_results:
-#                     data = [np.nan]
-#                 else:
-#                     sub_df = sub_df.nlargest(n_largest, columns="val_metric")
-#                     data = sub_df[metric].to_numpy()
-
-#                 axes[i, j].boxplot(data, positions=[k])
-#                 if log_y:
-#                     axes[i, j].set_yscale("log")
-#             axes[i, j].set_xticklabels([str(trn_ratio) for trn_ratio in train_ratios])
-#     fig.tight_layout()
 
 
 def get_train_ratio(part_name):
@@ -340,39 +217,6 @@ def clean_names(val):
 
     return val
 
-
-# def collect_individual_run_traces(df: pd.DataFrame, exp_dir: str) -> Dict[int, pd.DataFrame]:
-#     """Collect individual runs for sweep or seeded runs based on an experiment.
-
-#     Args:
-#         df: summary dataframe that holds 'exp_dir' and 'csv_log_dir'
-#         exp_dir:  exp_dir name for which to collect individual run traces
-
-#     Returns:
-#         dictionary with enumerated keys and datafram values of run traces run traces
-#     """
-#     exp_df = df[df["exp_dir"] == exp_dir]
-#     log_dirs = exp_df["csv_log_dir"].tolist()
-
-#     all_exp_traces = {}
-#     for idx, log_dir in enumerate(log_dirs):
-#         all_exp_traces[idx] = collect_trace_info(log_dir)
-
-#     return all_exp_traces
-
-
-# def collect_trace_info_old(log_dir: str) -> pd.DataFrame:
-#     """Collect trace infor for a single run.
-
-#     Args:
-#         log_dir: logging directory where trace csv can be found
-
-#     Returns:
-#         dataframe with trace information
-#     """
-#     orig_df = pd.read_csv(Path(log_dir) / "metrics.csv")
-#     trace_df = orig_df.set_index("epoch").stack().groupby(level=[0, 1]).mean().unstack().reset_index(drop=True)
-#     return trace_df
 
 
 @cache
@@ -560,9 +404,9 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         colors = sns.color_palette("tab10")
         for i, log_dir in enumerate(sorted_log_dirs[:top_k]):
             trace_dict = collect_trace_info(log_dir)
-            val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="triang").mean()
-            val_trace = trace_dict[val_metric].rolling(filt_size, win_type="triang").mean()
-            test_trace = trace_dict[test_metric].rolling(filt_size, win_type="triang").mean()
+            val_loss = smooth_series(trace_dict["val_loss"], filt_size)
+            val_trace = smooth_series(trace_dict[val_metric], filt_size)
+            test_trace = smooth_series(trace_dict[test_metric], filt_size)
 
             # print(np.min(trace_dict["val_loss"].keys().to_numpy()))
             all_val_loss.append(val_loss.to_numpy())
@@ -616,6 +460,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
             new_df = new_df.append(sub_df)
 
     return new_df
+
 
 def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=None):
     """Plot all dataset results for a single model."""
