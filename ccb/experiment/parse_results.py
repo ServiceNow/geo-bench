@@ -419,47 +419,66 @@ def collect_trace_info_raw(log_dir: str) -> pd.DataFrame:
     return df
 
 
-def find_metric(keys: List[str]):
+def find_metric_names(keys: List[str]):
     """Find metric based on a key.
 
     Args:
         keys: List of metrics
     """
+    val_metric = None
+    test_metric = None
     for key in keys:
         if key in ("val_JaccardIndex", "val_Accuracy", "val_F1Score"):
-            return key
+            val_metric = key
+        if key in ("test_JaccardIndex", "test_Accuracy", "test_F1Score"):
+            test_metric = key
+    return val_metric, test_metric
 
 
-def get_best_logs(log_dirs, val_metric=None, filt_size=5, lower_is_better=False, test_metric=None):
-    """Find the `top_k` best experiments based on maximum validation accuracy."""
+def smooth_series(series, filt_size):
+    """Smoothout the series with a triang window of size filt_size."""
+    return series.rolling(filt_size, win_type="triang").mean()
+
+
+def extract_best_points(log_dirs, filt_size=5, lower_is_better=False, val_metric=None, test_metric=None):
+    """Find the optimal step on the validation trace for each log_dir, and return info into a dataframe."""
     max_scores = []
-    best_points = {}
+    best_points = []
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
 
-        if val_metric is None:
-            val_metric = find_metric(trace_dict.keys())
+        if val_metric is None or test_metric is None:
+            val_metric, test_metric = find_metric_names(trace_dict.keys())
 
-        if test_metric is None:
-            test_metric = val_metric.replace("val", "test")
-
-        val_trace = trace_dict[val_metric].rolling(filt_size, win_type="triang").mean()
+        val_trace = smooth_series(trace_dict[val_metric], filt_size)
         test_trace = trace_dict[test_metric]
 
-        if lower_is_better:
+        if lower_is_better:  # We currently only ue higher is better.
             scores = -1 * val_trace
         else:
             scores = val_trace
 
-        best_idx = scores.idxmax()
-        max_scores.append(scores[best_idx])
+        best_step = scores.idxmax()
+        max_scores.append(scores[best_step])  # used for sorting
 
-        best_points[log_dir] = (best_idx, val_trace[best_idx], test_trace[best_idx])
+        best_points.append(
+            dict(
+                log_dir=log_dir,
+                best_step=best_step,
+                val_metric=val_trace[best_step],
+                test_metric=test_trace[best_step],
+                best_config=False,
+            )
+        )
 
-    max_scores = np.array(max_scores)
+    best_points = pd.DataFrame(best_points)
+    best_points = best_points.set_index("log_dir")
 
-    idx = np.argsort(max_scores)[::-1]
-    return np.array(log_dirs)[idx], val_metric, test_metric, best_points
+    idx = np.argsort(np.array(max_scores))[::-1]
+    sorted_log_dirs = np.array(log_dirs)[idx]
+    best_points.at[sorted_log_dirs[0], "best_config"] = True
+
+    return best_points, sorted_log_dirs, val_metric, test_metric
 
 
 @cache
@@ -530,29 +549,16 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         all_val_loss = []
         # all_val_accuarcy = []
 
-        val_metric = "val_Accuracy"
-        if dataset == "bigearthnet":
-            val_metric = "val_F1Score"
-        if dataset in [
-            "pv4ger_segmentation",
-            "nz_cattle_segmentation",
-            "smallholder_cashew",
-            "southAfricaCropType",
-            "cvpr_chesapeake_landcover",
-            "NeonTree_segmentation",
-        ]:
-            val_metric = "val_JaccardIndex"
-
         if len(log_dirs) == 0:
             return
 
         constants, exp_names = format_hparams(log_dirs)
-        log_dirs, val_metric, test_metric, best_points = get_best_logs(log_dirs, val_metric, filt_size=filt_size)
+        best_points, sorted_log_dirs, val_metric, test_metric = extract_best_points(log_dirs, filt_size=filt_size)
 
         # print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
 
         colors = sns.color_palette("tab10")
-        for i, log_dir in enumerate(log_dirs[:top_k]):
+        for i, log_dir in enumerate(sorted_log_dirs[:top_k]):
             trace_dict = collect_trace_info(log_dir)
             val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="triang").mean()
             val_trace = trace_dict[val_metric].rolling(filt_size, win_type="triang").mean()
@@ -569,9 +575,11 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
             sns.lineplot(data=val_trace, ax=ax2, linestyle=":", color=colors[i])
             sns.lineplot(data=test_trace, ax=ax2, linestyle="--", color=colors[i])
 
-            x_best, y_val_best, y_test_best = best_points[log_dir]
-            sns.lineplot(x=[x_best], y=[y_val_best], marker="*", markersize="15", color=colors[i])
-            sns.lineplot(x=[x_best], y=[y_test_best], marker="X", markersize="15", color=colors[i])
+            best_step = best_points.at[log_dir, "best_step"]
+            val_best_value = best_points.at[log_dir, "val_metric"]
+            test_value = best_points.at[log_dir, "test_metric"]
+            sns.lineplot(x=[best_step], y=[val_best_value], marker="*", markersize="15", color=colors[i])
+            sns.lineplot(x=[best_step], y=[test_value], marker="X", markersize="15", color=colors[i])
 
         # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
         # ax.set_ylim(bottom=mn, top=mx)
@@ -590,6 +598,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     models = df["model"].unique()
     datasets = df["dataset"].unique()
 
+    new_df = pd.DataFrame()
     fig, axes = plt.subplots(len(datasets), len(models), figsize=fig_size)
     # fig.suptitle(metric, fontsize=20)
     for i, dataset in enumerate(datasets):
@@ -600,8 +609,13 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
             #     continue
             axes[i, j].set_title(f"{len(sub_df)} runs of {model} on {dataset} ")
 
-            plot_fn(sub_df, axes[i, j], dataset, model)
+            sub_df = plot_fn(sub_df, axes[i, j], dataset, model)
+            sub_df["dataset"] = dataset
+            sub_df["model"] = model
 
+            new_df = new_df.append(sub_df)
+
+    return new_df
 
 def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=None):
     """Plot all dataset results for a single model."""
