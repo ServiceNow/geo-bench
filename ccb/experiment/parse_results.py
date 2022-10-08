@@ -388,7 +388,12 @@ def collect_trace_info(log_dir: str, index="step") -> pd.DataFrame:
     # log_dir = log_dir.replace("train_v0.5_", "train_classification_v0.5_")
     # csv_path = Path(log_dir) / "lightning_logs" / "version_0" / "metrics.csv"
 
-    df = pd.read_csv(Path(log_dir) / "metrics.csv")
+    try:
+        df = pd.read_csv(Path(log_dir) / "metrics.csv")
+    except pd.EmptyDataError:
+        print(f"Empty log: {Path(log_dir) / 'metrics.csv'}")
+        return {}
+
     df.set_index(index)
 
     trace_dict = {}
@@ -425,27 +430,36 @@ def find_metric(keys: List[str]):
             return key
 
 
-def get_best_logs(log_dirs, metric=None, filt_size=5, lower_is_better=False):
+def get_best_logs(log_dirs, val_metric=None, filt_size=5, lower_is_better=False, test_metric=None):
     """Find the `top_k` best experiments based on maximum validation accuracy."""
     max_scores = []
     best_points = {}
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
 
-        if metric is None:
-            metric = find_metric(trace_dict.keys())
+        if val_metric is None:
+            val_metric = find_metric(trace_dict.keys())
 
-        metric_trace = trace_dict[metric].rolling(filt_size, win_type="triang").mean()
+        if test_metric is None:
+            test_metric = val_metric.replace("val", "test")
+
+        val_trace = trace_dict[val_metric].rolling(filt_size, win_type="triang").mean()
+        test_trace = trace_dict[test_metric]
+
         if lower_is_better:
-            metric_trace *= -1
-        max_val = metric_trace.max()
-        max_scores.append(max_val)
-        best_points[log_dir] = (metric_trace.idxmax(), max_val)
+            scores = -1 * val_trace
+        else:
+            scores = val_trace
+
+        best_idx = scores.idxmax()
+        max_scores.append(scores[best_idx])
+
+        best_points[log_dir] = (best_idx, val_trace[best_idx], test_trace[best_idx])
 
     max_scores = np.array(max_scores)
 
     idx = np.argsort(max_scores)[::-1]
-    return np.array(log_dirs)[idx], metric, best_points
+    return np.array(log_dirs)[idx], val_metric, test_metric, best_points
 
 
 @cache
@@ -516,9 +530,9 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         all_val_loss = []
         # all_val_accuarcy = []
 
-        metric = "val_Accuracy"
+        val_metric = "val_Accuracy"
         if dataset == "bigearthnet":
-            metric = "val_F1Score"
+            val_metric = "val_F1Score"
         if dataset in [
             "pv4ger_segmentation",
             "nz_cattle_segmentation",
@@ -527,22 +541,23 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
             "cvpr_chesapeake_landcover",
             "NeonTree_segmentation",
         ]:
-            metric = "val_JaccardIndex"
-
-        log_dirs, metric, best_points = get_best_logs(log_dirs, metric, filt_size=filt_size)
+            val_metric = "val_JaccardIndex"
 
         if len(log_dirs) == 0:
             return
 
-        print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
-
         constants, exp_names = format_hparams(log_dirs)
+        log_dirs, val_metric, test_metric, best_points = get_best_logs(log_dirs, val_metric, filt_size=filt_size)
+
+        # print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
 
         colors = sns.color_palette("tab10")
         for i, log_dir in enumerate(log_dirs[:top_k]):
             trace_dict = collect_trace_info(log_dir)
             val_loss = trace_dict["val_loss"].rolling(filt_size, win_type="triang").mean()
-            val_metric = trace_dict[metric].rolling(filt_size, win_type="triang").mean()
+            val_trace = trace_dict[val_metric].rolling(filt_size, win_type="triang").mean()
+            test_trace = trace_dict[test_metric].rolling(filt_size, win_type="triang").mean()
+
             # print(np.min(trace_dict["val_loss"].keys().to_numpy()))
             all_val_loss.append(val_loss.to_numpy())
 
@@ -551,16 +566,21 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
             sns.lineplot(data=val_loss, ax=ax, label=label, color=colors[i])
             if ax2 is None:
                 ax2 = ax.twinx()
-            sns.lineplot(data=val_metric, ax=ax2, linestyle=":", color=colors[i])
+            sns.lineplot(data=val_trace, ax=ax2, linestyle=":", color=colors[i])
+            sns.lineplot(data=test_trace, ax=ax2, linestyle="--", color=colors[i])
 
-            x_best, y_best = best_points[log_dir]
-            sns.lineplot(x=[x_best], y=[y_best], marker="*", markersize="15", color=colors[i])
+            x_best, y_val_best, y_test_best = best_points[log_dir]
+            sns.lineplot(x=[x_best], y=[y_val_best], marker="*", markersize="15", color=colors[i])
+            sns.lineplot(x=[x_best], y=[y_test_best], marker="X", markersize="15", color=colors[i])
+
         # mn, mx = np.nanpercentile(np.concatenate(all_val_loss), q=[0, 99])
         # ax.set_ylim(bottom=mn, top=mx)
 
         if legend:
             ax.legend()
             sns.move_legend(ax, loc="upper left", bbox_to_anchor=(1.2, 1), title=constants)
+
+        return best_points
 
     return plot_sweep
 
