@@ -46,6 +46,8 @@ def experiment_generator(
         model_name = config["model"]["backbone"]
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
         model_name = config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":
+        model_name = "millionaid_" + config["model"]["backbone"]
     else:
         model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
 
