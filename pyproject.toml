@@ -41,6 +41,7 @@ ipyplot = "^1.1.1"
 ipyleaflet = "^0.17.1"
 seaborn = "^0.12.0"
 albumentations = ">=1.2.1"
+yacs = "^0.1.8"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"
