@@ -167,25 +167,36 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
 
     all_trials_df.reset_index(drop=True, inplace=True)
 
-    # remove duplicates sweeps and keep the ones with 12 trials
-    count_df = all_trials_df.groupby(["model", "dataset", "partition_name", "exp_dir"]).size().reset_index()
-    count_df.rename(columns={0: "count"}, inplace=True)
-
-    # extract latest date from string
-    count_df["date"] = (
-        count_df["exp_dir"].str.split("_", expand=True)[6] + "_" + count_df["exp_dir"].str.split("_", expand=True)[7]
+    all_trials_df["date"] = (
+        all_trials_df["exp_dir"].str.split("_", expand=True)[6]
+        + "_"
+        + all_trials_df["exp_dir"].str.split("_", expand=True)[7]
     )
-    count_df["date"] = pd.to_datetime(count_df["date"], format="%m-%d-%Y_%H:%M:%S")
 
-    # keep the most recent version
-    count_df.sort_values(by=["model", "dataset", "partition_name", "exp_dir", "date"], inplace=True, ascending=False)
-    if exp_type == "sweep":
-        count_df.drop_duplicates(subset=["model", "dataset", "partition_name"], inplace=True, keep="first")
-    exp_dirs_to_keep = count_df["exp_dir"].tolist()
-    all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
+    most_recent = all_trials_df.groupby(["model", "dataset", "partition_name"]).head(12)
+
+    # # remove duplicates sweeps and keep the ones with 12 trials
+    # count_df = all_trials_df.groupby(["model", "dataset", "partition_name", "exp_dir"]).size().reset_index()
+    # count_df.rename(columns={0: "count"}, inplace=True)
+
+    # # extract latest date from string
+    # count_df["date"] = (
+    #     count_df["exp_dir"].str.split("_", expand=True)[6] + "_" + count_df["exp_dir"].str.split("_", expand=True)[7]
+    # )
+    # count_df["date"] = pd.to_datetime(count_df["date"], format="%m-%d-%Y_%H:%M:%S")
+
+    # # keep the most recent version
+    # import pdb
+    # pdb.set_trace()
+    # count_df.sort_values(by=["model", "dataset", "partition_name", "exp_dir", "date"], inplace=True, ascending=False)
+    # if exp_type == "sweep":
+    #     count_df.drop_duplicates(subset=["model", "dataset", "partition_name"], inplace=True, keep="first")
+    # exp_dirs_to_keep = count_df["exp_dir"].tolist()
+    # all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
 
     all_trials_df.to_csv(csv_path)
-    return all_trials_df
+
+    return most_recent
 
 
 partition_names = [

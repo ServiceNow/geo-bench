@@ -71,6 +71,14 @@
         "pv4ger_classification":64,
         "so2sat":64
     },
+    "millionaid_resnet50": {
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
+        "so2sat":64
+    },
     "resnet18_Unet": {
         "cvpr_chesapeake_landcover":32,
         "NeonTree_segmentation":32,
