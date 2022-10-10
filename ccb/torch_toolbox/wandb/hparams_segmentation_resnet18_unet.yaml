@@ -17,5 +17,5 @@ parameters:
     max: -4.60517019
     min: -11.512925465
   batch_size:
-    value: 32
+    value: 64
 
