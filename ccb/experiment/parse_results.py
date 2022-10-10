@@ -12,6 +12,7 @@ import seaborn as sns
 import yaml
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+from pandas.errors import EmptyDataError
 from scipy.stats import trim_mean
 
 from ccb.dataset_converters import inspect_tools
@@ -58,6 +59,7 @@ class Normalizer:
             new_metric = f"normalized {metric}"
             df[new_metric] = df.apply(lambda row: self.__call__(row["dataset"], row[metric]), axis=1)
 
+
 def biqm(scores):
     """Return a bootstram sample of iqm."""
     b_scores = np.random.choice(scores, size=len(scores), replace=True)
@@ -102,8 +104,6 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None)
         )
     )
     plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size)
-
-
 
 
 def plot_per_dataset_3(
@@ -164,6 +164,7 @@ def plot_per_dataset_3(
     else:
         fig.subplots_adjust(wspace=0.3)
 
+
 def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=True):
     """Plot the time (in number of steps) of each experiment as a function of the training set size."""
     df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
@@ -195,8 +196,6 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
     ax.set_xlabel("Train Size Ratio")
 
 
-
-
 def get_train_ratio(part_name):
     """Parse train ratio from partition name."""
     return float(part_name.split("x ")[0])
@@ -218,7 +217,6 @@ def clean_names(val):
     return val
 
 
-
 @cache
 def collect_trace_info(log_dir: str, index="step") -> pd.DataFrame:
     """Collect trace infor for a single run.
@@ -231,10 +229,9 @@ def collect_trace_info(log_dir: str, index="step") -> pd.DataFrame:
     """
     # log_dir = log_dir.replace("train_v0.5_", "train_classification_v0.5_")
     # csv_path = Path(log_dir) / "lightning_logs" / "version_0" / "metrics.csv"
-
     try:
         df = pd.read_csv(Path(log_dir) / "metrics.csv")
-    except pd.EmptyDataError:
+    except EmptyDataError:
         print(f"Empty log: {Path(log_dir) / 'metrics.csv'}")
         return {}
 
@@ -284,10 +281,34 @@ def smooth_series(series, filt_size):
     return series.rolling(filt_size, win_type="triang").mean()
 
 
+def find_best_hparam_for_seeds(df):
+    """Find best hparams for all experiments."""
+    model_and_ds = df.groupby(["model", "dataset", "partition_name"]).size().reset_index()
+    model_names, ds_names, part_names = (
+        model_and_ds["model"].tolist(),
+        model_and_ds["dataset"].tolist(),
+        model_and_ds["partition_name"].tolist(),
+    )
+
+    best_hparam_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(str)))
+
+    for model, ds, part in zip(model_names, ds_names, part_names):
+        sweep_df = df[(df["model"] == model) & (df["dataset"] == ds) & (df["partition_name"] == part)]
+        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[4]
+
+        best_hparam_dict[model][part][ds] = best_log_dir
+
+    return best_hparam_dict
+
+
 def extract_best_points(log_dirs, filt_size=5, lower_is_better=False, val_metric=None, test_metric=None):
-    """Find the optimal step on the validation trace for each log_dir, and return info into a dataframe."""
+    """Find the optimal step on the validation trace for each log_dir, and return info into a dataframe.
+
+    This is for a single model/dataset combination.
+    """
     max_scores = []
     best_points = []
+
     for log_dir in log_dirs:
         trace_dict = collect_trace_info(log_dir)
 
@@ -320,9 +341,10 @@ def extract_best_points(log_dirs, filt_size=5, lower_is_better=False, val_metric
 
     idx = np.argsort(np.array(max_scores))[::-1]
     sorted_log_dirs = np.array(log_dirs)[idx]
-    best_points.at[sorted_log_dirs[0], "best_config"] = True
+    best_log_dir = sorted_log_dirs[0]
+    best_points.at[best_log_dir, "best_config"] = True
 
-    return best_points, sorted_log_dirs, val_metric, test_metric
+    return best_points, sorted_log_dirs, val_metric, test_metric, best_log_dir
 
 
 @cache

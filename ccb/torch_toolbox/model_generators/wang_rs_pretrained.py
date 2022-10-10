@@ -25,15 +25,15 @@ from ccb.torch_toolbox.model import (
 )
 
 
-class SSLMocoGenerator(ModelGenerator):
-    """SSL Moco Generator.
+class RSPretrained(ModelGenerator):
+    """Remote Sensing Pretrained Checkpoints.
 
-    SSL Moco models on RGB data pretrained taken from:
-    `Zhu Lab <https://github.com/zhu-xlab/SSL4EO-S12>`_.
+    Pretrained models on RGB data pretrained taken from:
+    `An Empirical Study of Remote Sensing Pretraining <https://github.com/ViTAE-Transformer/ViTAE-Transformer-Remote-Sensing>`_.
     """
 
     def __init__(self) -> None:
-        """Initialize a new instance of SSL MOCO model."""
+        """Initialize a new instance of RS Pretrained model."""
         super().__init__()
 
     def generate_model(self, task_specs: TaskSpecifications, config: dict) -> Model:
@@ -47,36 +47,18 @@ class SSLMocoGenerator(ModelGenerator):
         Returns:
             configured model
         """
-        # this part comes from model loading from their script
         if "resnet50" in config["model"]["backbone"]:
             backbone = models.resnet50(weights=None)
-            backbone.fc = torch.nn.Linear(2048, 19)
+            backbone.fc = torch.nn.Linear(2048, 51)
             shapes = [(2048, 1, 1)]
-            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn50_moco_0099_ckpt.pth"
-        elif "resnet18" in config["model"]["backbone"]:
-            backbone = models.resnet18(weights=None)
-            backbone.fc = torch.nn.Linear(512, 19)
-            shapes = [(512, 1, 1)]
-            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn18_moco_0199_ckpt.pth"
+            ckpt_path = "/mnt/data/experiments/nils/rs_pretrained_chkpts/rsp-resnet-50-ckpt.pth"
 
         print("=> loading checkpoint '{}'".format(ckpt_path))
         checkpoint = torch.load(ckpt_path, map_location="cpu")
-
-        # rename moco pre-trained keys
-        state_dict = checkpoint["state_dict"]
-
-        for k in list(state_dict.keys()):
-            # retain only encoder up to before the embedding layer
-            if k.startswith("module.encoder_q") and not k.startswith("module.encoder_q.fc"):
-                # pdb.set_trace()
-                # remove prefix
-                state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
-            # delete renamed or unused k
-            del state_dict[k]
-
         previous_backbone = copy.deepcopy(backbone)
+        backbone.load_state_dict(checkpoint["model"])
+
         prev_sample_weight = previous_backbone.layer4[0].conv1.weight
-        backbone.load_state_dict(state_dict, strict=False)
 
         post_sample_weight = backbone.layer4[0].conv1.weight
 
@@ -155,10 +137,10 @@ class SSLMocoGenerator(ModelGenerator):
         return transform
 
 
-def model_generator() -> SSLMocoGenerator:
-    """Return SSL Moco Generator.
+def model_generator() -> RSPretrained:
+    """Return RSPretrained model generator.
 
     Returns:
-        SSL Moco model generator
+        RSPretrained model generator
     """
-    return SSLMocoGenerator()
+    return RSPretrained()
