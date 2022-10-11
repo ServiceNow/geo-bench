@@ -7,6 +7,30 @@
 A set of climate change tasks to benchmark self-supervised learning algorithms.
 
 
+## Visualizing the Content of the Benchmark
+
+Simply run the notebook `instpect_benchmark.ipynb`
+
+## Basic Usage
+
+```bash
+export CCB_DIR=/path/to/the/benchmark_dir
+```
+
+```python
+from ccb import io
+
+def my_transform(sample):
+    data, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
+    return data
+
+for task in io.task_iterator(io.CCB_DIR / "classification_v0.7"):
+    print(task)
+    dataset = task.get_dataset(split="train", partition_name="default", transform=my_transform)
+    data = dataset[0] # load and transform the first sample
+    print(data.shape)
+```
+
 ## Contributing
 
 We welcome your contributions! Please see [our wiki](https://github.com/ElementAI/climate-change-benchmark/wiki#instructions-for-contributing) for instructions on how to contribute.
