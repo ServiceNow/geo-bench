@@ -288,7 +288,6 @@ def test_dataset_statistics():
         # Compute statistics : this will create all_bandstats.json
         produce_band_stats(
             io.CCBDataset(dataset_dir, band_names=band_names, partition_name="default"),
-            use_splits=False,
             values_per_image=None,
             samples=None,
         )
