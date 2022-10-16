@@ -559,8 +559,8 @@ class Sample(object):
         """Initialize new instance of Sample.
 
         Args:
-            bands: list of bands
-            label: label for this input
+            bands: list of bands, image bands should have data of dimension H x W x C so C = 1
+            label: label for this input, labels should have dimension only H x W no channel dim
             sample_name: name of sample
         """
         super().__init__()
@@ -1559,9 +1559,13 @@ def compute_dataset_statistics(
             if n_value_per_image is None:
                 accumulator[band.band_info.name].append(band.data.flatten())
             else:
-                accumulator[band.band_info.name].append(
-                    np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-                )
+                try:
+                    accumulator[band.band_info.name].append(
+                        np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+                    )
+                except:
+                    print(band.data.shape)
+                    print(n_value_per_image)
 
         if isinstance(sample.label, Band):
             if n_value_per_image is None:
