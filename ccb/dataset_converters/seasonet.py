@@ -73,186 +73,207 @@ WIDTH = 120
 SEASONS = ["Fall"]
 
 
-def split_rgb_bands(rgb_path: Path):
-    """Split the concatenated rgb bands.
+def load_bands(path, band_info_list):
 
-    Args:
-        rgb_path: path to tif file of concatentated rgb image
-
-    Returns:
-        rgb io.Bands
-    """
-    with rasterio.open(rgb_path) as src:
+    with rasterio.open(path) as src:
         data = src.read()
 
-        r_data, g_data, b_data = data[0, :, :], data[1, :, :], data[2, :, :]
+        band_dict = {}
+        for i, band_info in enumerate(band_info_list):
+            band = io.Band(
+                data=data[i, :, :],
+                band_info=band_info,
+                date=None,
+                spatial_resolution=src.res[0],
+                transform=src.transform,
+                crs=src.crs,
+                convert_to_int16=False,
+            )
+            band_dict[band_info] = band
 
-        red_band = io.Band(
-            data=r_data[..., None],
-            band_info=BAND_INFO_LIST[3],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        green_band = io.Band(
-            data=g_data[..., None],
-            band_info=BAND_INFO_LIST[2],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        blue_band = io.Band(
-            data=b_data[..., None],
-            band_info=BAND_INFO_LIST[1],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-    return red_band, green_band, blue_band
+    return band_dict
 
 
-def create_nir_band(nir_path: Path):
-    """Convert nir to io.Band.
+# def split_rgb_bands(rgb_path: Path):
+#     """Split the concatenated rgb bands.
 
-    Args:
-        nir_path: path to nir tif file
+#     Args:
+#         rgb_path: path to tif file of concatentated rgb image
 
-    Returns:
-        io.Band of nir band
-    """
-    with rasterio.open(nir_path) as src:
-        data = src.read()
+#     Returns:
+#         rgb io.Bands
+#     """
+#     with rasterio.open(rgb_path) as src:
+#         data = src.read()
 
-        nir_band = io.Band(
-            data=data[..., None],
-            band_info=BAND_INFO_LIST[7],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
+#         r_data, g_data, b_data = data[0, :, :], data[1, :, :], data[2, :, :]
 
-    return nir_band
+#         red_band = io.Band(
+#             data=r_data[..., None],
+#             band_info=BAND_INFO_LIST[3],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
 
+#         green_band = io.Band(
+#             data=g_data[..., None],
+#             band_info=BAND_INFO_LIST[2],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
 
-def split_vegetation_swir_bands(veg_and_swir_path):
-    """Split the concatenated vegetation and swir bands.
+#         blue_band = io.Band(
+#             data=b_data[..., None],
+#             band_info=BAND_INFO_LIST[1],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
 
-    Args:
-        veg_and_swir_path: path to tif with vegetation and swir bands
-
-    Returns:
-        io.Bands
-    """
-    with rasterio.open(veg_and_swir_path) as src:
-        data = src.read()
-
-        band_5 = io.Band(
-            data=data[0, :, :][..., None],
-            band_info=BAND_INFO_LIST[4],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        band_6 = io.Band(
-            data=data[1, :, :][..., None],
-            band_info=BAND_INFO_LIST[5],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        band_7 = io.Band(
-            data=data[2, :, :][..., None],
-            band_info=BAND_INFO_LIST[6],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        band_8a = io.Band(
-            data=data[3, :, :][..., None],
-            band_info=BAND_INFO_LIST[8],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        band_11 = io.Band(
-            data=data[4, :, :][..., None],
-            band_info=BAND_INFO_LIST[10],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-        band_12 = io.Band(
-            data=data[5, :, :][..., None],
-            band_info=BAND_INFO_LIST[11],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
-
-    return band_5, band_6, band_7, band_8a, band_11, band_12
+#     return red_band, green_band, blue_band
 
 
-def split_water_bands(water_band_path):
-    """Split the concatenated water bands.
+# def create_nir_band(nir_path: Path):
+#     """Convert nir to io.Band.
 
-    Args:
-        water_band_path: path to tif file with water bands
+#     Args:
+#         nir_path: path to nir tif file
 
-    Returns:
-        io.Bands
-    """
-    with rasterio.open(water_band_path) as src:
-        data = src.read()
+#     Returns:
+#         io.Band of nir band
+#     """
+#     with rasterio.open(nir_path) as src:
+#         data = src.read()
 
-        band_1 = io.Band(
-            data=data[0, :, :][..., None],
-            band_info=BAND_INFO_LIST[0],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
+#         nir_band = io.Band(
+#             data=data[..., None],
+#             band_info=BAND_INFO_LIST[7],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
 
-        band_9 = io.Band(
-            data=data[1, ...][..., None],
-            band_info=BAND_INFO_LIST[9],
-            date=None,
-            spatial_resolution=src.res[0],
-            transform=src.transform,
-            crs=src.crs,
-            convert_to_int16=False,
-        )
+#     return nir_band
 
-    return band_1, band_9
+
+# def split_vegetation_swir_bands(veg_and_swir_path):
+#     """Split the concatenated vegetation and swir bands.
+
+#     Args:
+#         veg_and_swir_path: path to tif with vegetation and swir bands
+
+#     Returns:
+#         io.Bands
+#     """
+#     with rasterio.open(veg_and_swir_path) as src:
+#         data = src.read()
+
+#         band_5 = io.Band(
+#             data=data[0, :, :][..., None],
+#             band_info=BAND_INFO_LIST[4],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_6 = io.Band(
+#             data=data[1, :, :][..., None],
+#             band_info=BAND_INFO_LIST[5],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_7 = io.Band(
+#             data=data[2, :, :][..., None],
+#             band_info=BAND_INFO_LIST[6],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_8a = io.Band(
+#             data=data[3, :, :][..., None],
+#             band_info=BAND_INFO_LIST[8],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_11 = io.Band(
+#             data=data[4, :, :][..., None],
+#             band_info=BAND_INFO_LIST[10],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_12 = io.Band(
+#             data=data[5, :, :][..., None],
+#             band_info=BAND_INFO_LIST[11],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#     return band_5, band_6, band_7, band_8a, band_11, band_12
+
+
+# def split_water_bands(water_band_path):
+#     """Split the concatenated water bands.
+
+#     Args:
+#         water_band_path: path to tif file with water bands
+
+#     Returns:
+#         io.Bands
+#     """
+#     with rasterio.open(water_band_path) as src:
+#         data = src.read()
+
+#         band_1 = io.Band(
+#             data=data[0, :, :][..., None],
+#             band_info=BAND_INFO_LIST[0],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#         band_9 = io.Band(
+#             data=data[1, ...][..., None],
+#             band_info=BAND_INFO_LIST[9],
+#             date=None,
+#             spatial_resolution=src.res[0],
+#             transform=src.transform,
+#             crs=src.crs,
+#             convert_to_int16=False,
+#         )
+
+#     return band_1, band_9
 
 
 def load_label_as_band(label_path):
@@ -323,35 +344,42 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         sample_dir = SRC_DATASET_DIR / row.Path
 
         id = str(sample_dir).split("/")[-1]
-        rgb_path = sample_dir / (id + "_10m_RGB.tif")
-        red_band_4, green_band_3, blue_band_2 = split_rgb_bands(rgb_path)
 
-        nir_path = sample_dir / (id + "_10m_IR.tif")
-        nir_band_8 = create_nir_band(nir_path)
+        band_dict = {}
+        band_dict.update(load_bands(sample_dir / (id + "_10m_RGB.tif"), BAND_INFO_LIST[1:3]))
+        band_dict.update(load_bands(sample_dir / (id + "_10m_IR.tif"), BAND_INFO_LIST[...]))
+        band_dict.update(load_bands(sample_dir / (id + "_20m.tif"), BAND_INFO_LIST[...]))
+        band_dict.update(load_bands(sample_dir / (id + "_60m.tif"), BAND_INFO_LIST[...]))
 
-        veg_and_swir_path = sample_dir / (id + "_20m.tif")
-        band_5, band_6, band_7, band_8a, band_11, band_12 = split_vegetation_swir_bands(veg_and_swir_path)
+        bands = [band_dict[band_info] for band_info in BAND_INFO_LIST]
+        label = load_label_as_band(sample_dir / (id + "_labels.tif"))
 
-        water_band_path = sample_dir / (id + "_60m.tif")
-        band_1, band_9 = split_water_bands(water_band_path)
+        # red_band_4, green_band_3, blue_band_2 = split_rgb_bands(rgb_path)
 
-        label_path = sample_dir / (id + "_labels.tif")
-        label = load_label_as_band(label_path)
+        # nir_band_8 = create_nir_band(nir_path)
 
-        bands = [
-            band_1,
-            blue_band_2,
-            green_band_3,
-            red_band_4,
-            band_5,
-            band_6,
-            band_7,
-            nir_band_8,
-            band_8a,
-            band_9,
-            band_11,
-            band_12,
-        ]
+        # veg_and_swir_path = sample_dir / (id + "_20m.tif")
+        # band_5, band_6, band_7, band_8a, band_11, band_12 = split_vegetation_swir_bands(veg_and_swir_path)
+
+        # water_band_path = sample_dir / (id + "_60m.tif")
+        # band_1, band_9 = split_water_bands(water_band_path)
+
+        # label_path = sample_dir / (id + "_labels.tif")
+
+        # bands = [
+        #     band_1,
+        #     blue_band_2,
+        #     green_band_3,
+        #     red_band_4,
+        #     band_5,
+        #     band_6,
+        #     band_7,
+        #     nir_band_8,
+        #     band_8a,
+        #     band_9,
+        #     band_11,
+        #     band_12,
+        # ]
 
         if label.data.min() == 0:
             import pdb
