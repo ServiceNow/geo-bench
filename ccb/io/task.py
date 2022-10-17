@@ -54,6 +54,14 @@ class TaskSpecifications:
         self.eval_metrics = eval_metrics
         self.spatial_resolution = spatial_resolution
 
+    def __str__(self):
+        shape = 'x'.join([str(sz) for sz in self.patch_size])
+        lines = [
+            f"{self.benchmark_name}/{self.dataset_name}",
+            f"  {len(self.bands_info)} bands, max shape {shape} @ {self.spatial_resolution}m resolution.",
+        ]
+        return "\n".join(lines)
+
     def save(self, directory: str, overwrite: bool = False) -> None:
         """Save task specs.
 
