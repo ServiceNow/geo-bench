@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 from ccb import io
 from ccb.io import dataset as io_ds
-from ccb.io.dataset import Band, Dataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
+from ccb.io.dataset import Band, CCBDataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
 
 
 def compare(a, b, name, src_a, src_b) -> None:
@@ -340,13 +340,15 @@ def leaflet_map(samples):
     return map
 
 
-def load_and_verify_samples(dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None):
+def load_and_verify_samples(
+    dataset_dir, n_samples, n_hist_bins=100, check_integrity=True, split=None, n_value_per_image=1000
+):
     """High level function. Loads samples, perform some statistics and plot histograms."""
-    dataset = Dataset(dataset_dir, split=split)
+    dataset = CCBDataset(dataset_dir, split=split)
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
         io.check_dataset_integrity(dataset, samples=samples)
-    band_values, band_stats = compute_dataset_statistics(samples, n_value_per_image=1000)
+    band_values, band_stats = compute_dataset_statistics(samples, n_value_per_image=n_value_per_image)
     plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
     return dataset, samples, band_values, band_stats
 
