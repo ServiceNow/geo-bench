@@ -210,7 +210,7 @@ def extract_label_as_image(samples, rgb_images=None, opacity=0.3, percentile_max
 
     if rgb_images is not None:
         label_images = [
-            label_img.astype(np.float32) * opacity + rgb_img.astype(np.float32) * (1 - opacity)
+            label_img.squeeze().astype(np.float32) * opacity + rgb_img.astype(np.float32) * (1 - opacity)
             for label_img, rgb_img in zip(label_images, rgb_images)
         ]
         label_images = float_image_to_uint8(label_images)
