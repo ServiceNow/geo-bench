@@ -95,7 +95,7 @@ def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
     return new_df
 
 
-def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None):
+def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None, n_legend_rows=2):
     """Add aggregated data as a new dataset."""
     bootstrapped_iqm = pd.concat(
         (
@@ -103,7 +103,7 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None)
             bootstrap_iqm(df, metric=metric, repeat=repeat),
         )
     )
-    plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size)
+    plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size, n_legend_rows=n_legend_rows)
 
 
 def plot_per_dataset_3(
@@ -294,7 +294,7 @@ def find_best_hparam_for_seeds(df):
 
     for model, ds, part in zip(model_names, ds_names, part_names):
         sweep_df = df[(df["model"] == model) & (df["dataset"] == ds) & (df["partition_name"] == part)]
-        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[4]
+        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[1][[0]]
 
         best_hparam_dict[model][part][ds] = best_log_dir
 
@@ -341,10 +341,9 @@ def extract_best_points(log_dirs, filt_size=5, lower_is_better=False, val_metric
 
     idx = np.argsort(np.array(max_scores))[::-1]
     sorted_log_dirs = np.array(log_dirs)[idx]
-    best_log_dir = sorted_log_dirs[0]
-    best_points.at[best_log_dir, "best_config"] = True
+    best_points.at[sorted_log_dirs[0], "best_config"] = True
 
-    return best_points, sorted_log_dirs, val_metric, test_metric, best_log_dir
+    return best_points, sorted_log_dirs, val_metric, test_metric
 
 
 @cache
@@ -398,7 +397,7 @@ def format_hparams(log_dirs):
     for log_dir in log_dirs:
         hparams = get_hparams(log_dir)
 
-        exp_names[log_dir] = ", ".join([format_hparam(key, hparams[key]) for key in variables])
+        exp_names[log_dir] = ", ".join([format_hparam(key, hparams.get(key, None)) for key in variables])
     cst_str = str(constants)
     cst_str = "\n".join(wrap(cst_str, 100))
     return cst_str, exp_names
@@ -416,11 +415,10 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
         # all_val_accuarcy = []
 
         if len(log_dirs) == 0:
-            return
+            return pd.DataFrame()
 
         constants, exp_names = format_hparams(log_dirs)
         best_points, sorted_log_dirs, val_metric, test_metric = extract_best_points(log_dirs, filt_size=filt_size)
-
         # print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
 
         colors = sns.color_palette("tab10")
