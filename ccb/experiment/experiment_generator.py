@@ -3,6 +3,7 @@
 Usage: experiment_generator.py --model-generator path/to/my/model/generator.py  --experiment-dir path/to/my/experiments
 """
 import argparse
+import copy
 import json
 import os
 from datetime import datetime
@@ -12,6 +13,23 @@ import yaml
 
 from ccb import io
 from ccb.experiment.experiment import Job, get_model_generator
+
+
+def define_model_name(config):
+    """Define a model name."""
+    if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
+        model_name = config["model"]["ssl_method"] + "_" + config["model"]["backbone"]
+        # model_name = "ssl_moco_" + config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
+        model_name = config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
+        model_name = config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":
+        model_name = "millionaid_" + config["model"]["backbone"]
+    else:
+        model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+
+    return model_name
 
 
 def experiment_generator(
@@ -40,16 +58,7 @@ def experiment_generator(
 
     benchmark_dir = config["experiment"]["benchmark_dir"]
 
-    if config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.ssl_moco":
-        model_name = "ssl_moco_" + config["model"]["backbone"]
-    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
-        model_name = config["model"]["backbone"]
-    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
-        model_name = config["model"]["backbone"]
-    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":
-        model_name = "millionaid_" + config["model"]["backbone"]
-    else:
-        model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+    model_name = define_model_name(config)
 
     experiment_prefix = f"{config['experiment']['experiment_name'] or 'experiment'}_{os.path.basename(benchmark_dir)}_{datetime.now().strftime('%m-%d-%Y_%H:%M:%S')}_{model_name}"
     if config["experiment"]["experiment_name"] is not None:
@@ -64,34 +73,54 @@ def experiment_generator(
     for task_specs in io.task_iterator(benchmark_dir=benchmark_dir):
         print(task_specs.dataset_name)
         experiment_type = config["experiment"]["experiment_type"]
+        task_config = copy.deepcopy(config)
 
         if experiment_type == "sweep":
+
+            beyond_rgb = False
+            if task_config["dataset"]["band_names"] == "all":
+                if task_specs.dataset_name not in ["eurosat", "brick_kiln_v1.0", "bigearthnet"]:
+                    continue
+                band_names = [band_info.name for band_info in task_specs.bands_info]
+                beyond_rgb = True
+                if "Cloud Probability" in band_names:
+                    band_names.remove("Cloud Probability")
+                if task_specs.dataset_name == "so2sat":  # only sentinel 2 bands for so2sat
+                    band_names = [band_info for band_info in band_names if "VH." not in band_info]
+                    band_names = [band_info for band_info in band_names if "VV." not in band_info]
+
+                task_config["dataset"]["band_names"] = band_names
+
+            print(len(task_config["dataset"]["band_names"]))
             model_generator = get_model_generator(config["model"]["model_generator_module_name"])
 
             # use wandb sweep for hyperparameter search
-            model = model_generator.generate_model(task_specs, config)
+            model = model_generator.generate_model(task_specs, task_config)
 
             # there might be other params added during the generate process,
             # continue with hyperparameters from initialized model
-            config = model.config
+            task_config = model.config
 
-            config["model"]["model_name"] = model_name
+            task_config["model"]["model_name"] = model_name
 
-            config["model"]["batch_size"] = batch_size_dict[model_name][task_specs.dataset_name]
+            task_config["model"]["batch_size"] = batch_size_dict[model_name][task_specs.dataset_name]
+
+            if beyond_rgb:
+                task_config["model"]["batch_size"] = int(task_config["model"]["batch_size"] / 2)
 
             # create and fill experiment directory
             job_dir = experiment_dir / task_specs.dataset_name
             job = Job(job_dir)
-            job.save_config(config)
+            job.save_config(task_config)
             job.save_task_specs(task_specs)
 
             # sweep name that will be seen on wandb
             wandb_name = "_".join(str(job_dir).split("/")[-2:]) + "_" + model_name
 
             job.write_wandb_sweep_cl_script(
-                config["model"]["model_generator_module_name"],
+                task_config["model"]["model_generator_module_name"],
                 job_dir=job_dir,
-                base_sweep_config=config["wandb"]["sweep"]["sweep_config_path"],
+                base_sweep_config=task_config["wandb"]["sweep"]["sweep_config_path"],
                 name=wandb_name,
             )
 
@@ -100,10 +129,8 @@ def experiment_generator(
             with open(config["experiment"]["best_hparam_config"], "r") as f:
                 seed_run_dict = json.load(f)
 
-            back_name = config["model"]["backbone"]
-
-            part_name = config["experiment"]["partition_name"].split("_partition.json")[0]
-            ds_dict = seed_run_dict[back_name][part_name]
+            part_name = task_config["experiment"]["partition_name"].split("_partition.json")[0]
+            ds_dict = seed_run_dict[model_name][part_name]
 
             # for datasets that are in classification benchmark dir but not swept yet
             try:
@@ -114,7 +141,7 @@ def experiment_generator(
             with open(os.path.join(exp_dir, "config.yaml")) as f:
                 best_config = yaml.safe_load(f)
 
-            best_config["wandb"]["wandb_group"] = task_specs.dataset_name + "/" + back_name + "/" + experiment_prefix
+            best_config["wandb"]["wandb_group"] = task_specs.dataset_name + "/" + model_name + "/" + experiment_prefix
 
             print(best_config["model"]["batch_size"])
             print(exp_dir)

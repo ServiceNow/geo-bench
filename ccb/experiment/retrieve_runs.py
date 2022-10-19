@@ -16,7 +16,7 @@ from ruamel.yaml import YAML
 from tqdm import tqdm
 
 
-def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
+def retrieve_runs(experiment_dir, use_cached_csv=False, exp_type="sweep"):
     """Compute results for a sweep.
 
     Args:
@@ -27,16 +27,27 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
     Returns:
         df with sweep summaries per individual run
     """
-    csv_path = Path(sweep_experiment_dir) / "cached_results.csv"
+    csv_path = Path(experiment_dir) / "cached_results.csv"
     if use_cached_csv and csv_path.exists():
         return pd.read_csv(csv_path)
 
     if exp_type == "sweep":
-        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     elif exp_type == "seeds":
-        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+        # run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
     else:
         raise ValueError("exp_type not valid, should be 'sweep' or 'seeds'")
+
+    # import shutil
+    # for config_path in run_dirs:
+    #     try:
+    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
+    #     except:
+    #         continue
+
+    # import pdb
+    # pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
     all_trials_df = pd.DataFrame(
@@ -82,7 +93,12 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
         step_to_epoch = orig_df[["step", "epoch"]].drop_duplicates(subset="step")
         step_to_epoch = dict(zip(step_to_epoch.step, step_to_epoch.epoch))
 
-        eval_df = orig_df[orig_df["val_loss"].notnull()]
+        try:
+            eval_df = orig_df[orig_df["val_loss"].notnull()]
+        except KeyError:
+            print(orig_df)
+            print(orig_df.columns)
+            print(csv_logger_dir)
         eval_df = eval_df.groupby("epoch").mean().reset_index()
         train_loss_df = orig_df[orig_df["train_loss"].notnull()]
         train_loss_df = train_loss_df.groupby("epoch").mean().reset_index()
@@ -97,7 +113,11 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
         if metric_name == "Accuracy" and "NeonTree_segmentation" in str(csv_logger_dir):
             metric_name = "JaccardIndex"
 
-        train_metric_df = orig_df[orig_df["train_" + metric_name].notnull()]
+        try:
+            train_metric_df = orig_df[orig_df["train_" + metric_name].notnull()]
+        except KeyError:
+            print(orig_df)
+            print(csv_logger_dir)
 
         train_metric_df = train_metric_df.groupby("epoch").mean().reset_index()
 
@@ -197,6 +217,13 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
     all_trials_df.to_csv(csv_path)
 
     return most_recent
+
+
+# classification_dir = '/mnt/data/experiments/nils/final_classification_seeded_runs'
+# # segmentation_dir =  '/mnt/data/experiments/nils/last_segmentation_sweeps'
+# segmentation_dir = "/mnt/data/experiments/nils/final_segmentation_seeded_runs"
+
+# df = retrieve_runs(classification_dir, use_cached_csv=False, exp_type="seeds")
 
 
 partition_names = [
