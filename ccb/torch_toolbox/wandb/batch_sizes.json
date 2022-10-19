@@ -63,7 +63,23 @@
         "pv4ger_classification":128,
         "so2sat":128
     },
+    "moco_resnet50": {
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
+        "so2sat":64
+    },
     "ssl_moco_resnet50": {
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
+        "so2sat":64
+    },
+    "moco_vit_small_patch16_224": {
         "bigearthnet":64,
         "brick_kiln_v1.0":64,
         "eurosat":64,
