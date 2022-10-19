@@ -1,14 +1,15 @@
 experiment:
-  generate_experiment_dir: /mnt/data/experiments/nils/new_classification_seeded_runs
-  experiment_name: 1.00x_train # prefix
+  generate_experiment_dir: /mnt/data/experiments/nils/final_classification_seeded_runs
+  experiment_name: 0.50x_train # prefix
   experiment_type: seeded_runs # standard, seeded_runs, sweew
-  partition_name: 1.00x_train
+  partition_name: 0.50x_train
   benchmark_dir: /mnt/data/cc_benchmark/classification_v0.7
-  best_hparam_config: /mnt/data/experiments/nils/new_classification_results/seeded_runs.json
-  num_seeds: 2
+  best_hparam_config: /mnt/home/climate-change-benchmark/ccb/configs/best_hparams_classification.json
+  num_seeds: 12
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
-  backbone: convnext_base
+  model_generator_module_name: ccb.torch_toolbox.model_generators.ssl_moco
+  ssl_method: moco
+  backbone: resnet50 # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project

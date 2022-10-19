@@ -294,7 +294,7 @@ def find_best_hparam_for_seeds(df):
 
     for model, ds, part in zip(model_names, ds_names, part_names):
         sweep_df = df[(df["model"] == model) & (df["dataset"] == ds) & (df["partition_name"] == part)]
-        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[1][[0]]
+        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[1][0]
 
         best_hparam_dict[model][part][ds] = best_log_dir
 

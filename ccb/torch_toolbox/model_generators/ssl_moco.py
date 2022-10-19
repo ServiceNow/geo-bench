@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict
 
 import albumentations as A
 import numpy as np
+import timm
 import torch
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data.dataloader import default_collate
@@ -23,6 +24,130 @@ from ccb.torch_toolbox.model import (
     train_loss_generator,
     train_metrics_generator,
 )
+
+
+def load_resnet_model(config):
+    """Load resnet weights according to their code.
+
+    Args:
+        config: configuration file
+
+    Returns:
+        backbone
+    """
+    # this part comes from model loading from their script
+    if "resnet50" in config["model"]["backbone"]:
+        backbone = models.resnet50(weights=None)
+        backbone.fc = torch.nn.Linear(2048, 19)
+        ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn50_moco_0099_ckpt.pth"
+        if len(config["dataset"]["band_names"]) >= 10:
+            backbone.conv1 = torch.nn.Conv2d(13, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_rn50_moco_0099_ckpt.pth"
+
+    elif "resnet18" in config["model"]["backbone"]:
+        backbone = models.resnet18(weights=None)
+        backbone.fc = torch.nn.Linear(512, 19)
+        ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn18_moco_0199_ckpt.pth"
+
+    print("=> loading checkpoint '{}'".format(ckpt_path))
+    checkpoint = torch.load(ckpt_path, map_location="cpu")
+
+    # rename moco pre-trained keys
+    state_dict = checkpoint["state_dict"]
+
+    for k in list(state_dict.keys()):
+        # retain only encoder up to before the embedding layer
+        if k.startswith("module.encoder_q") and not k.startswith("module.encoder_q.fc"):
+            # remove prefix
+            state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    previous_backbone = copy.deepcopy(backbone)
+    prev_sample_weight = previous_backbone.layer4[0].conv1.weight
+    backbone.load_state_dict(state_dict, strict=False)
+
+    post_sample_weight = backbone.layer4[0].conv1.weight
+
+    # make sure there are new weights loaded
+    assert torch.equal(prev_sample_weight, post_sample_weight) is False
+
+    before_check = backbone.conv1.weight[:, 0, :, :]
+    backbone.conv1 = copy_sentinel_weights(backbone.conv1, config)
+    after_check = backbone.conv1.weight[:, 0, :, :]
+
+    assert torch.equal(before_check, after_check)
+
+    return backbone
+
+
+def copy_sentinel_weights(current_layer, config):
+    """Copy weights."""
+    new_layer = new_layer = torch.nn.Conv2d(
+        in_channels=len(config["dataset"]["band_names"]),
+        out_channels=current_layer.out_channels,
+        kernel_size=current_layer.kernel_size,
+        stride=current_layer.stride,
+        padding=current_layer.padding,
+    )
+    # remove the 11th layer because we only have 12 bands
+    new_indices = list(range(len(config["dataset"]["band_names"])))
+    current_indices = list(range(13))
+    if len(new_indices) == 12:
+        current_indices.remove(10)
+    elif len(new_indices) == 10:  # so2sat
+        current_indices = [e for e in current_indices if e not in (0, 9, 10)]
+
+    for new_idx, old_idx in zip(new_indices, current_indices):
+        with torch.no_grad():
+            new_layer.weight[:, new_idx : new_idx + 1, :, :] = current_layer.weight[:, old_idx : old_idx + 1, :, :]
+
+    return new_layer
+
+
+def load_vit_model(config):
+    """Load Vit model weights."""
+    backbone = timm.create_model(
+        config["model"]["backbone"],
+        pretrained=config["model"]["pretrained"],
+        features_only=False,
+        in_chans=13,  # pretrained weights from zhu lab are for 13 bands
+    )
+
+    path_dict = {
+        "moco": "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_vits16_moco_0099_ckpt.pth",
+        "dino": "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_vits16_dino_0099_ckpt.pth",
+        "data2vec": "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_vits16_data2vec_0099_ckpt.pth",
+    }
+    ckpt_path = path_dict[config["model"]["ssl_method"]]
+
+    print("=> loading checkpoint '{}'".format(ckpt_path))
+
+    # moco
+    ckpt = torch.load(ckpt_path, map_location="cpu")
+
+    # rename moco pre-trained keys
+    state_dict = ckpt["state_dict"]
+    for k in list(state_dict.keys()):
+        # retain only base_encoder up to before the embedding layer
+        if k.startswith("module.base_encoder") and not k.startswith("module.base_encoder.%s" % "head"):
+            # remove prefix
+            state_dict[k[len("module.base_encoder.") :]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    msg = backbone.load_state_dict(state_dict, strict=False)
+    assert set(msg.missing_keys) == {"%s.weight" % "head", "%s.bias" % "head"}
+
+    before_check = backbone.patch_embed.proj.weight[:, 1, :, :]
+
+    backbone.patch_embed.proj = copy_sentinel_weights(backbone.patch_embed.proj, config)
+
+    after_check = backbone.patch_embed.proj.weight[:, 1, :, :]
+
+    assert torch.equal(before_check, after_check)
+
+    return backbone
 
 
 class SSLMocoGenerator(ModelGenerator):
@@ -47,44 +172,17 @@ class SSLMocoGenerator(ModelGenerator):
         Returns:
             configured model
         """
-        # this part comes from model loading from their script
-        if "resnet50" in config["model"]["backbone"]:
-            backbone = models.resnet50(weights=None)
-            backbone.fc = torch.nn.Linear(2048, 19)
-            shapes = [(2048, 1, 1)]
-            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn50_moco_0099_ckpt.pth"
-        elif "resnet18" in config["model"]["backbone"]:
-            backbone = models.resnet18(weights=None)
-            backbone.fc = torch.nn.Linear(512, 19)
-            shapes = [(512, 1, 1)]
-            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn18_moco_0199_ckpt.pth"
-
-        print("=> loading checkpoint '{}'".format(ckpt_path))
-        checkpoint = torch.load(ckpt_path, map_location="cpu")
-
-        # rename moco pre-trained keys
-        state_dict = checkpoint["state_dict"]
-
-        for k in list(state_dict.keys()):
-            # retain only encoder up to before the embedding layer
-            if k.startswith("module.encoder_q") and not k.startswith("module.encoder_q.fc"):
-                # pdb.set_trace()
-                # remove prefix
-                state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
-            # delete renamed or unused k
-            del state_dict[k]
-
-        previous_backbone = copy.deepcopy(backbone)
-        prev_sample_weight = previous_backbone.layer4[0].conv1.weight
-        backbone.load_state_dict(state_dict, strict=False)
-
-        post_sample_weight = backbone.layer4[0].conv1.weight
-
-        # make sure there are new weights loaded
-        assert torch.equal(prev_sample_weight, post_sample_weight) is False
+        if "resnet" in config["model"]["backbone"]:
+            backbone = load_resnet_model(config)
+            shapes = [(backbone.fc.in_features, 1, 1)]
+            backbone.fc = torch.nn.Identity()
+        elif "vit_small" in config["model"]["backbone"] and len(config["dataset"]["band_names"]) > 3:
+            backbone = load_vit_model(config)
+            print(backbone.patch_embed.proj)
+            shapes = [(backbone.head.in_features, 1, 1)]
+            backbone.head = torch.nn.Identity()
 
         # replace head for the task at hand
-        backbone.fc = torch.nn.Identity()
         head = head_generator(task_specs, shapes, config)
         loss = train_loss_generator(task_specs, config)
         train_metrics = train_metrics_generator(task_specs, config)
