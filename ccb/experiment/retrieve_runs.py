@@ -1,22 +1,64 @@
 """Retrieve runs from experiment directory for analysis."""
 
 import glob
-import math
 import os
 import pickle
-from datetime import datetime
 from email.quoprimime import unquote
 from pathlib import Path
 from typing import Dict, List
+
+from ccb.experiment import parse_results
 
 import numpy as np
 import pandas as pd
 from pandas.errors import EmptyDataError
 from ruamel.yaml import YAML
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
-def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
+def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, is_sweep=True, max_num_exp=12):
+    """Compute results for a sweep.
+
+    Args:
+        experiment_dir: diretory where all sweeps are stored
+        use_cached_csv: cached csv
+        exp_type: 'sweep', 'seeds'
+
+    Returns:
+        df with sweep summaries per individual run
+    """
+    csv_path = Path(sweep_experiment_dir) / "cached_results.csv"
+    if use_cached_csv and csv_path.exists():
+        return pd.read_csv(csv_path)
+
+    if is_sweep:
+        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+    else:
+        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+
+    csv_run_dirs = [Path(path).parent for path in run_dirs]
+
+    info_list = []
+    for log_dir in tqdm(csv_run_dirs):
+
+        exp_result = parse_results.ExpResult(log_dir)
+        exp_info = exp_result.get_combined_info()
+        if exp_info is None:
+            continue
+
+        info_list.append(exp_info)
+
+    info_df = pd.DataFrame(info_list)
+
+    if max_num_exp is not None:
+        info_df = info_df.groupby(["model", "dataset", "partition_name"]).head(max_num_exp)
+
+    info_df.to_csv(csv_path)
+
+    return info_df
+
+
+def retrieve_runs_old(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep", max_num_exp=12):
     """Compute results for a sweep.
 
     Args:
@@ -61,16 +103,16 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
 
     for csv_logger_dir in tqdm(csv_run_dirs):
 
-        # load task_specs
+        # load task_specs # TODO use the one from task.py
         with open(csv_logger_dir.parents[1] / "task_specs.pkl", "rb") as f:
             task_specs = pickle.load(f)
 
-        # load config
+        # load config TODO use the one from parse_results.py
         yaml = YAML()
         with open(csv_logger_dir / "config.yaml", "r") as fd:
             config = yaml.load(fd)
 
-        # load metric_csv
+        # load metric_csv TODO use the one in parse_results.py
         if os.path.exists(os.path.join(str(csv_logger_dir), "metrics.csv")):
             try:
                 orig_df = pd.read_csv(csv_logger_dir / "metrics.csv")
@@ -78,6 +120,8 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
                 continue
         else:
             continue
+
+        # TODO see if we can reuse collect_trace_info from parse_results.py
         # keep track of steps to epoch and use trick to remove stacked nans
         step_to_epoch = orig_df[["step", "epoch"]].drop_duplicates(subset="step")
         step_to_epoch = dict(zip(step_to_epoch.step, step_to_epoch.epoch))
@@ -87,6 +131,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
         train_loss_df = orig_df[orig_df["train_loss"].notnull()]
         train_loss_df = train_loss_df.groupby("epoch").mean().reset_index()
 
+        # TODO we NEED to refactor this, probably need to fix names earlier in the pipeline.
         metric_name = str(task_specs.eval_loss).split(".")[-1].split("'")[0]
         if metric_name == "MultilabelAccuracy":
             metric_name = "F1Score"
@@ -124,7 +169,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
             [
                 "epoch",
                 "current_time",
-                "train_loss",
+                "train_ltoss",
                 "train_metric",
                 "val_loss",
                 "val_metric",
@@ -173,7 +218,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
         + all_trials_df["exp_dir"].str.split("_", expand=True)[7]
     )
 
-    most_recent = all_trials_df.groupby(["model", "dataset", "partition_name"]).head(12)
+    most_recent = all_trials_df.groupby(["model", "dataset", "partition_name"]).head(max_num_exp)
 
     # # remove duplicates sweeps and keep the ones with 12 trials
     # count_df = all_trials_df.groupby(["model", "dataset", "partition_name", "exp_dir"]).size().reset_index()
@@ -194,7 +239,7 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, exp_type="sweep"):
     # exp_dirs_to_keep = count_df["exp_dir"].tolist()
     # all_trials_df = all_trials_df[all_trials_df["exp_dir"].isin(exp_dirs_to_keep)].reset_index(drop=True)
 
-    all_trials_df.to_csv(csv_path)
+    most_recent.to_csv(csv_path)
 
     return most_recent
 

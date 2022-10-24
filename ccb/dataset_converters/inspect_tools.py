@@ -439,6 +439,9 @@ DISPLAY_NAMES = {
     "smallholder_cashew": "m-cashew-plantation",
     "southAfricaCropType": "m-SA-crop-type",
     "cvpr_chesapeake_landcover": "m-chesapeake-landcover",
+    "vit_small_patch16_224": "vit-small",
+    "vit_tiny_patch16_224": "vit-tiny",
+    "swinv2_tiny_window16_256": "swinv2-tiny",
 }
 
 
