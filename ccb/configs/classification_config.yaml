@@ -1,10 +1,10 @@
 experiment:
-  generate_experiment_dir: /mnt/data/experiments/nils/last_classification_sweeps
+  generate_experiment_dir: /mnt/data/experiments/nils/beyond_rgb_classification_sweeps
   # generate_experiment_dir: /mnt/data/experiments/pau/partition_sweeps_classification
-  experiment_name: 0.50x_train # prefix
+  experiment_name: 1.00x_train # prefix
   experiment_type: sweep # standard, seeded_runs, sweep
   benchmark_dir: /mnt/data/cc_benchmark/classification_v0.7
-  partition_name: 0.50x_train
+  partition_name: 1.00x_train
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
@@ -26,7 +26,7 @@ model:
   optimizer: sgd
   head_type: linear # classification
 dataset:
-  band_names: ["red", "green", "blue"]
+  band_names: all #["red", "green", "blue"]
   format: hdf5
 dataloader:
   num_workers: 4

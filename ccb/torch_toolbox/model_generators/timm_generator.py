@@ -36,7 +36,7 @@ def modify_beyond_rgb_layer(new_in_channels, current_layer, task_specs, config):
         padding=current_layer.padding,
     )
 
-    new_layer.bias.data = current_layer.bias  # type: ignore
+    # new_layer.bias.data = current_layer.bias  # type: ignore
 
     return _initialize_additional_in_channels(
         current_layer=current_layer, new_layer=new_layer, task_specs=task_specs, config=config
