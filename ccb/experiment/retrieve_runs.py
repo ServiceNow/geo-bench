@@ -99,6 +99,7 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, exp_type="sweep"):
             print(orig_df)
             print(orig_df.columns)
             print(csv_logger_dir)
+            continue
         eval_df = eval_df.groupby("epoch").mean().reset_index()
         train_loss_df = orig_df[orig_df["train_loss"].notnull()]
         train_loss_df = train_loss_df.groupby("epoch").mean().reset_index()
@@ -118,6 +119,7 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, exp_type="sweep"):
         except KeyError:
             print(orig_df)
             print(csv_logger_dir)
+            continue
 
         train_metric_df = train_metric_df.groupby("epoch").mean().reset_index()
 
