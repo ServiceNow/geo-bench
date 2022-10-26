@@ -18,6 +18,7 @@ from warnings import warn
 
 from ccb.dataset_converters import inspect_tools
 from ccb.io.task import load_task_specs
+from ccb.experiment.discriminative_metric import boostrap_pw_entropy
 
 
 def make_normalizer(data_frame, metrics=("test metric",)):
@@ -167,7 +168,7 @@ def plot_per_dataset_3(
         fig.subplots_adjust(wspace=0.3)
 
 
-def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=True):
+def plot_normalized_time(df: pd.DataFrame, time_metric="best step", average_seeds=True, reference_ratio=0.1):
     """Plot the time (in number of steps) of each experiment as a function of the training set size."""
     df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
 
@@ -175,13 +176,15 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
         df["n observation"] = df["step"] * df["batch size"]
         time_metric = "n observation"
 
-    mean_1x_time = df[df["train ratio"] == 0.1].groupby(["dataset", "model"])[time_metric].mean()
+    hue = "dataset"
+
+    mean_1x_time = df[df["train ratio"] == reference_ratio].groupby(["dataset", "model"])[time_metric].mean()
     df["mean 1x time"] = df.apply(lambda row: mean_1x_time[(row.dataset, row.model)], axis=1)
     normalized_name = f"{time_metric} normalized"
     df[normalized_name] = df.apply(lambda row: row[time_metric] / row["mean 1x time"], axis=1)
 
     if average_seeds:
-        df = df.groupby(["dataset", "train ratio"]).mean()
+        df = df.groupby([hue, "train ratio"]).mean()
         df = df.reset_index()
         noise_level = 0.05
     else:
@@ -190,8 +193,7 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="step", average_seeds=Tru
     df["train ratio +noise"] = df.apply(
         lambda row: row["train ratio"] * np.exp(np.random.randn() * noise_level), axis=1
     )
-    # print(df.keys())
-    ax = sns.scatterplot(data=df, x="train ratio +noise", y=normalized_name, hue="dataset")
+    ax = sns.scatterplot(data=df, x="train ratio +noise", y=normalized_name, hue=hue)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_ylabel("Normalized Training Time")
@@ -209,7 +211,7 @@ def clean_names(val):
         val = inspect_tools.DISPLAY_NAMES.get(val, val)
     except TypeError:
         pass
-    
+
     if isinstance(val, str):
         for src, tgt in (
             ("_classification", ""),
@@ -239,7 +241,7 @@ def collect_trace_info(log_dir: str, index="step", normalize_col_name=True) -> p
         warn(f"File not found: {Path(log_dir) / 'metrics.csv'}")
         return None
 
-    df.set_index(index)
+    df = df.set_index(index)
 
     pattern_replace = {"F1Score": "metric", "JaccardIndex": "metric", "Accuracy": "metric"}
     trace_dict = {}
@@ -248,7 +250,9 @@ def collect_trace_info(log_dir: str, index="step", normalize_col_name=True) -> p
             for pattern, replace in pattern_replace.items():
                 col_name = col_name.replace(pattern, replace)
 
-        trace_dict[col_name] = series.dropna()
+        series = series.dropna()  # drop rows with NaN
+        series = series[~series.index.duplicated()]  # remove duplcated index
+        trace_dict[col_name] = series
 
     if "val_metric" not in trace_dict:
         warn(f"val_metrc not found in {Path(log_dir) / 'metrics.csv'}.")
@@ -572,6 +576,13 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     return new_df
 
 
+def make_train_size_plotter(filt_size=5, top_k=6, legend=False):
+    """Return a plotting function."""
+
+    def plotter(df, ax, dataset, model):
+        pass
+
+
 def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=None):
     """Plot all dataset results for a single model."""
     datasets = df["dataset"].unique()
@@ -586,6 +597,54 @@ def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=
         axes[i].set_title(f"{len(sub_df)} runs of {model[:15]} on {dataset[:10]} ")
 
         plot_fn(sub_df, axes[i], dataset, model)
+
+
+def plot_discriminative_metric(df, metric="test metric", n_largest=3, fig_size=None):
+    models = df["model"].unique()
+    datasets = df["dataset"].unique()
+    train_ratios = np.sort(df["train ratio"].unique())
+
+    n_cols = 3
+    fig, axes = plt.subplots(int(np.ceil(len(datasets) / n_cols)), n_cols, figsize=fig_size, sharex=True)
+    axes = axes.flatten()
+    fig.suptitle("Effect of train size on discriminativity", fontsize=16)
+
+    for i, dataset in enumerate(datasets):
+
+        print(dataset)
+        discr_val = []
+        for k, train_ratio in enumerate(train_ratios):
+
+            # print(f"  train ratio : {train_ratio}")
+
+            all_scores = []
+            for j, model in enumerate(models):
+                sub_df = df[(df["dataset"] == dataset) & (df["train ratio"] == train_ratio) & (df["model"] == model)]
+                sub_df = sub_df.nlargest(n_largest, columns="val metric")
+                scores = sub_df[metric].to_numpy()
+                if len(scores) == 0:
+                    print(f"  train ration: {train_ratio}: missing {model}")
+                # print(f"    {j}: {scores}")
+                all_scores.append(scores)
+
+            # pw_entr = pairwise_entropy(all_scores)
+
+            pw_entr_list = boostrap_pw_entropy(all_scores, repeat=50, std_ratio=0.2)
+            # print(f"    pw entr: {pw_entr}")
+            # axes[i].boxplot(1 - np.array(pw_entr_list), positions=[k])
+            axes[i].violinplot(1 - np.array(pw_entr_list), positions=[k], quantiles=[0.05, 0.95], showextrema=False)
+
+            # discr_val.append(1 - pw_entr)
+
+        axes[i].set_title(f"{dataset}")
+        # axes[i].set_ylim((0.5,1))
+        # axes[i].plot(np.arange(len(discr_val)), discr_val, marker='.')
+
+        if len(axes[i].get_xticklabels()) > 0:
+            axes[i].set_xticks(range(len(train_ratios)))
+            axes[i].set_xticklabels([str(trn_ratio) for trn_ratio in train_ratios])
+            axes[i].set_xlabel("train ratio")
+    fig.tight_layout()
 
 
 def count_exp(df):

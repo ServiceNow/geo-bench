@@ -23,8 +23,8 @@ def test_exp_result():
 
     exp_info = exp_result.get_combined_info()
     hparams["batch_size"] = exp_info["batch_size"]
-    # for key, val in exp_info.items():
-    #     print(f"{key}: {str(val)[:100]}")
+    for key, val in exp_info.items():
+        print(f"{key}: {str(val)[:100]}")
 
 
 if __name__ == "__main__":
