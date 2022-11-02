@@ -477,7 +477,6 @@ class Band:
         return file_path
 
     def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
-        """Crop image from ratio."""
         shape = np.array(self.data.shape[:2])
         start = np.round(shape * np.array(start_ratio)).astype(np.int)
         size = np.round(shape * np.array(size_ratio)).astype(np.int)
@@ -559,8 +558,8 @@ class Sample(object):
         """Initialize new instance of Sample.
 
         Args:
-            bands: list of bands, image bands should have data of dimension H x W x C so C = 1
-            label: label for this input, labels should have dimension only H x W no channel dim
+            bands: list of bands
+            label: label for this input
             sample_name: name of sample
         """
         super().__init__()
@@ -604,7 +603,7 @@ class Sample(object):
         return len(self.dates) > 1
 
     def largest_shape(self):
-        """Return the height and width of the largest band, including label."""
+        """Return the height and width of the largest band, including label"""
         bands: List[Any] = self.bands
         if isinstance(self.label, Band):
             bands.append(self.label)
@@ -1559,13 +1558,9 @@ def compute_dataset_statistics(
             if n_value_per_image is None:
                 accumulator[band.band_info.name].append(band.data.flatten())
             else:
-                try:
-                    accumulator[band.band_info.name].append(
-                        np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-                    )
-                except:
-                    print(band.data.shape)
-                    print(n_value_per_image)
+                accumulator[band.band_info.name].append(
+                    np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
+                )
 
         if isinstance(sample.label, Band):
             if n_value_per_image is None:

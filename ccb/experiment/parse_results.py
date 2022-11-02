@@ -74,7 +74,7 @@ def iqm(scores):
     return trim_mean(scores, proportiontocut=0.25, axis=None)
 
 
-def bootstrap_iqm(df, group_keys=("model", "dataset"), metric="test_metric", repeat=100):
+def bootstrap_iqm(df, group_keys=("model", "dataset", "partition name"), metric="test_metric", repeat=100):
     """Boostram of seeds for all model and all datasets to comput iqm score distribution."""
     df_list = []
     for i in range(repeat):
@@ -86,11 +86,12 @@ def bootstrap_iqm(df, group_keys=("model", "dataset"), metric="test_metric", rep
 
 def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
     """Stratified bootstrap (by dataset) of all seeds to compute iqm score distribution for each model."""
-    group = df.groupby(["dataset", "model"])
+    group = df.groupby(["model", "dataset", "partition name"])
+
     df_list = []
     for i in range(repeat):
         new_df = group.sample(frac=1, replace=True)
-        series = new_df.groupby(["model"])[metric].apply(iqm)
+        series = new_df.groupby(["model", "partition name"])[metric].apply(iqm)
         df_list.append(series.to_frame().reset_index())
 
     new_df = pd.concat(df_list)
@@ -106,7 +107,84 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None,
             bootstrap_iqm(df, metric=metric, repeat=repeat),
         )
     )
+    print(bootstrapped_iqm.keys())
     plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size, n_legend_rows=n_legend_rows)
+
+
+def plot_bootstrap_aggregate_growing(df, metric, repeat=50, fig_size=None, n_legend_rows=2):
+    df = df[["dataset", "partition name", "model", metric]].copy()
+    sharey = True
+    print(f"bootstrapping with repeat={repeat}.")
+    bootstrapped_iqm = pd.concat(
+        (
+            bootstrap_iqm_aggregate(df, metric=metric, repeat=repeat),
+            bootstrap_iqm(df, metric=metric, repeat=repeat),
+        )
+    )
+
+    datasets = sorted(bootstrapped_iqm["dataset"].unique())
+    if fig_size is None:
+        fig_width = len(datasets) * 2
+        fig_size = (fig_width, 3)
+    fig, axes = plt.subplots(1, len(datasets), figsize=fig_size, sharey=sharey)
+
+    # models = "resnet18,resnet50,convnext base,vit-small,swinv2-tiny".split(",")
+    models = "conv4,resnet18,moco resnet18,millionaid resnet50,moco resnet50,resnet50,convnext base,vit-tiny,vit-small,swinv2-tiny".split(
+        ","
+    )
+
+    for dataset, ax in zip(datasets, axes):
+        sns.set_style("dark")
+
+        colors = sns.color_palette("tab10")
+
+        for i, model in enumerate(models):
+            model_df = bootstrapped_iqm[(bootstrapped_iqm["dataset"] == dataset) & (bootstrapped_iqm["model"] == model)]
+            quantiles = []
+            partition_ratios = []
+            for partition_name, partition_df in model_df.groupby("partition name"):
+                quantiles.append(np.quantile(partition_df[metric], [0.1, 0.5, 0.9]))
+                partition_ratio = float(partition_name.split("x")[0])
+                partition_ratios.append(partition_ratio)
+
+            ax.plot(
+                partition_ratios,
+                [b[1] for b in quantiles],
+                label=model,
+                color=colors[i],
+            )
+
+            ax.fill_between(
+                partition_ratios,
+                [b[0] for b in quantiles],
+                [b[2] for b in quantiles],
+                alpha=0.6,
+                color=colors[i],
+            )
+
+        ax.set_xscale("log")
+        ax.legend(loc="best")
+        ax.set_ylim(-0.25, 1.0)
+        ax.grid(axis="y")
+
+        if dataset == "aggregated":
+            ax.set_facecolor("#cff6fc")
+        ax.set(xlabel=dataset)
+
+        if dataset != datasets[int((len(datasets) - 1) / 2)]:
+            ax.get_legend().remove()
+        else:
+            ncols = int(np.ceil(len(models) / n_legend_rows))
+            sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=ncols, title="")
+
+        ax.set(ylabel=metric)
+        if dataset != datasets[0]:
+            ax.set(ylabel=None)
+
+    if sharey:
+        fig.subplots_adjust(wspace=0.15)
+    else:
+        fig.subplots_adjust(wspace=0.3)
 
 
 def plot_per_dataset_3(
@@ -172,8 +250,8 @@ def plot_normalized_time(df: pd.DataFrame, time_metric="best step", average_seed
     """Plot the time (in number of steps) of each experiment as a function of the training set size."""
     df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
 
-    if time_metric == "step":
-        df["n observation"] = df["step"] * df["batch size"]
+    if time_metric == "best step":
+        df["n observation"] = df[time_metric] * df["batch size"]
         time_metric = "n observation"
 
     hue = "dataset"
@@ -378,6 +456,8 @@ class ExpResult:
         """Load the config from the yaml file."""
         with open(Path(self.log_dir) / "config.yaml", "r") as stream:
             config = yaml.safe_load(stream)
+
+        config["model"]["model_name"] = config["model"]["model_name"].replace("ssl_moco", "moco")
 
         return config
 
