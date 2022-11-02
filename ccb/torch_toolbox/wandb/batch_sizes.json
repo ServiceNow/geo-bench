@@ -15,6 +15,14 @@
         "pv4ger_classification":128,
         "so2sat":128
     },
+    "scratch_resnet18": {
+        "bigearthnet":128,
+        "brick_kiln_v1.0":128,
+        "eurosat":128,
+        "forestnet_v1.0":128,
+        "pv4ger_classification":128,
+        "so2sat":128
+    },
     "resnet50": {
         "bigearthnet":64,
         "brick_kiln_v1.0":64,
@@ -56,6 +64,14 @@
         "so2sat":16
     },
     "ssl_moco_resnet18": {
+        "bigearthnet":128,
+        "brick_kiln_v1.0":128,
+        "eurosat":128,
+        "forestnet_v1.0":128,
+        "pv4ger_classification":128,
+        "so2sat":128
+    },
+    "moco_resnet18": {
         "bigearthnet":128,
         "brick_kiln_v1.0":128,
         "eurosat":128,

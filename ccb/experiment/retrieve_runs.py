@@ -11,12 +11,12 @@ import numpy as np
 import pandas as pd
 from pandas.errors import EmptyDataError
 from ruamel.yaml import YAML
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ccb.experiment import parse_results
 
 
-def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, is_sweep=True, max_num_exp=12):
+def retrieve_runs(experiment_dir, use_cached_csv=False, is_sweep=True, max_num_exp=12):
     """Compute results for a sweep.
 
     Args:
@@ -27,14 +27,25 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, is_sweep=True, max
     Returns:
         df with sweep summaries per individual run
     """
-    csv_path = Path(sweep_experiment_dir) / "cached_results.csv"
+    csv_path = Path(experiment_dir) / "cached_results.csv"
     if use_cached_csv and csv_path.exists():
         return pd.read_csv(csv_path)
 
     if is_sweep:
-        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
+        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     else:
-        run_dirs = glob.glob(os.path.join(sweep_experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+    #     run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
+
+    # import shutil
+    # for config_path in run_dirs:
+    #     try:
+    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
+    #     except:
+    #         continue
+
+    # import pdb
+    # pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
 
@@ -52,6 +63,10 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, is_sweep=True, max
 
     if max_num_exp is not None:
         info_df = info_df.groupby(["model", "dataset", "partition_name"]).head(max_num_exp)
+
+    # rename moco
+    info_df["model"] = info_df["model"].str.replace("ssl_moco_resnet18", "moco_resnet18")
+    info_df["model"] = info_df["model"].str.replace("ssl_moco_resnet50", "moco_resnet50")
 
     info_df.to_csv(csv_path)
 
@@ -77,19 +92,21 @@ def retrieve_runs_old(experiment_dir, use_cached_csv=False, exp_type="sweep", ma
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     elif exp_type == "seeds":
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
-        # run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
+        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
     else:
         raise ValueError("exp_type not valid, should be 'sweep' or 'seeds'")
 
-    # import shutil
-    # for config_path in run_dirs:
-    #     try:
-    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
-    #     except:
-    #         continue
+    import shutil
 
-    # import pdb
-    # pdb.set_trace()
+    for config_path in run_dirs:
+        try:
+            shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
+        except:
+            continue
+
+    import pdb
+
+    pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
     all_trials_df = pd.DataFrame(

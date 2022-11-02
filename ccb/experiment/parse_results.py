@@ -300,6 +300,7 @@ def smooth_series(series, filt_size):
 
 def find_best_hparam_for_seeds(df):
     """Find best hparams for all experiments."""
+    df
     model_and_ds = df.groupby(["model", "dataset", "partition_name"]).size().reset_index()
     model_names, ds_names, part_names = (
         model_and_ds["model"].tolist(),
