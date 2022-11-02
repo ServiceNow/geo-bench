@@ -21,7 +21,10 @@ def define_model_name(config):
         model_name = config["model"]["ssl_method"] + "_" + config["model"]["backbone"]
         # model_name = "ssl_moco_" + config["model"]["backbone"]
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.timm_generator":
-        model_name = config["model"]["backbone"]
+        if config["model"]["pretrained"]:
+            model_name = config["model"]["backbone"]
+        else:
+            model_name = "scratch_" + config["model"]["backbone"]
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.conv4":
         model_name = config["model"]["backbone"]
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":

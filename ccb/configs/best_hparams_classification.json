@@ -115,6 +115,172 @@
             "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_09-30-2022_15:03:27_convnext_base/so2sat/csv_logs/version_1"
         }
     },
+    "millionaid_resnet50": {
+        "0.01x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-05-2022_13:28:29_millionaid_resnet50/bigearthnet/csv_logs/version_3",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-29-2022_10:27:41_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_4",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-29-2022_10:27:41_millionaid_resnet50/eurosat/csv_logs/version_0",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-29-2022_10:27:41_millionaid_resnet50/forestnet_v1.0/csv_logs/version_4",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-29-2022_10:27:41_millionaid_resnet50/pv4ger_classification/csv_logs/version_4",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-05-2022_13:28:29_millionaid_resnet50/so2sat/csv_logs/version_6"
+        },
+        "0.02x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/bigearthnet/csv_logs/version_2",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_12",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/eurosat/csv_logs/version_9",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/forestnet_v1.0/csv_logs/version_4",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/pv4ger_classification/csv_logs/version_11",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-29-2022_10:21:46_millionaid_resnet50/so2sat/csv_logs/version_10"
+        },
+        "0.05x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/bigearthnet/csv_logs/version_3",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_4",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/eurosat/csv_logs/version_0",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/forestnet_v1.0/csv_logs/version_0",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/pv4ger_classification/csv_logs/version_2",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:13:24_millionaid_resnet50/so2sat/csv_logs/version_6"
+        },
+        "0.10x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/bigearthnet/csv_logs/version_7",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_0",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/eurosat/csv_logs/version_7",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/forestnet_v1.0/csv_logs/version_10",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/pv4ger_classification/csv_logs/version_4",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_07:11:09_millionaid_resnet50/so2sat/csv_logs/version_4"
+        },
+        "0.20x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/bigearthnet/csv_logs/version_5",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_5",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/eurosat/csv_logs/version_3",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/forestnet_v1.0/csv_logs/version_2",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/pv4ger_classification/csv_logs/version_8",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_07:07:54_millionaid_resnet50/so2sat/csv_logs/version_4"
+        },
+        "0.50x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/bigearthnet/csv_logs/version_9",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_13",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/eurosat/csv_logs/version_14",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/forestnet_v1.0/csv_logs/version_1",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/pv4ger_classification/csv_logs/version_13",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:03:31_millionaid_resnet50/so2sat/csv_logs/version_8"
+        },
+        "1.00x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:23:46_millionaid_resnet50/bigearthnet/csv_logs/version_2",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:23:46_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_6",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:23:46_millionaid_resnet50/eurosat/csv_logs/version_11",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:23:46_millionaid_resnet50/forestnet_v1.0/csv_logs/version_9",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-05-2022_17:00:25_millionaid_resnet50/pv4ger_classification/csv_logs/version_1",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:23:46_millionaid_resnet50/so2sat/csv_logs/version_5"
+        }
+    },
+    "moco_resnet18": {
+        "0.01x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/bigearthnet/csv_logs/version_8",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/brick_kiln_v1.0/csv_logs/version_0",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/eurosat/csv_logs/version_8",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/forestnet_v1.0/csv_logs/version_11",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/pv4ger_classification/csv_logs/version_3",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:44:09_moco_resnet18/so2sat/csv_logs/version_0"
+        },
+        "0.02x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/bigearthnet/csv_logs/version_0",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/brick_kiln_v1.0/csv_logs/version_3",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/eurosat/csv_logs/version_12",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/forestnet_v1.0/csv_logs/version_11",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/pv4ger_classification/csv_logs/version_3",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_15:41:50_moco_resnet18/so2sat/csv_logs/version_10"
+        },
+        "0.05x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/bigearthnet/csv_logs/version_14",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/brick_kiln_v1.0/csv_logs/version_12",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/eurosat/csv_logs/version_11",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/forestnet_v1.0/csv_logs/version_14",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/pv4ger_classification/csv_logs/version_8",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:06:59_moco_resnet18/so2sat/csv_logs/version_13"
+        },
+        "0.10x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/bigearthnet/csv_logs/version_8",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/brick_kiln_v1.0/csv_logs/version_4",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/eurosat/csv_logs/version_0",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/forestnet_v1.0/csv_logs/version_11",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/pv4ger_classification/csv_logs/version_11",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:37:20_moco_resnet18/so2sat/csv_logs/version_3"
+        },
+        "0.20x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/bigearthnet/csv_logs/version_9",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/brick_kiln_v1.0/csv_logs/version_0",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/eurosat/csv_logs/version_6",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/forestnet_v1.0/csv_logs/version_11",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/pv4ger_classification/csv_logs/version_4",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:35:08_moco_resnet18/so2sat/csv_logs/version_1"
+        },
+        "0.50x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/bigearthnet/csv_logs/version_5",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/brick_kiln_v1.0/csv_logs/version_4",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/eurosat/csv_logs/version_11",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/forestnet_v1.0/csv_logs/version_6",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/pv4ger_classification/csv_logs/version_3",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/so2sat/csv_logs/version_7"
+        },
+        "1.00x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/bigearthnet/csv_logs/version_7",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/brick_kiln_v1.0/csv_logs/version_7",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/eurosat/csv_logs/version_0",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/forestnet_v1.0/csv_logs/version_1",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/pv4ger_classification/csv_logs/version_10",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/so2sat/csv_logs/version_11"
+        }
+    },
+    "moco_resnet50": {
+        "0.01x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/bigearthnet/csv_logs/version_8",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/brick_kiln_v1.0/csv_logs/version_1",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/eurosat/csv_logs/version_0",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/forestnet_v1.0/csv_logs/version_7",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/pv4ger_classification/csv_logs/version_7",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/so2sat/csv_logs/version_4"
+        },
+        "0.05x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/bigearthnet/csv_logs/version_8",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/brick_kiln_v1.0/csv_logs/version_2",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/eurosat/csv_logs/version_10",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/forestnet_v1.0/csv_logs/version_10",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/pv4ger_classification/csv_logs/version_1",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/so2sat/csv_logs/version_5"
+        },
+        "0.10x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/bigearthnet/csv_logs/version_8",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/brick_kiln_v1.0/csv_logs/version_1",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/eurosat/csv_logs/version_1",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/forestnet_v1.0/csv_logs/version_12",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/pv4ger_classification/csv_logs/version_10",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-29-2022_09:44:53_moco_resnet50/so2sat/csv_logs/version_1"
+        },
+        "0.20x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/bigearthnet/csv_logs/version_10",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/brick_kiln_v1.0/csv_logs/version_12",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/eurosat/csv_logs/version_1",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/forestnet_v1.0/csv_logs/version_4",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/pv4ger_classification/csv_logs/version_14",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-29-2022_09:40:21_moco_resnet50/so2sat/csv_logs/version_4"
+        },
+        "0.50x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/bigearthnet/csv_logs/version_14",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/brick_kiln_v1.0/csv_logs/version_8",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/eurosat/csv_logs/version_8",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/forestnet_v1.0/csv_logs/version_2",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/pv4ger_classification/csv_logs/version_0",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/so2sat/csv_logs/version_15"
+        },
+        "1.00x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/bigearthnet/csv_logs/version_9",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/brick_kiln_v1.0/csv_logs/version_8",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/eurosat/csv_logs/version_9",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/forestnet_v1.0/csv_logs/version_8",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/pv4ger_classification/csv_logs/version_11",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/so2sat/csv_logs/version_6"
+        }
+    },
     "resnet18": {
         "0.01x_train": {
             "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-04-2022_08:27:59_resnet18/bigearthnet/csv_logs/version_6",
@@ -175,8 +341,8 @@
     },
     "resnet50": {
         "0.01x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-05-2022_13:28:29_millionaid_resnet50/bigearthnet/csv_logs/version_3",
-            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-05-2022_13:28:29_millionaid_resnet50/brick_kiln_v1.0/csv_logs/version_7",
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-04-2022_08:36:38_resnet50/bigearthnet/csv_logs/version_4",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-10-2022_08:18:58_resnet50/brick_kiln_v1.0/csv_logs/version_3",
             "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-04-2022_08:36:38_resnet50/eurosat/csv_logs/version_0",
             "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-04-2022_08:36:38_resnet50/forestnet_v1.0/csv_logs/version_3",
             "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-10-2022_08:18:58_resnet50/pv4ger_classification/csv_logs/version_3",
@@ -231,40 +397,62 @@
             "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_09-30-2022_15:02:10_resnet50/so2sat/csv_logs/version_11"
         }
     },
-    "moco_resnet18": {
+    "scratch_resnet18": {
+        "0.01x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/bigearthnet/csv_logs/version_12",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_7",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/eurosat/csv_logs/version_8",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/forestnet_v1.0/csv_logs/version_0",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/pv4ger_classification/csv_logs/version_9",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_18:19:49_scratch_resnet18/so2sat/csv_logs/version_3"
+        },
+        "0.02x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/bigearthnet/csv_logs/version_9",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_8",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/eurosat/csv_logs/version_6",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/forestnet_v1.0/csv_logs/version_14",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/pv4ger_classification/csv_logs/version_7",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_10-31-2022_18:16:06_scratch_resnet18/so2sat/csv_logs/version_3"
+        },
+        "0.05x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/bigearthnet/csv_logs/version_7",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_3",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/eurosat/csv_logs/version_4",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/forestnet_v1.0/csv_logs/version_5",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/pv4ger_classification/csv_logs/version_12",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-31-2022_15:39:45_scratch_resnet18/so2sat/csv_logs/version_2"
+        },
+        "0.10x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/bigearthnet/csv_logs/version_1",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_1",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/eurosat/csv_logs/version_6",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/forestnet_v1.0/csv_logs/version_5",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/pv4ger_classification/csv_logs/version_11",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.10x_train_classification_v0.7_10-31-2022_15:34:10_scratch_resnet18/so2sat/csv_logs/version_3"
+        },
+        "0.20x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/bigearthnet/csv_logs/version_0",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_1",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/eurosat/csv_logs/version_11",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/forestnet_v1.0/csv_logs/version_9",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/pv4ger_classification/csv_logs/version_10",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/so2sat/csv_logs/version_5"
+        },
         "0.50x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/bigearthnet/csv_logs/version_5",
-            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/brick_kiln_v1.0/csv_logs/version_4",
-            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/eurosat/csv_logs/version_11",
-            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/forestnet_v1.0/csv_logs/version_6",
-            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/pv4ger_classification/csv_logs/version_3",
-            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:08:56_ssl_moco_resnet18/so2sat/csv_logs/version_7"
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/bigearthnet/csv_logs/version_9",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_3",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/eurosat/csv_logs/version_1",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/forestnet_v1.0/csv_logs/version_7",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/pv4ger_classification/csv_logs/version_6",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/so2sat/csv_logs/version_8"
         },
         "1.00x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/bigearthnet/csv_logs/version_7",
-            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/brick_kiln_v1.0/csv_logs/version_7",
-            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/eurosat/csv_logs/version_0",
-            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/forestnet_v1.0/csv_logs/version_1",
-            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/pv4ger_classification/csv_logs/version_10",
-            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:15:42_ssl_moco_resnet18/so2sat/csv_logs/version_11"
-        }
-    },
-    "moco_resnet50": {
-        "0.50x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/bigearthnet/csv_logs/version_14",
-            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/brick_kiln_v1.0/csv_logs/version_8",
-            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/eurosat/csv_logs/version_8",
-            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/forestnet_v1.0/csv_logs/version_2",
-            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/pv4ger_classification/csv_logs/version_0",
-            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-14-2022_05:05:28_ssl_moco_resnet50/so2sat/csv_logs/version_15"
-        },
-        "1.00x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/bigearthnet/csv_logs/version_9",
-            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/brick_kiln_v1.0/csv_logs/version_8",
-            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/eurosat/csv_logs/version_9",
-            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/forestnet_v1.0/csv_logs/version_8",
-            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/pv4ger_classification/csv_logs/version_11",
-            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-11-2022_14:17:07_ssl_moco_resnet50/so2sat/csv_logs/version_6"
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/bigearthnet/csv_logs/version_0",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_8",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/eurosat/csv_logs/version_4",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/forestnet_v1.0/csv_logs/version_8",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/pv4ger_classification/csv_logs/version_8",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/so2sat/csv_logs/version_6"
         }
     },
     "swinv2_tiny_window16_256": {

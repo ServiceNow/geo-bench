@@ -9,7 +9,7 @@ experiment:
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
   encoder_type: resnet101 # resnet18,
-  decoder_type: Unet
+  decoder_type: DeepLabV3
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
