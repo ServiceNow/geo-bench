@@ -30,7 +30,10 @@ def define_model_name(config):
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":
         model_name = "millionaid_" + config["model"]["backbone"]
     else:
-        model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+        if config["model"]["pretrained"] is False:
+            model_name = "scratch_" + config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
+        else:
+            model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
 
     return model_name
 
@@ -82,7 +85,7 @@ def experiment_generator(
 
             beyond_rgb = False
             if task_config["dataset"]["band_names"] == "all":
-                if task_specs.dataset_name not in ["eurosat", "brick_kiln_v1.0", "bigearthnet"]:
+                if task_specs.dataset_name not in ["eurosat", "brick_kiln_v1.0", "bigearthnet", "so2sat"]:
                     continue
                 band_names = [band_info.name for band_info in task_specs.bands_info]
                 beyond_rgb = True
