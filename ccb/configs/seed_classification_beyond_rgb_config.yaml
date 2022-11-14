@@ -8,7 +8,8 @@ experiment:
   num_seeds: 12
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
-  ssl_method: moco
+  # ssl_method: dino
+  pretrained: True
   backbone: resnet50 # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
 wandb:
   project: ccb # wandb project name

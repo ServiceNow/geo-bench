@@ -422,8 +422,12 @@ def extract_best_points(log_dirs, filt_size=5, lower_is_better=False):
 
     for log_dir in log_dirs:
         best_point = extract_best_point(log_dir, filt_size, lower_is_better)
+        try:
+            best_point["best_config"] = False
+        except:
+            import pdb
 
-        best_point["best_config"] = False
+            pdb.set_trace()
         best_points.append(best_point)
         max_scores.append(best_point["score"])  # used for sorting
 
@@ -559,6 +563,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     for i, dataset in enumerate(datasets):
         print(dataset)
         for j, model in enumerate(models):
+
             sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
             # if len(sub_df) == 0:
             #     continue

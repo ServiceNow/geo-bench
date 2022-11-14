@@ -35,22 +35,12 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, is_sweep=True, max_num_e
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     else:
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
-    #     run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
-
-    # import shutil
-    # for config_path in run_dirs:
-    #     try:
-    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
-    #     except:
-    #         continue
-
-    # import pdb
-    # pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
 
     info_list = []
     for log_dir in tqdm(csv_run_dirs):
+        # for log_dir in csv_run_dirs:
 
         exp_result = parse_results.ExpResult(log_dir)
         exp_info = exp_result.get_combined_info()
@@ -61,9 +51,14 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, is_sweep=True, max_num_e
 
     info_df = pd.DataFrame(info_list)
 
+    info_df["date"] = (
+        info_df["exp_dir"].str.split("_", expand=True)[8] + "_" + info_df["exp_dir"].str.split("_", expand=True)[9]
+    )
+
+    info_df.sort_values(by=["model", "dataset", "date"], inplace=True, ascending=False)
+
     if max_num_exp is not None:
         info_df = info_df.groupby(["model", "dataset", "partition_name"]).head(max_num_exp)
-
     # rename moco
     info_df["model"] = info_df["model"].str.replace("ssl_moco_resnet18", "moco_resnet18")
     info_df["model"] = info_df["model"].str.replace("ssl_moco_resnet50", "moco_resnet50")
