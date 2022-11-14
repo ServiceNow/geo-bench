@@ -240,6 +240,14 @@
             "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/pv4ger_classification/csv_logs/version_7",
             "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.01x_train_classification_v0.7_10-31-2022_15:48:10_moco_resnet50/so2sat/csv_logs/version_4"
         },
+        "0.02x_train": {
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/bigearthnet/csv_logs/version_6",
+            "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/brick_kiln_v1.0/csv_logs/version_8",
+            "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/eurosat/csv_logs/version_4",
+            "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/forestnet_v1.0/csv_logs/version_3",
+            "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/pv4ger_classification/csv_logs/version_8",
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.02x_train_classification_v0.7_11-02-2022_07:40:07_moco_resnet50/so2sat/csv_logs/version_1"
+        },
         "0.05x_train": {
             "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/bigearthnet/csv_logs/version_8",
             "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.05x_train_classification_v0.7_10-29-2022_10:04:00_moco_resnet50/brick_kiln_v1.0/csv_logs/version_2",
@@ -439,7 +447,7 @@
             "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/0.20x_train_classification_v0.7_10-31-2022_14:10:12_scratch_resnet18/so2sat/csv_logs/version_5"
         },
         "0.50x_train": {
-            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/bigearthnet/csv_logs/version_9",
+            "bigearthnet": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/bigearthnet/csv_logs/version_15",
             "brick_kiln_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/brick_kiln_v1.0/csv_logs/version_3",
             "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/eurosat/csv_logs/version_1",
             "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/0.50x_train_classification_v0.7_10-31-2022_13:44:48_scratch_resnet18/forestnet_v1.0/csv_logs/version_7",
@@ -452,7 +460,7 @@
             "eurosat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/eurosat/csv_logs/version_4",
             "forestnet_v1.0": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/forestnet_v1.0/csv_logs/version_8",
             "pv4ger_classification": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/pv4ger_classification/csv_logs/version_8",
-            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/so2sat/csv_logs/version_6"
+            "so2sat": "/mnt/data/experiments/nils/last_classification_sweeps/1.00x_train_classification_v0.7_10-31-2022_13:41:21_scratch_resnet18/so2sat/csv_logs/version_12"
         }
     },
     "swinv2_tiny_window16_256": {

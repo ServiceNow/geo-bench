@@ -42,7 +42,11 @@ def load_resnet_model(config):
         ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn50_moco_0099_ckpt.pth"
         if len(config["dataset"]["band_names"]) >= 10:
             backbone.conv1 = torch.nn.Conv2d(13, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-            ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_rn50_moco_0099_ckpt.pth"
+            path_dict = {
+                "moco": "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_rn50_moco_0099_ckpt.pth",
+                "dino": "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B13_rn50_dino_0099_ckpt.pth",
+            }
+            ckpt_path = path_dict[config["model"]["ssl_method"]]
 
     elif "resnet18" in config["model"]["backbone"]:
         backbone = models.resnet18(weights=None)
@@ -50,22 +54,19 @@ def load_resnet_model(config):
         ckpt_path = "/mnt/data/experiments/nils/ssl_checkpoints_zhu/B3_rn18_moco_0199_ckpt.pth"
 
     print("=> loading checkpoint '{}'".format(ckpt_path))
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
+    ckpt = torch.load(ckpt_path, map_location="cpu")
 
-    # rename moco pre-trained keys
-    state_dict = checkpoint["state_dict"]
-
-    for k in list(state_dict.keys()):
-        # retain only encoder up to before the embedding layer
-        if k.startswith("module.encoder_q") and not k.startswith("module.encoder_q.fc"):
-            # remove prefix
-            state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
-        # delete renamed or unused k
-        del state_dict[k]
+    if config["model"]["ssl_method"] == "moco":
+        state_dict = load_resnet_moco_state_dict(ckpt)
+    elif config["model"]["ssl_method"] == "dino":
+        state_dict = load_dino_state_dict(ckpt)
 
     previous_backbone = copy.deepcopy(backbone)
     prev_sample_weight = previous_backbone.layer4[0].conv1.weight
-    backbone.load_state_dict(state_dict, strict=False)
+
+    msg = backbone.load_state_dict(state_dict, strict=False)
+    assert set(msg.missing_keys) == {"fc.weight", "fc.bias"}
+    # backbone.load_state_dict(state_dict, strict=False)
 
     post_sample_weight = backbone.layer4[0].conv1.weight
 
@@ -73,6 +74,7 @@ def load_resnet_model(config):
     assert torch.equal(prev_sample_weight, post_sample_weight) is False
 
     before_check = backbone.conv1.weight[:, 0, :, :]
+
     backbone.conv1 = copy_sentinel_weights(backbone.conv1, config)
     after_check = backbone.conv1.weight[:, 0, :, :]
 
@@ -96,13 +98,51 @@ def copy_sentinel_weights(current_layer, config):
     if len(new_indices) == 12:
         current_indices.remove(10)
     elif len(new_indices) == 10:  # so2sat
-        current_indices = [e for e in current_indices if e not in (0, 9, 10)]
+        current_indices = [e for e in current_indices if e not in (3, 9, 10)]
 
     for new_idx, old_idx in zip(new_indices, current_indices):
         with torch.no_grad():
             new_layer.weight[:, new_idx : new_idx + 1, :, :] = current_layer.weight[:, old_idx : old_idx + 1, :, :]
 
     return new_layer
+
+
+def load_resnet_moco_state_dict(ckpt):
+    """Load Moco resnet weights."""
+    state_dict = ckpt["state_dict"]
+
+    for k in list(state_dict.keys()):
+        # retain only encoder up to before the embedding layer
+        if k.startswith("module.encoder_q") and not k.startswith("module.encoder_q.fc"):
+            # remove prefix
+            state_dict[k[len("module.encoder_q.") :]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    return state_dict
+
+
+def load_dino_state_dict(ckpt):
+    """Load Dino weights for resnet and vit."""
+    state_dict = ckpt["teacher"]
+    state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
+    # remove `backbone.` prefix induced by multicrop wrapper
+    state_dict = {k.replace("backbone.", ""): v for k, v in state_dict.items()}
+    return state_dict
+
+
+def load_vit_moco_state_dict(ckpt):
+    """Load Moco weights for vit."""
+    state_dict = ckpt["state_dict"]
+    for k in list(state_dict.keys()):
+        # retain only base_encoder up to before the embedding layer
+        if k.startswith("module.base_encoder") and not k.startswith("module.base_encoder.%s" % "head"):
+            # remove prefix
+            state_dict[k[len("module.base_encoder.") :]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    return state_dict
 
 
 def load_vit_model(config):
@@ -127,14 +167,10 @@ def load_vit_model(config):
     ckpt = torch.load(ckpt_path, map_location="cpu")
 
     # rename moco pre-trained keys
-    state_dict = ckpt["state_dict"]
-    for k in list(state_dict.keys()):
-        # retain only base_encoder up to before the embedding layer
-        if k.startswith("module.base_encoder") and not k.startswith("module.base_encoder.%s" % "head"):
-            # remove prefix
-            state_dict[k[len("module.base_encoder.") :]] = state_dict[k]
-        # delete renamed or unused k
-        del state_dict[k]
+    if config["model"]["ssl_method"] == "moco":
+        state_dict = load_vit_moco_state_dict(ckpt)
+    elif config["model"]["ssl_method"] == "dino":
+        state_dict = load_dino_state_dict(ckpt)
 
     msg = backbone.load_state_dict(state_dict, strict=False)
     assert set(msg.missing_keys) == {"%s.weight" % "head", "%s.bias" % "head"}
