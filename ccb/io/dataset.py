@@ -1558,16 +1558,16 @@ def compute_dataset_statistics(
             if n_value_per_image is None:
                 accumulator[band.band_info.name].append(band.data.flatten())
             else:
-                accumulator[band.band_info.name].append(
-                    np.random.choice(band.data.flat, size=n_value_per_image, replace=False)
-                )
+                n_vals = min(n_value_per_image, band.data.size)
+                accumulator[band.band_info.name].append(np.random.choice(band.data.flat, size=n_vals, replace=False))
 
         if isinstance(sample.label, Band):
             if n_value_per_image is None:
                 accumulator["label"].append(sample.label.data.flatten())
             else:
+                n_vals = min(n_value_per_image, sample.label.data.size)
                 accumulator["label"].append(
-                    np.random.choice(sample.label.data.flat, size=n_value_per_image, replace=False)
+                    np.random.choice(sample.label.data.flat, size=n_vals, replace=False)
                 )
         elif isinstance(sample.label, (list, tuple)):
             for obj in sample.label:
