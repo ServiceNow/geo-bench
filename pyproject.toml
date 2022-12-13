@@ -42,6 +42,8 @@ ipyleaflet = "^0.17.1"
 seaborn = "^0.12.0"
 albumentations = ">=1.2.1"
 yacs = "^0.1.8"
+nvidia-ml-py3 = "^7.352.0"
+gym = "^0.26.2"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"

@@ -103,6 +103,22 @@
         "pv4ger_classification":64,
         "so2sat":64
     },
+    "seco_resnet18": {
+        "bigearthnet":128,
+        "brick_kiln_v1.0":128,
+        "eurosat":128,
+        "forestnet_v1.0":128,
+        "pv4ger_classification":128,
+        "so2sat":128
+    },
+    "seco_resnet50": {
+        "bigearthnet":64,
+        "brick_kiln_v1.0":64,
+        "eurosat":64,
+        "forestnet_v1.0":64,
+        "pv4ger_classification":64,
+        "so2sat":64
+    },
     "dino_resnet50": {
         "bigearthnet":64,
         "brick_kiln_v1.0":64,
@@ -198,6 +214,15 @@
         "seasonet":64
     },
     "resnet101_DeepLabV3": {
+        "cvpr_chesapeake_landcover":16,
+        "NeonTree_segmentation":16,
+        "nz_cattle_segmentation":16,
+        "pv4ger_segmentation":16,
+        "smallholder_cashew":16,
+        "southAfricaCropType":16,
+        "seasonet":16
+    },
+    "swinv2_tiny_segmentation": {
         "cvpr_chesapeake_landcover":16,
         "NeonTree_segmentation":16,
         "nz_cattle_segmentation":16,

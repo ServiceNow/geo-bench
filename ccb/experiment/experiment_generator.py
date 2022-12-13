@@ -29,12 +29,15 @@ def define_model_name(config):
         model_name = config["model"]["backbone"]
     elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.wang_rs_pretrained":
         model_name = "millionaid_" + config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.seco":
+        model_name = "seco_" + config["model"]["backbone"]
+    elif config["model"]["model_generator_module_name"] == "ccb.torch_toolbox.model_generators.swin_segmentation":
+        model_name = config["model"]["model"] + "_segmentation"
     else:
         if config["model"]["pretrained"] is False:
             model_name = "scratch_" + config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
         else:
             model_name = config["model"]["encoder_type"] + "_" + config["model"]["decoder_type"]
-
     return model_name
 
 

@@ -52,9 +52,11 @@ def train(job_dir: str) -> None:
 
     trainer.log_every_n_steps = min(len(datamodule.train_dataloader()), config["pl"]["log_every_n_steps"])  # type: ignore[attr-defined]
 
+    print("Profiler")
+    print(trainer.profiler)
     ckpt_path = config["model"].get("ckpt_path", None)
     trainer.fit(model, datamodule, ckpt_path=ckpt_path)
-    trainer.test(model, datamodule)
+    # trainer.test(model, datamodule)
 
     # save updated configs in csv_logger one directories are created
     yaml = YAML()
