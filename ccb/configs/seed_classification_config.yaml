@@ -7,8 +7,8 @@ experiment:
   best_hparam_config: /mnt/home/climate-change-benchmark/ccb/configs/best_hparams_classification.json
   num_seeds: 12
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
-  ssl_method: moco
+  model_generator_module_name: ccb.torch_toolbox.model_generators.seco
+  # ssl_method: moco
   pretrained: True
   backbone: resnet50 # resnet18, convnext_base, vit_tiny_patch16_224, vit_small_patch16_224. swinv2_tiny_window16_256
 wandb:
