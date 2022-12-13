@@ -35,14 +35,14 @@ def pairwise_entropy(all_scores: List[List[float]]):
     return np.mean(entropy_list)
 
 
-def boostrap_pw_entropy(all_scores, repeat=10, std_ratio=0.1, replace=True):
+def boostrap_pw_entropy(all_scores, repeat=10, std_ratio=0.1):
     """Bootstrap version."""
     values = []
     for i in range(repeat):
         bootstraped_scores = []
         for scores in all_scores:
             std = np.std(scores)
-            scores_ = np.random.choice(scores, size=len(scores), replace=replace)
+            scores_ = np.random.choice(scores, size=len(scores), replace=True)
             scores_ += std * std_ratio * np.random.randn(len(scores))
             bootstraped_scores.append(scores_)
 
