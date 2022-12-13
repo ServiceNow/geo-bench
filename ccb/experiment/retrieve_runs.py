@@ -100,21 +100,6 @@ def retrieve_runs_old(experiment_dir, use_cached_csv=False, exp_type="sweep", ma
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     elif exp_type == "seeds":
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
-        run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
-    else:
-        raise ValueError("exp_type not valid, should be 'sweep' or 'seeds'")
-
-    import shutil
-
-    for config_path in run_dirs:
-        try:
-            shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
-        except:
-            continue
-
-    import pdb
-
-    pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
     all_trials_df = pd.DataFrame(
