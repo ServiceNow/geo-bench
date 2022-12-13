@@ -3,6 +3,7 @@
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
+import pickle
 from textwrap import wrap
 from typing import Dict, List
 
@@ -99,7 +100,7 @@ def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
     return new_df
 
 
-def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None, n_legend_rows=2):
+def plot_bootstrap_aggregate(df, metric, model_order, model_colors, repeat=100, fig_size=None, n_legend_rows=2):
     """Add aggregated data as a new dataset."""
     bootstrapped_iqm = pd.concat(
         (
@@ -107,11 +108,17 @@ def plot_bootstrap_aggregate(df, metric, model_order, repeat=100, fig_size=None,
             bootstrap_iqm(df, metric=metric, repeat=repeat),
         )
     )
-    print(bootstrapped_iqm.keys())
-    plot_per_dataset_3(bootstrapped_iqm, model_order, metric=metric, fig_size=fig_size, n_legend_rows=n_legend_rows)
+    plot_per_dataset_3(
+        bootstrapped_iqm,
+        model_order,
+        model_colors=model_colors,
+        metric=metric,
+        fig_size=fig_size,
+        n_legend_rows=n_legend_rows,
+    )
 
 
-def plot_bootstrap_aggregate_growing(df, metric, repeat=50, fig_size=None, n_legend_rows=2):
+def plot_bootstrap_aggregate_growing(df, metric, model_order, model_colors, repeat=50, fig_size=None, n_legend_rows=2):
     df = df[["dataset", "partition name", "model", metric]].copy()
     sharey = True
     print(f"bootstrapping with repeat={repeat}.")
@@ -128,17 +135,12 @@ def plot_bootstrap_aggregate_growing(df, metric, repeat=50, fig_size=None, n_leg
         fig_size = (fig_width, 3)
     fig, axes = plt.subplots(1, len(datasets), figsize=fig_size, sharey=sharey)
 
-    # models = "resnet18,resnet50,convnext base,vit-small,swinv2-tiny".split(",")
-    models = "conv4,resnet18,moco resnet18,millionaid resnet50,moco resnet50,resnet50,convnext base,vit-tiny,vit-small,swinv2-tiny".split(
-        ","
-    )
-
     for dataset, ax in zip(datasets, axes):
-        sns.set_style("dark")
+        # sns.set_style("dark")
 
-        colors = sns.color_palette("tab10")
+        # colors = sns.color_palette("tab10")
 
-        for i, model in enumerate(models):
+        for i, model in enumerate(model_order):
             model_df = bootstrapped_iqm[(bootstrapped_iqm["dataset"] == dataset) & (bootstrapped_iqm["model"] == model)]
             quantiles = []
             partition_ratios = []
@@ -150,31 +152,33 @@ def plot_bootstrap_aggregate_growing(df, metric, repeat=50, fig_size=None, n_leg
             ax.plot(
                 partition_ratios,
                 [b[1] for b in quantiles],
-                label=model,
-                color=colors[i],
+                linewidth=0.4,
+                color=model_colors[model],
             )
 
             ax.fill_between(
                 partition_ratios,
                 [b[0] for b in quantiles],
                 [b[2] for b in quantiles],
-                alpha=0.6,
-                color=colors[i],
+                alpha=0.4,
+                label=model,
+                color=model_colors[model],
             )
 
         ax.set_xscale("log")
         ax.legend(loc="best")
-        ax.set_ylim(-0.25, 1.0)
+        ax.set_ylim(-0.6, 1.0)
         ax.grid(axis="y")
 
         if dataset == "aggregated":
-            ax.set_facecolor("#cff6fc")
+            # ax.set_facecolor("#cff6fc")
+            ax.set_facecolor("#dbfbff")
         ax.set(xlabel=dataset)
 
         if dataset != datasets[int((len(datasets) - 1) / 2)]:
             ax.get_legend().remove()
         else:
-            ncols = int(np.ceil(len(models) / n_legend_rows))
+            ncols = int(np.ceil(len(model_order) / n_legend_rows))
             sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=ncols, title="")
 
         ax.set(ylabel=metric)
@@ -187,6 +191,12 @@ def plot_bootstrap_aggregate_growing(df, metric, repeat=50, fig_size=None, n_leg
         fig.subplots_adjust(wspace=0.3)
 
 
+def remove_violin_outline(ax):
+    """Remove the outline of the violin plot."""
+    for pc in ax.collections:
+        pc.set_edgecolor("none")
+
+
 def plot_per_dataset_3(
     df,
     model_order,
@@ -196,16 +206,20 @@ def plot_per_dataset_3(
     inner="box",
     fig_size=None,
     n_legend_rows=1,
+    model_colors=None,
 ):
     """Violin plots for each datasets and each models."""
     datasets = sorted(df["dataset"].unique())
+
     if fig_size is None:
         fig_width = len(datasets) * 2
         fig_size = (fig_width, 3)
     fig, axes = plt.subplots(1, len(datasets), sharey=sharey, figsize=fig_size)
 
     for dataset, ax in zip(datasets, axes):
-        sns.set_style("dark")
+        # sns.set_style("dark")
+        # sns.set_style("darkgrid")
+        # sns.set_style("dark", {"grid.color": "0.95"})
 
         sub_df = df[df["dataset"] == dataset]
         sns.violinplot(
@@ -214,14 +228,17 @@ def plot_per_dataset_3(
             hue="model",
             data=sub_df,
             hue_order=model_order,
-            linewidth=0.1,
-            saturation=0.9,
+            linewidth=0.5,
+            saturation=1,
             scale="count",
             inner=inner,
+            palette=model_colors,
             ax=ax,
         )
+        remove_violin_outline(ax)
         ax.tick_params(axis="y", labelsize=8)
         ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+        ax.grid(axis="y")
 
         if dataset == aggregated_name:
             ax.set_facecolor("#cff6fc")
@@ -235,13 +252,10 @@ def plot_per_dataset_3(
             sns.move_legend(ax, loc="lower center", bbox_to_anchor=(0.5, 1), ncol=ncols, title="")
 
         if dataset != datasets[0]:
-            if sharey:
-                ax.axes.get_yaxis().set_visible(False)
-            else:
-                ax.set(ylabel=None)
+            ax.set(ylabel=None)
 
     if sharey:
-        fig.subplots_adjust(wspace=0.01)
+        fig.subplots_adjust(wspace=0.02)
     else:
         fig.subplots_adjust(wspace=0.3)
 
@@ -407,7 +421,7 @@ def extract_best_point(log_dir, filt_size=5, lower_is_better=False):
     if trace_dict is None:  # empty log
         return None
 
-    if len(trace_dict["val_metric"]) < 10:
+    if len(trace_dict["val_metric"]) < 5 * filt_size:
         warn(f"Not enough steps in {log_dir}. len(trace_dict['val_metric']) = {len(trace_dict['val_metric'])}.")
         return None
 
@@ -592,7 +606,12 @@ def make_plot_sweep(filt_size=5, top_k=6, legend=False):
             return pd.DataFrame()
 
         constants, exp_names = format_hparams(log_dirs)
-        best_points, sorted_log_dirs = extract_best_points(log_dirs, filt_size=filt_size)
+        try:
+            best_points, sorted_log_dirs = extract_best_points(log_dirs, filt_size=filt_size)
+        except Exception as e:
+            print(e)
+            return pd.DataFrame()
+
         # print(f"best config of {model} on {dataset}: \n{log_dirs[0]}")
 
         colors = sns.color_palette("tab10")
@@ -680,6 +699,8 @@ def plot_all_datasets(df, model, plot_fn=make_plot_sweep(legend=True), fig_size=
 
 
 def plot_discriminative_metric(df, metric="test metric", n_largest=3, fig_size=None):
+    df["train ratio"] = [get_train_ratio(part_name) for part_name in df["partition name"]]
+
     models = df["model"].unique()
     datasets = df["dataset"].unique()
     train_ratios = np.sort(df["train ratio"].unique())
@@ -693,6 +714,7 @@ def plot_discriminative_metric(df, metric="test metric", n_largest=3, fig_size=N
 
         print(dataset)
         discr_val = []
+        colors = sns.color_palette("colorblind")
         for k, train_ratio in enumerate(train_ratios):
 
             # print(f"  train ratio : {train_ratio}")
@@ -712,8 +734,13 @@ def plot_discriminative_metric(df, metric="test metric", n_largest=3, fig_size=N
             pw_entr_list = boostrap_pw_entropy(all_scores, repeat=50, std_ratio=0.2)
             # print(f"    pw entr: {pw_entr}")
             # axes[i].boxplot(1 - np.array(pw_entr_list), positions=[k])
-            axes[i].violinplot(1 - np.array(pw_entr_list), positions=[k], quantiles=[0.05, 0.95], showextrema=False)
+            vp = axes[i].violinplot(
+                1 - np.array(pw_entr_list), positions=[k], quantiles=[0.05, 0.95], showextrema=False
+            )
+            vp["bodies"][0].set_color(colors[k])
+            vp["bodies"][0].set_alpha(0.9)
 
+            axes[i].set_ylim(bottom=0, top=1)
             # discr_val.append(1 - pw_entr)
 
         axes[i].set_title(f"{dataset}")
@@ -732,3 +759,68 @@ def count_exp(df):
     if partition_name not in df.columns:
         partition_name = "partition name"
     return df.groupby(["model", "dataset", partition_name]).size().unstack(level=0)
+
+
+def plot_speed_results(pkl_file, df, model_order, time_metric="best step"):
+
+    with open(pkl_file, "rb") as f:
+        speed_df = pickle.load(f)
+
+    _fig, axes = plt.subplots(1, 4, figsize=(18, 5), sharey=True)
+    axes = axes.flatten()
+    [ax.grid(axis="x") for ax in axes]
+    # _fig, axes2 = plt.subplots(3, 4, figsize=(12, 12))
+    # axes2 = axes2.flatten()
+
+    ax = axes[0]
+    model_names = [inspect_tools.DISPLAY_NAMES[model] for model in model_order]
+    ax.set_yticks(np.arange(len(model_order)), model_names)
+    ax.set_title("Number of parameters")
+    for i, model in enumerate(model_order):
+        n_params = np.array(speed_df[model]["num_params"])
+        ax.barh(i, n_params)
+
+    ax = axes[1]
+    ax.set_title("Memory usage (GB)\nwith batch_size=32")
+    for i, model in enumerate(model_order):
+        start_mem = np.array(speed_df[model]["before_forward"])
+        stop_mem = np.array(speed_df[model]["after_backward"])
+        mem = np.mean(stop_mem - start_mem)
+
+        # def format_mem_usage(key):
+        #     vals = np.array(speed_df[model][key])
+        #     val_str = [f"{val/1e9:0.2f}GB" for val in vals[:5]]
+        #     return ", ".join(val_str)
+
+        # print(f"{model}")
+        # print(f"  {format_mem_usage('before_forward')}")
+        # print(f"  {format_mem_usage('after_backward')}")
+
+        ax.barh(i, mem / 1e9)
+
+    ax = axes[2]
+    ax.set_title("Forward time (ms)\nwith batch_size=32")
+    for i, model in enumerate(model_order):
+        times = np.array(speed_df[model]["forward_time"])
+        times *= 1000
+
+        times_cleaned = times[(times < np.percentile(times, 100)) & (times > np.percentile(times, 0))]
+
+        # print(f"ratio of clean time for {model}: {times_cleaned.sum() / times.sum()}")
+
+        ax.violinplot(times_cleaned, positions=[i], vert=False, showmeans=True, showextrema=False, widths=0.8)
+        # axes2[i].plot(times_cleaned, ".")
+        # axes2[i].set_title(model)
+
+    ax = axes[3]
+    ax.set_title("Convergence time\n in training steps / 1000")
+    if time_metric == "best step":
+        df["n batches"] = df[time_metric] * df["batch size"] / 32
+
+    for i, model in enumerate(model_names):
+
+        sub_df = df[df["model"] == model]
+        values = sub_df[time_metric]
+        ax.violinplot(values / 1000, positions=[i], vert=False, showmeans=True, showextrema=False, widths=0.8)
+
+    ax.set_xlim((0, 200))
