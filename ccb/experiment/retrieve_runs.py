@@ -35,6 +35,19 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, is_sweep=True, max_num_e
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     else:
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
+    #     run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
+
+    # import shutil
+
+    # for config_path in run_dirs:
+    #     try:
+    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
+    #     except:
+    #         continue
+
+    # import pdb
+
+    # pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
 

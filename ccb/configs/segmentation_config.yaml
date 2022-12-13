@@ -8,15 +8,15 @@ wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project
   sweep:
-    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_resnet101_deeplabv3.yaml # or maybe define the entire sweep here?
+    sweep_config_path: /mnt/home/climate-change-benchmark/ccb/torch_toolbox/wandb/hparams_segmentation_swinv2_tiny.yaml # or maybe define the entire sweep here?
     num_agents: 8 # how many agents participate in sweep, one agent usually corresponds to one gpu
     num_trials_per_agent: 2 # how many hparam trials each agent should execute, num_agents x num_trials_per_agent corresponds to total number of trials executed by sweep
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
-  new_channel_init_method: random
-  encoder_type: resnet101  # resnet18,
-  decoder_type: DeepLabV3
-  encoder_weights: imagenet
+  model_generator_module_name: ccb.torch_toolbox.model_generators.swin_segmentation
+  model: swinv2_tiny
+  # encoder_type: resnet101  # resnet18,
+  # decoder_type: DeepLabV3
+  # encoder_weights: imagenet
   desired_input_size: 224 # desired image input dimension to model
   pretrained: True
   lr_backbone: 1.0e-6

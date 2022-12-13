@@ -8,9 +8,9 @@ experiment:
   num_seeds: 12
 model:
   model_generator_module_name: ccb.torch_toolbox.model_generators.py_segmentation_generator
-  encoder_type: resnet101 # resnet18,
-  pretrained: True
-  decoder_type: DeepLabV3
+  encoder_type: resnet18 # resnet18,
+  pretrained: False
+  decoder_type: Unet
 wandb:
   project: ccb # wandb project name
   entity: climate-benchmark # user or team entity that hosts a project

@@ -214,7 +214,6 @@ class SSLMocoGenerator(ModelGenerator):
             backbone.fc = torch.nn.Identity()
         elif "vit_small" in config["model"]["backbone"] and len(config["dataset"]["band_names"]) > 3:
             backbone = load_vit_model(config)
-            print(backbone.patch_embed.proj)
             shapes = [(backbone.head.in_features, 1, 1)]
             backbone.head = torch.nn.Identity()
 
@@ -287,12 +286,3 @@ class SSLMocoGenerator(ModelGenerator):
             return {"input": x, "label": sample.label}
 
         return transform
-
-
-def model_generator() -> SSLMocoGenerator:
-    """Return SSL Moco Generator.
-
-    Returns:
-        SSL Moco model generator
-    """
-    return SSLMocoGenerator()

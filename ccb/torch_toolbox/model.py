@@ -13,6 +13,7 @@ import torchmetrics
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.profiler import SimpleProfiler
 from torch import Tensor
 
 from ccb import io
@@ -57,6 +58,8 @@ class Model(LightningModule):
         self.eval_metrics = eval_metrics
         self.test_metrics = test_metrics
         self.config = config
+
+        self.forward_pass_arr = []
 
     def forward(self, x):
         """Forward input through model.
@@ -371,6 +374,12 @@ class ModelGenerator:
             min_delta=1e-5,
         )
 
+        profiler_flag = config["experiment"].get("profiler", False)
+        if profiler_flag:
+            profiler = SimpleProfiler(dirpath=job.dir, filename="profiler")
+        else:
+            profiler = None
+
         trainer = pl.Trainer(
             **config["pl"],
             default_root_dir=job.dir,
@@ -379,6 +388,7 @@ class ModelGenerator:
                 checkpoint_callback,
             ],
             logger=loggers,
+            profiler=profiler,
         )
 
         return trainer
