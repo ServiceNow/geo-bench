@@ -50,6 +50,12 @@ def retrieve_runs(sweep_experiment_dir, use_cached_csv=False, is_sweep=True, max
 
     info_df = pd.DataFrame(info_list)
 
+    info_df["date"] = (
+        info_df["exp_dir"].str.split("_", expand=True)[8] + "_" + info_df["exp_dir"].str.split("_", expand=True)[9]
+    )
+
+    info_df.sort_values(by=["model", "dataset", "date"], inplace=True, ascending=False)
+
     if max_num_exp is not None:
         info_df = info_df.groupby(["model", "dataset", "partition_name"]).head(max_num_exp)
 
