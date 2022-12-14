@@ -1,9 +1,9 @@
 """Parse results."""
 
+import pickle
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
-import pickle
 from textwrap import wrap
 from typing import Dict, List
 from warnings import warn
