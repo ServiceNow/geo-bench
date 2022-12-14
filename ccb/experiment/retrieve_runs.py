@@ -35,19 +35,6 @@ def retrieve_runs(experiment_dir, use_cached_csv=False, is_sweep=True, max_num_e
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "csv_logs", "**", "config.yaml"))
     else:
         run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "csv_logs", "**", "config.yaml"))
-    #     run_dirs = glob.glob(os.path.join(experiment_dir, "**", "**", "**", "config.yaml"))
-
-    # import shutil
-
-    # for config_path in run_dirs:
-    #     try:
-    #         shutil.copy(config_path, Path(config_path).parent / "csv_logs" / "version_0")
-    #     except:
-    #         continue
-
-    # import pdb
-
-    # pdb.set_trace()
 
     csv_run_dirs = [Path(path).parent for path in run_dirs]
 
@@ -274,13 +261,6 @@ def retrieve_runs_old(experiment_dir, use_cached_csv=False, exp_type="sweep", ma
     most_recent.to_csv(csv_path)
 
     return most_recent
-
-
-# classification_dir = '/mnt/data/experiments/nils/final_classification_seeded_runs'
-# # segmentation_dir =  '/mnt/data/experiments/nils/last_segmentation_sweeps'
-# segmentation_dir = "/mnt/data/experiments/nils/final_segmentation_seeded_runs"
-
-# df = retrieve_runs(classification_dir, use_cached_csv=False, exp_type="seeds")
 
 
 partition_names = [
