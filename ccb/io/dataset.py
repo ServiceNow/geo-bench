@@ -1566,9 +1566,7 @@ def compute_dataset_statistics(
                 accumulator["label"].append(sample.label.data.flatten())
             else:
                 n_vals = min(n_value_per_image, sample.label.data.size)
-                accumulator["label"].append(
-                    np.random.choice(sample.label.data.flat, size=n_vals, replace=False)
-                )
+                accumulator["label"].append(np.random.choice(sample.label.data.flat, size=n_vals, replace=False))
         elif isinstance(sample.label, (list, tuple)):
             for obj in sample.label:
                 if isinstance(obj, dict):
