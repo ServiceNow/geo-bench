@@ -32,7 +32,7 @@ h5py = "3.3.0"
 xmltodict = "0.12.0"
 "ruamel.yaml" = "0.17.21"
 segmentation-models-pytorch = { git = "https://github.com/ElementAI/segmentation_models.pytorch.git", rev = "903115cb156e7bd6d28148e7db66584b3b81b4a8" }
-timm = { git = "https://github.com/rwightman/pytorch-image-models.git", branch = "main"}
+timm = "0.6.12"
 mypy = ">=0.900"
 setuptools = "59.5.0"
 types-PyYAML = "6.0.10"
@@ -40,10 +40,10 @@ ipykernel = "6.15.2"
 ipyplot = "^1.1.1"
 ipyleaflet = "^0.17.1"
 seaborn = "^0.12.0"
-albumentations = ">=1.2.1"
 yacs = "^0.1.8"
 nvidia-ml-py3 = "^7.352.0"
 gym = "^0.26.2"
+albumentations = "^1.3.0"
 
 [tool.poetry.dev-dependencies]
 black = "22.3.0"
