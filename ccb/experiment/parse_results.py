@@ -17,8 +17,8 @@ from pandas.errors import EmptyDataError
 from scipy.stats import trim_mean
 
 from ccb.dataset_converters import inspect_tools
-from ccb.io.task import load_task_specs
 from ccb.experiment.discriminative_metric import boostrap_pw_entropy
+from ccb.io.task import load_task_specs
 
 
 def make_normalizer(data_frame, metrics=("test metric",)):
