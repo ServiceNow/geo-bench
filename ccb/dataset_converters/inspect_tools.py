@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw
 from rasterio import warp
 from rasterio.crs import CRS
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from ccb import io
 from ccb.io import dataset as io_ds
@@ -423,6 +423,7 @@ SENSORS = {
     "smallholder_cashew": "Sentinel-2",
     "southAfricaCropType": "Sentinel-2",
     "cvpr_chesapeake_landcover": "RGBN",
+    "seasonet": "Sentinel-2",
 }
 
 DISPLAY_NAMES = {
@@ -436,12 +437,34 @@ DISPLAY_NAMES = {
     "pv4ger_segmentation": "m-pv4ger-seg",
     "nz_cattle_segmentation": "m-nz-cattle",
     "NeonTree_segmentation": "m-NeonTree",
-    "smallholder_cashew": "m-cashew-plantation",
+    "smallholder_cashew": "m-cashew-plant.",
     "southAfricaCropType": "m-SA-crop-type",
-    "cvpr_chesapeake_landcover": "m-chesapeake-landcover",
-    "vit_small_patch16_224": "vit-small",
-    "vit_tiny_patch16_224": "vit-tiny",
-    "swinv2_tiny_window16_256": "swinv2-tiny",
+    "cvpr_chesapeake_landcover": "m-chesapeake",
+    "vit_small_patch16_224": "ViT-S-timm",
+    "scratch_vit_small_patch16_224": "ViT-S-Rnd",
+    "vit_tiny_patch16_224": "ViT-T-timm",
+    "swinv2_tiny_window16_256": "SwinV2-T-timm",
+    "convnext_base": "ConvNeXt-B-timm",
+    "resnet18": "ResNet18-timm",
+    "resnet50": "ResNet50-timm",
+    "millionaid_resnet50": "ResNet50-MillionAID",
+    "moco_resnet50": "ResNet50-MoCo-S2",
+    "moco_resnet50-multi": "ResNet50-MoCo-S2-multi",
+    "moco_resnet18": "ResNet18-MoCo-S2",
+    "scratch_resnet18": "ResNet18-Rnd",
+    "scratch_resnet50": "ResNet50-Rnd",
+    "resnet18_Unet": "ResNet18-U-Net-timm",
+    "resnet50_Unet": "ResNet50-U-Net-timm",
+    "resnet101_Unet": "ResNet101-U-Net-timm",
+    "resnet18_DeepLabV3": "ResNet18 DeepLabV3-timm",
+    "resnet50_DeepLabV3": "ResNet50 DeepLabV3-timm",
+    "resnet101_DeepLabV3": "ResNet101 DeepLabV3-timm",
+    "moco_vit_small_patch16_224": "ViT-S-MoCo-S2",
+    "moco_vit_small_patch16_224-multi": "ViT-S-MoCo-S2-multi",
+    "dino_resnet50": "ResNet50-DINO-S2",
+    "dino_resnet50-multi": "ResNet50-DINO-S2-multi",
+    "dino_vit_small_patch16_224": "ViT-S-DINO-S2",
+    "dino_vit_small_patch16_224-multi": "ViT-S-DINO-S2-multi",
 }
 
 
