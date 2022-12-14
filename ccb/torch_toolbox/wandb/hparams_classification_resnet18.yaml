@@ -12,8 +12,8 @@ parameters:
     min: 1.0e-4
   lr_backbone:
     distribution: log_uniform_values
-    max: 1.0e-3
-    min: 1.0e-6
+    max: 1.0e-2
+    min: 1.0e-5
   optimizer:
     value: adamw
 

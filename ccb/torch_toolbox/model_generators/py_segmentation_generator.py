@@ -144,6 +144,9 @@ class SegmentationGenerator(ModelGenerator):
         t = []
         if h < patch_h:
             t.append(A.SmallestMaxSize(max_size=h))
+        if patch_h < h32:
+            t.append(A.Resize(h32, w32))
+
         t.append(A.RandomCrop(h32, w32))
         if train:
             t.append(A.RandomRotate90(0.5))
@@ -163,7 +166,7 @@ class SegmentationGenerator(ModelGenerator):
                 x, y = x, sample.label.data.astype("float32")
                 transformed = t_comp(image=x, mask=y)
 
-            return {"input": transformed["image"], "label": transformed["mask"].long()}
+            return {"input": transformed["image"], "label": transformed["mask"].squeeze(-1).long()}
 
         return transform
 

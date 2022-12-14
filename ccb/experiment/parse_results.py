@@ -1,11 +1,12 @@
 """Parse results."""
 
+import pickle
 from collections import defaultdict
 from functools import cache
 from pathlib import Path
-import pickle
 from textwrap import wrap
 from typing import Dict, List
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -15,11 +16,10 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 from pandas.errors import EmptyDataError
 from scipy.stats import trim_mean
-from warnings import warn
 
 from ccb.dataset_converters import inspect_tools
-from ccb.io.task import load_task_specs
 from ccb.experiment.discriminative_metric import boostrap_pw_entropy
+from ccb.io.task import load_task_specs
 
 
 def make_normalizer(data_frame, metrics=("test metric",)):
@@ -396,6 +396,7 @@ def smooth_series(series, filt_size):
 
 def find_best_hparam_for_seeds(df):
     """Find best hparams for all experiments."""
+    df
     model_and_ds = df.groupby(["model", "dataset", "partition_name"]).size().reset_index()
     model_names, ds_names, part_names = (
         model_and_ds["model"].tolist(),
@@ -407,7 +408,7 @@ def find_best_hparam_for_seeds(df):
 
     for model, ds, part in zip(model_names, ds_names, part_names):
         sweep_df = df[(df["model"] == model) & (df["dataset"] == ds) & (df["partition_name"] == part)]
-        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[1][[0]]
+        best_log_dir = extract_best_points(sweep_df["csv_log_dir"].tolist())[1][0]
 
         best_hparam_dict[model][part][ds] = best_log_dir
 
@@ -519,8 +520,12 @@ def extract_best_points(log_dirs, filt_size=5, lower_is_better=False):
 
     for log_dir in log_dirs:
         best_point = extract_best_point(log_dir, filt_size, lower_is_better)
+        try:
+            best_point["best_config"] = False
+        except:
+            import pdb
 
-        best_point["best_config"] = False
+            pdb.set_trace()
         best_points.append(best_point)
         max_scores.append(best_point["score"])  # used for sorting
 
@@ -661,6 +666,7 @@ def plot_all_models_datasets(df, plot_fn=make_plot_sweep(legend=False), fig_size
     for i, dataset in enumerate(datasets):
         print(dataset)
         for j, model in enumerate(models):
+
             sub_df = df[(df["model"] == model) & (df["dataset"] == dataset)]
             # if len(sub_df) == 0:
             #     continue
