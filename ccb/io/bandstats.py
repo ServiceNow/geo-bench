@@ -21,69 +21,6 @@ parser.add_argument("--values-per-image", default=1000, help="values per image")
 parser.add_argument("--samples", default=1000, help="dataset subset size")
 
 
-# def linear_remapping(band_array):
-#     """Map band array linearly to a certain range.
-
-#     Args:
-#         band_array: array of band data
-
-#     Returns:
-#         Linearlz remapped band data
-#     """
-#     lower_output = 0
-#     upper_output = 1
-
-#     lower_input = np.percentile(band_array, 1)
-#     upper_input = np.percentile(band_array, 99)
-
-#     output_band_array = (band_array - lower_input) * (
-#         (upper_output - lower_output) / (upper_input - lower_input)
-#     ) + lower_output
-
-#     return output_band_array
-
-
-# def own_normalization_stats(dataset):
-#     """Check normalization stats computation."""
-#     accumulator: DefaultDict[str, List] = defaultdict(list)
-
-#     indices = np.random.choice(len(dataset), 1000, replace=False)
-
-#     for i in tqdm(indices, desc="Extracting Statistics"):
-#         sample = dataset[i]
-
-#         for band in sample.bands:
-#             accumulator[band.band_info.name].append(band.data.flatten())
-
-#     band_stats = {}
-#     remapped_band_stats = {}
-#     for name, values in accumulator.items():
-#         stacked_values = np.hstack(values)
-
-#         remapped = linear_remapping(stacked_values)
-#         band_stats[name] = {"mean": stacked_values.mean(), "std": stacked_values.std()}
-#         remapped_band_stats[name] = {"mean": remapped.mean(), "std": remapped.std()}
-
-#     # test normalization of bands
-#     indices = np.random.choice(len(dataset), 10, replace=False)
-#     for i in indices:
-#         # current approach
-#         sample = dataset[i]
-
-#         for band in sample.bands:
-#             band_name = band.band_info.name
-#             if band_name in ["04 - Red", "03 - Green", "02 - Blue", "Red", "Green", "Blue"]:
-#                 print("Current / alternative appraoch:")
-#                 current = (band.data - band_stats[band_name]["mean"]) / band_stats[band_name]["std"]
-#                 print(f"{band_name}, mean: {current.mean()}, std: {current.std()}")
-#                 new = (linear_remapping(band.data) - remapped_band_stats[band_name]["mean"]) / remapped_band_stats[
-#                     band_name
-#                 ]["std"]
-#                 print(f"{band_name}, mean: {new.mean()}, std: {new.std()}")
-
-#     return band_stats
-
-
 def produce_band_stats(dataset: io.CCBDataset, values_per_image: int = 1000, samples: int = 1000) -> None:
     """Compute and save band statistics.
 
