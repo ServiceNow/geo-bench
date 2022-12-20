@@ -1,4 +1,4 @@
-"""Rasterize detection."""
+"""Rasterize detection. Transform boxes and point annotation to segmentation mask."""
 from typing import Dict, List, Tuple
 
 import numpy as np

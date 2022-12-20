@@ -1,4 +1,4 @@
-"""Compute dataset band statistics for each band and save them in bandstats.json.
+"""Compute label_map.json and labels_stats.json to help resampling datasets when creating the benchmark.
 
 For the future, implement partitions and splits
 """
@@ -37,7 +37,7 @@ def load_label(sample_path):
 
 
 def clean_partition(partition: io.Partition):
-    """Clean partition.
+    """Clean partition. Used for testing if there are any redundent samples.
 
     Args:
         partition: partition to clean
