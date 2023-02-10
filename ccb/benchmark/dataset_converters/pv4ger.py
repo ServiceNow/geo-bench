@@ -10,7 +10,7 @@
 """
 import sys
 from pathlib import Path
-from typing import List, Union
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,7 @@ from tqdm import tqdm
 
 from ccb import io
 from ccb.io.dataset import Band, Sample
+from ccb.benchmark.dataset_converters.util import center_to_transform
 
 sys.path.append(str(Path.cwd()))
 
@@ -51,9 +52,12 @@ def get_transform(img_path: str):
     if lat_center < lon_center:
         lat_center, lon_center = lon_center, lat_center
 
-    transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
-    lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
-    transform = rasterio.transform.from_origin(lon_corner, lat_corner, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
+    radius_in_meter = PATCH_SIZE / 2 * SPATIAL_RESOLUTION
+    transform = center_to_transform(lat_center, lon_center, radius_in_meter, (PATCH_SIZE, PATCH_SIZE))
+
+    # transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
+    # lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
+    # transform = rasterio.transform.from_origin(lon_corner, lat_corner, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
 
     return transform
 
