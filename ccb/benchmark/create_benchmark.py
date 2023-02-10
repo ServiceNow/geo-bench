@@ -334,6 +334,8 @@ def transform_dataset(
 
     task_specs.benchmark_name = new_benchmark_dir.name
     task_specs.save(new_dataset_dir, overwrite=True)
+    
+    # TODO task_specs should be updated if sample_converter modifies the patch_size.
 
     for split_name, sample_names in new_partition.partition_dict.items():
         print(f"  Converting {len(sample_names)} samples from {split_name} split.")
@@ -383,7 +385,7 @@ def make_classification_benchmark():
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
         "forestnet_v1.0": (default_resampler, max_shape_center_crop((256, 256))),
-        "eurosat": (default_resampler, None),
+        # "eurosat": (default_resampler, None),
         # "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
         "pv4ger_classification": (default_resampler, max_shape_center_crop((256, 256))),
@@ -391,7 +393,7 @@ def make_classification_benchmark():
         # "geolifeclef-2022": (default_resampler, None),
         # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
     }
-    _make_benchmark("classification_v0.7", specs)
+    _make_benchmark("classification_v0.8", specs)
 
 
 def make_segmentation_benchmark():
@@ -414,8 +416,8 @@ def make_segmentation_benchmark():
 
 
 if __name__ == "__main__":
-    # make_classification_benchmark()
-    make_segmentation_benchmark()
+    make_classification_benchmark()
+    # make_segmentation_benchmark()
 
 
 # procedure
