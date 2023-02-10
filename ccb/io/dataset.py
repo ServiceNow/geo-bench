@@ -478,8 +478,8 @@ class Band:
 
     def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
         shape = np.array(self.data.shape[:2])
-        start = np.round(shape * np.array(start_ratio)).astype(np.int)
-        size = np.round(shape * np.array(size_ratio)).astype(np.int)
+        start = np.round(shape * np.array(start_ratio)).astype(int)
+        size = np.round(shape * np.array(size_ratio)).astype(int)
         self.crop(start, size)
 
     def crop(self, start: Union[tuple, np.ndarray], size: Union[tuple, np.ndarray]):
@@ -489,8 +489,11 @@ class Band:
         self.data = self.data[x_start:x_end, y_start:y_end, ...]
 
         # TODO recalculate the new transform. Meanwhile, set to None to avoid silent errors.
-        self.transform = None
-        self.crs = None
+
+        north, west = self.transform * (x_start, y_start)
+        south, east = self.transform * (x_end, y_end)
+        self.transform = rasterio.transform.from_bounds(west, south, east, north, x_end - x_start, y_end - y_start)
+        
 
 
 def load_band_tif(file_path) -> Band:
@@ -820,6 +823,8 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
                 spatial_resolution=band.spatial_resolution,
                 band_info=band.band_info,
                 meta_info=band.meta_info,
+                transform=band.transform,
+                crs=band.crs,
             )
             bands_order.append(band_descriptor)
             attr_dict[band_descriptor] = attrs
