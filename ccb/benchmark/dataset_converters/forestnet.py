@@ -1,7 +1,7 @@
 """Foresnet dataset."""
 # Download the dataset using this link: http://download.cs.stanford.edu/deep/ForestNetDataset.zip
 # (Available at this webpage: https://stanfordmlgroup.github.io/projects/forestnet/)
-# Unzip the directory, then either place contents in dataset/forestnet_v1.0
+# Unzip the directory, then either place contents in source/forestnet_v1.0
 # or create a symlink.
 import datetime
 import pickle
@@ -10,11 +10,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import rasterio
 from PIL import Image, ImageDraw
 from tqdm import tqdm
 
 from ccb import io
+from ccb.benchmark.dataset_converters import util
 
 DATASET_NAME = "forestnet_v1.0"
 SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
@@ -113,10 +113,10 @@ def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
     """
     # Get lat center and lon center from img path
     lat_center, lon_center = map(float, example_dir.name.split("_"))
+    redius_in_meter = (PATCH_SIZE / 2) * SPATIAL_RESOLUTION
 
-    transform_center = rasterio.transform.from_origin(lon_center, lat_center, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
-    lon_corner, lat_corner = transform_center * [-PATCH_SIZE // 2, -PATCH_SIZE // 2]
-    transform = rasterio.transform.from_origin(lon_corner, lat_corner, SPATIAL_RESOLUTION, SPATIAL_RESOLUTION)
+    crs = "EPSG:4326"
+    transform = util.center_to_transform(lat_center, lon_center, redius_in_meter, (PATCH_SIZE, PATCH_SIZE))
 
     # Load the forest loss region to mask the image
     forest_loss_region = example_dir / "forest_loss_region.pkl"
@@ -130,7 +130,6 @@ def load_sample(example_dir: Path, label: str, year: int) -> io.Sample:
     # Load the visible + infrared images and add them as bands
     images_dir = example_dir / "images"
     visible_dir = images_dir / "visible"
-    crs = "EPSG:4326"
     bands = []
     seen_years = set()
     for visible_image_path in visible_dir.iterdir():

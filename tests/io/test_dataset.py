@@ -5,7 +5,7 @@ import pytest
 
 from ccb import io
 from ccb.io.bandstats import produce_band_stats
-
+import rasterio
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
     data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(float)
@@ -14,7 +14,11 @@ def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name
         band_info = io.MultiBand(band_name, alt_names=alt_band_names, spatial_resolution=20, n_bands=shape[2])
     else:
         band_info = io.SpectralBand(band_name, alt_names=alt_band_names, spatial_resolution=20, wavelength=0.1)
-    return io.Band(data, band_info, 10)
+    
+
+    transform = rasterio.transform.from_bounds(1, 2, 3, 3, 4, 5)
+
+    return io.Band(data, band_info, 10, transform=transform, crs="EPSG:4326")
 
 
 def random_sample(n_bands=3, name="test_sample"):
@@ -99,8 +103,10 @@ def test_write_read():
         sample_ = list(ds.iter_dataset(1))[0]
 
     assert len(sample.bands) == len(sample_.bands)
+    # TODO need to review test here
     for band in sample.bands:
-        len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
+        assert len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
+        assert len(list(filter(lambda band_: band.crs == band_.crs, sample_.bands))) > 0
 
 
 def assert_same_sample(sample, sample_):
