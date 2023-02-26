@@ -2,10 +2,11 @@ import tempfile
 
 import numpy as np
 import pytest
+import rasterio
 
 from geobench import io
 from geobench.io.bandstats import produce_band_stats
-import rasterio
+
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
     data = np.random.randint(1, 1000, shape, dtype=np.int16).astype(float)
@@ -14,7 +15,6 @@ def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name
         band_info = io.MultiBand(band_name, alt_names=alt_band_names, spatial_resolution=20, n_bands=shape[2])
     else:
         band_info = io.SpectralBand(band_name, alt_names=alt_band_names, spatial_resolution=20, wavelength=0.1)
-    
 
     transform = rasterio.transform.from_bounds(1, 2, 3, 3, 4, 5)
 

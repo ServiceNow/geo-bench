@@ -1,14 +1,13 @@
 """Big Earth Net dataset."""
 from pathlib import Path
-from typing import Optional, Callable, Dict
-from torch import Tensor
-import torch
+from typing import Callable, Dict, Optional
 
 import numpy as np
 import rasterio
-from torchgeo.datasets import BigEarthNet
+import torch
 from rasterio.enums import Resampling
-from torchgeo.datasets import BigEarthNet
+from torch import Tensor
+from torchgeo.datasets import BigEarthNet  # noqa: F811
 from tqdm import tqdm
 
 from geobench import io
@@ -19,7 +18,8 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 class GeoBigEarthNet(BigEarthNet):
-    """Overwrite BigEarthNet to get geo information."""
+    """Wrapper for BigEarthNet to get geo information."""
+
     def __init__(
         self,
         root: str = "data",
@@ -31,6 +31,7 @@ class GeoBigEarthNet(BigEarthNet):
         checksum: bool = False,
     ) -> None:
         """Initialize a new BigEarthNet dataset instance.
+
         Args:
             root: root directory where dataset can be found
             split: train/val/test split to load
@@ -45,8 +46,10 @@ class GeoBigEarthNet(BigEarthNet):
 
     def __getitem__(self, index: int) -> Dict[str, Tensor]:
         """Return an index within the dataset.
+
         Args:
             index: index to return
+
         Returns:
             data and label at that index
         """
@@ -61,8 +64,10 @@ class GeoBigEarthNet(BigEarthNet):
 
     def _load_image(self, index: int) -> Tensor:
         """Load a single image.
+
         Args:
             index: index to return
+
         Returns:
             the raster image or target
         """
@@ -82,6 +87,7 @@ class GeoBigEarthNet(BigEarthNet):
         arrays: "np.typing.NDArray[np.int_]" = np.stack(images, axis=0)
         tensor = torch.from_numpy(arrays).float()
         return tensor, dataset.crs, dataset.bounds
+
 
 def make_sample(
     images: "np.typing.NDArray[np.int_]", label, sample_name: str, task_specs: io.TaskSpecifications

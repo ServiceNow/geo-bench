@@ -55,6 +55,7 @@ class TaskSpecifications:
         self.spatial_resolution = spatial_resolution
 
     def __str__(self):
+        """Return string representation of TaskSpecs."""
         shape = "x".join([str(sz) for sz in self.patch_size])
         lines = [
             f"{self.benchmark_name}/{self.dataset_name}",
