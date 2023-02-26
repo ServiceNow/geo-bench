@@ -252,8 +252,11 @@ def resample_from_stats(
 
 
 def max_shape_center_crop(max_shape):
-    """Ensure that the largest band has `max_shape` or less. If not, all bands will be center-cropped proportionnally
-    e.g., a band that is half the size of the max band will have a crop that is half the size of max_shape"""
+    """Ensure that the largest band has `max_shape` or less.
+
+    If not, all bands will be center-cropped proportionnally
+    e.g., a band that is half the size of the max band will have a crop that is half the size of max_shape.
+    """
     max_shape = np.array(max_shape)
 
     def sample_converter(sample: io.Sample) -> io.Sample:
@@ -334,7 +337,7 @@ def transform_dataset(
 
     task_specs.benchmark_name = new_benchmark_dir.name
     task_specs.save(new_dataset_dir, overwrite=True)
-    
+
     # TODO task_specs should be updated if sample_converter modifies the patch_size.
 
     for split_name, sample_names in new_partition.partition_dict.items():

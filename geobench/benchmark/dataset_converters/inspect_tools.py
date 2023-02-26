@@ -18,7 +18,14 @@ from tqdm.auto import tqdm
 
 from geobench import io
 from geobench.io import dataset as io_ds
-from geobench.io.dataset import Band, GeobenchDataset, HyperSpectralBands, Sample, SegmentationClasses, compute_dataset_statistics
+from geobench.io.dataset import (
+    Band,
+    GeobenchDataset,
+    HyperSpectralBands,
+    Sample,
+    SegmentationClasses,
+    compute_dataset_statistics,
+)
 
 
 def compare(a, b, name, src_a, src_b) -> None:
@@ -482,10 +489,9 @@ def collect_task_info(task, fix_task_shape=False):
         n_test = len(partition["test"])
         n_geoinfo = 0
         for band in dataset[0].bands:
-            
-            if band.transform != None:
+
+            if band.transform is not None:
                 n_geoinfo += 1
-        
 
     except Exception as e:
         print(e)

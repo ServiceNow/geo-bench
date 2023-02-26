@@ -477,6 +477,7 @@ class Band:
         return file_path
 
     def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
+        """Crop from ratio."""
         shape = np.array(self.data.shape[:2])
         start = np.round(shape * np.array(start_ratio)).astype(int)
         size = np.round(shape * np.array(size_ratio)).astype(int)
@@ -493,7 +494,6 @@ class Band:
         north, west = self.transform * (x_start, y_start)
         south, east = self.transform * (x_end, y_end)
         self.transform = rasterio.transform.from_bounds(west, south, east, north, x_end - x_start, y_end - y_start)
-        
 
 
 def load_band_tif(file_path) -> Band:
@@ -606,7 +606,7 @@ class Sample(object):
         return len(self.dates) > 1
 
     def largest_shape(self):
-        """Return the height and width of the largest band, including label"""
+        """Return the height and width of the largest band, including label."""
         bands: List[Any] = self.bands
         if isinstance(self.label, Band):
             bands.append(self.label)

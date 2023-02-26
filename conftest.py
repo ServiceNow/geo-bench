@@ -1,7 +1,10 @@
+"""Conftest."""
+
 import pytest
 
 
 def pytest_addoption(parser):
+    """Pytest addoption."""
     parser.addoption(
         "--optional",
         action="store_true",
@@ -10,5 +13,6 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
+    """Pytest runner setup."""
     if "optional" in item.keywords and not item.config.getoption("--optional"):
         pytest.skip("need --optional option to run this test")

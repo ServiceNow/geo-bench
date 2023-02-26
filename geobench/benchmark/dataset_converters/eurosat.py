@@ -3,14 +3,14 @@
 
 import os
 from pathlib import Path
+from typing import Callable, Dict, Optional, Sequence, Tuple
 
 import numpy as np
-from typing import Dict, Optional, Callable, Sequence, Tuple
-from torch import Tensor
-import torch
 import rasterio
-from torchvision.datasets import ImageFolder
+import torch
+from torch import Tensor
 from torchgeo.datasets import EuroSAT
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
 from geobench import io
@@ -21,6 +21,7 @@ DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
 class GeoEuroSAT(EuroSAT):
+    """Wrapper around EuroSAT Dataset to extract geo information."""
 
     all_band_names = (
         "B01",
@@ -43,6 +44,7 @@ class GeoEuroSAT(EuroSAT):
     BAND_SETS = {"all": all_band_names, "rgb": rgb_bands}
 
     """Wrapper to extract geo information."""
+
     def __init__(
         self,
         root: str = "data",
@@ -53,6 +55,7 @@ class GeoEuroSAT(EuroSAT):
         checksum: bool = False,
     ) -> None:
         """Initialize a new EuroSAT dataset instance.
+
         Args:
             root: root directory where dataset can be found
             split: one of "train", "val", or "test"
@@ -66,8 +69,10 @@ class GeoEuroSAT(EuroSAT):
 
     def __getitem__(self, index: int) -> Dict[str, Tensor]:
         """Return an index within the dataset.
+
         Args:
             index: index to return
+
         Returns:
             data and label at that index
         """
@@ -83,8 +88,10 @@ class GeoEuroSAT(EuroSAT):
 
     def _load_image(self, index: int) -> Tuple[Tensor, Tensor]:
         """Load a single image and it's class label.
+
         Args:
             index: index to return
+
         Returns:
             the image
             the image class label
@@ -108,7 +115,7 @@ def make_sample(images: "np.typing.NDArray[np.float_]", label, sample_name: str)
     Args:
         images: image array to be contained in sample
         label: label to be contained in sample
-        sample_name: name of sample
+        sample_name: name of samplefrom torchgeo.datasets import BigEarthNet
 
     Returns:
         sample
@@ -161,7 +168,9 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
 
     sample_id = 0
     for split_name in ["train", "val", "test"]:
-        eurosat_dataset = GeoEuroSAT(root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True)
+        eurosat_dataset = GeoEuroSAT(
+            root=SRC_DATASET_DIR, split=split_name, transforms=None, download=True, checksum=True
+        )
         for tg_sample in tqdm(eurosat_dataset):
             sample_name = f"id_{sample_id:04d}"
 
