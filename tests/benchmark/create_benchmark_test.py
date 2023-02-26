@@ -4,8 +4,8 @@ from typing import Dict, List
 
 import numpy as np
 
-from ccb import io
-from ccb.benchmark.create_benchmark import resample, resample_from_stats
+from geobench import io
+from geobench.benchmark.create_benchmark import resample, resample_from_stats
 
 
 def make_rand_partition(n=1000):
