@@ -1,1 +1,0 @@
-"""CCBDataset converter init."""

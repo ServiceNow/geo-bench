@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import entropy
 
-from ccb.experiment.discriminative_metric import pairwise_entropy, prob_higher, rank_entropy
+from geobench.experiment.discriminative_metric import pairwise_entropy, prob_higher, rank_entropy
 
 
 def test_p_higher():

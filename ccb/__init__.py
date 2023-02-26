@@ -1,1 +1,0 @@
-"""CCB package."""

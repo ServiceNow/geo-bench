@@ -1,4 +1,4 @@
-from ccb.benchmark.dataset_converters import util
+from geobench.benchmark.dataset_converters import util
 import numpy as np
 
 def transform_to_center(transform, img_shape):
