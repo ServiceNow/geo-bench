@@ -19,8 +19,8 @@ from PIL import Image
 from tqdm import tqdm
 
 from geobench import io
-from geobench.io.dataset import Band, Sample
 from geobench.benchmark.dataset_converters.util import center_to_transform
+from geobench.io.dataset import Band, Sample
 
 sys.path.append(str(Path.cwd()))
 

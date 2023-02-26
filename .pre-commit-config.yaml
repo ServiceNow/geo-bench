@@ -3,19 +3,17 @@ repos:
         rev: 22.3.0
         hooks:
         -   id: black
-            additional_dependencies: ["toml"]
 
-    -   repo: https://gitlab.com/pycqa/flake8.git
-        rev: 3.9.2
+    -   repo: https://github.com/pycqa/flake8.git
+        rev: 6.0.0
         hooks:
         -   id: flake8
-            additional_dependencies: ["toml"]
 
     -   repo: https://github.com/pycqa/isort
         rev: 5.10.1
         hooks:
         -    id: isort
-             additional_dependencies: ["colorama>=0.4.3", "toml"]
+             additional_dependencies: ["colorama>=0.4.3"]
 
     -   repo: https://github.com/pycqa/pydocstyle
         rev: 6.1.1
