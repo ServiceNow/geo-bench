@@ -41,6 +41,12 @@ BAND_INFO_LIST = io.make_rgb_bands(SPATIAL_RESOLUTION)
 BAND_INFO_LIST.append(io.SpectralBand("NearInfrared", ("nir",), SPATIAL_RESOLUTION, 0.876))
 
 
+class GeoChesapeakeCVPRDataModule(ChesapeakeCVPRDataModule):
+    """Geo Wrapper to extract geo information."""
+
+    pass
+
+
 def make_sample(
     image: "np.typing.NDArray[np.int_]",
     label: "np.typing.NDArray[np.int_]",

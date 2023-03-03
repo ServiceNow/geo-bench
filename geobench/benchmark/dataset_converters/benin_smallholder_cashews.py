@@ -157,7 +157,7 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
-class GeoBeninCashed(BeninSmallHolderCashews):
+class GeoBeninCashews(BeninSmallHolderCashews):
     """Geo Wrapper to extract geo information from dataste."""
 
     all_bands = (
@@ -327,7 +327,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     print("Loading dataset from torchgeo")
-    cashew = BeninSmallHolderCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
+    cashew = GeoBeninCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
 
     if GROUP_BY_TIMESTEP:
         n_time_steps = len(noclouds_25) if NOCLOUDS else N_TIMESTEPS
