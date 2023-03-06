@@ -96,7 +96,7 @@ def load_sample(img_path: Path) -> io.Sample:
         bands.append(band_data)
 
     if SEGMENTATION:
-        label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=4), img_shape=data.shape[:2])
+        label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=6), img_shape=data.shape[:2])
         label = io.Band(
             data=label_data,
             band_info=label_type,
