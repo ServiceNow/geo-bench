@@ -81,6 +81,8 @@ split_paths = list((SRC_DATASET_DIR / "splits").glob("*.csv"))
 SPLIT_DICT = {}
 for path in split_paths:
     split = str(path).split("/")[-1].split(".")[0]
+    if split == "val": 
+        split = "valid"
     df = pd.read_csv(path, header=None)
     for id in df.loc[:, 0].tolist():
         SPLIT_DICT[id] = split
@@ -167,20 +169,23 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
 
     # only use one grid
     meta_df = meta_df[meta_df["Grid"] == 1]
-    print(len(meta_df))
+
 
     # only consider cloud free and non snow-images
     meta_df = meta_df[(meta_df["Clouds"] == 0.0) & (meta_df["Snow"] == 0.0)]
+
+    if max_count is None:
+        max_count = len(meta_df)
 
     # sample max_count number of samples from df
     meta_df = meta_df.sample(n=max_count, random_state=1).reset_index(drop=True)
 
     # iterate over df to load samples
-    for idx, row in tqdm(meta_df.iterrows()):
+    for idx, row in tqdm(list(meta_df.iterrows())):
 
         sample_dir = SRC_DATASET_DIR / row.Path
 
-        id = str(sample_dir).split("/")[-1]
+        id = sample_dir.name
 
         band_dict = {}
         rgb_band_info = [BAND_INFO_LIST[3], BAND_INFO_LIST[2], BAND_INFO_LIST[1]]
@@ -207,13 +212,13 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
 
         label = load_label_as_band(sample_dir / (id + "_labels.tif"))
 
-        sample = io.Sample(ordered_bands, label=label, sample_name=SPLIT_DICT[int(id.split("_")[-1])])
+        sample = io.Sample(ordered_bands, label=label, sample_name=id)
         sample.write(dataset_dir)
-        partition.add(split, id)
+        partition.add(SPLIT_DICT[int(id.split("_")[-1])], id)
 
     partition.save(dataset_dir, "default")
 
 
 if __name__ == "__main__":
 
-    convert(max_count=100)
+    convert()
