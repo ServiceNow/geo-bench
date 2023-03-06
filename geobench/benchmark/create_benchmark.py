@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from geobench import io
 from geobench.io import bandstats
-
+from geobench.benchmark.generate_partitions import generate_train_size_sweep
 
 def make_subsampler(max_sizes):
     """Create a subsampler.
@@ -377,7 +377,18 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
 
         if new_dataset_dir is not None:
             print(f"  Producing band stats for {dataset_name}.")
-            bandstats.produce_band_stats(io.GeobenchDataset(new_dataset_dir))
+            dataset = io.GeobenchDataset(new_dataset_dir)
+            bandstats.produce_band_stats(dataset)
+
+            print(f"  Producing partitions for {dataset_name}.")
+            print(f"    Using partition {dataset.active_partition_name} in directory {dataset.dataset_dir}.")
+
+            generate_train_size_sweep(
+                partition=dataset.active_partition,
+                train_fractions=[0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],
+                dataset_dir=dataset.dataset_dir,
+            )
+
             print()
 
 
@@ -387,16 +398,16 @@ def make_classification_benchmark():
     # max_sizes = {"train": 10, "valid": 100, "test": 100}
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
-        "forestnet_v1.0": (default_resampler, max_shape_center_crop((256, 256))),
-        # "eurosat": (default_resampler, None),
+        # "forestnet_v1.0": (default_resampler, max_shape_center_crop((256, 256))),
+        "eurosat": (default_resampler, None),
         # "brick_kiln_v1.0": (default_resampler, None),
         # "so2sat": (default_resampler, None),
-        "pv4ger_classification": (default_resampler, max_shape_center_crop((256, 256))),
+        # "pv4ger_classification": (default_resampler, max_shape_center_crop((256, 256))),
         # # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
         # "geolifeclef-2022": (default_resampler, None),
         # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
     }
-    _make_benchmark("classification_v0.8", specs)
+    _make_benchmark("classification_v0.8.2", specs)
 
 
 def make_segmentation_benchmark():
@@ -412,10 +423,10 @@ def make_segmentation_benchmark():
         # "smallholder_cashew": (resampler_from_stats, None)
         # "southAfricaCropType": (resampler_from_stats, None)
         # "nz_cattle_segmentation": (resampler_from_stats, None),
-        # "NeonTree_segmentation": (resampler_from_stats, None),
-        "seasonet": (resampler_from_stats, None),
+        "NeonTree_segmentation": (resampler_from_stats, None),
+        # "seasonet": (resampler_from_stats, None),
     }
-    _make_benchmark("segmentation_v0.2", specs)
+    _make_benchmark("segmentation_v0.3", specs)
 
 
 if __name__ == "__main__":
