@@ -11,10 +11,15 @@
 # More info on the dataset: https://mlhub.earth/10.34911/rdnt.hfv20i
 
 import datetime
+import os
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+import rasterio
+import torch
+from rasterio.crs import CRS
+from torch import Tensor
 from torchgeo.datasets import BeninSmallHolderCashews
 from tqdm import tqdm
 
@@ -152,6 +157,154 @@ SRC_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME)  # type: ignore
 DATASET_DIR = Path(io.datasets_dir, DATASET_NAME)  # type: ignore
 
 
+class GeoBeninCashew(BeninSmallHolderCashews):
+    """Geo Wrapper to extract geo information from dataste."""
+
+    all_bands = (
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "B8A",
+        "B09",
+        "B11",
+        "B12",
+        "CLD",
+    )
+    rgb_bands = ("B04", "B03", "B02")
+
+    def __init__(
+        self,
+        root: str = "data",
+        chip_size: int = 256,
+        stride: int = 128,
+        bands: Tuple[str, ...] = all_bands,
+        download: bool = False,
+        api_key: Optional[str] = None,
+        checksum: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        """Initialize a new Benin Smallholder Cashew Plantations Dataset instance.
+        Args:
+            root: root directory where dataset can be found
+            chip_size: size of chips
+            stride: spacing between chips, if less than chip_size, then there
+                will be overlap between chips
+            bands: the subset of bands to load
+            download: if True, download dataset and store it in the root directory
+            api_key: a RadiantEarth MLHub API key to use for downloading the dataset
+            checksum: if True, check the MD5 of the downloaded files (may be slow)
+            verbose: if True, print messages when new tiles are loaded
+        Raises:
+            RuntimeError: if ``download=False`` but dataset is missing or checksum fails
+        """
+        super().__init__(root, chip_size, stride, bands, None, download, api_key, checksum, verbose)
+
+    def __getitem__(self, index: int) -> Dict[str, Tensor]:
+        """Return an index within the dataset.
+        Args:
+            index: index to return
+        Returns:
+            a dict containing image, mask, transform, crs, and metadata at index.
+        """
+        y, x = self.chips_metadata[index]
+
+        img, transform, crs, bounds = self._load_all_imagery(self.bands)
+        labels = self._load_mask(transform)
+
+        img = img[:, :, y : y + self.chip_size, x : x + self.chip_size]
+        labels = labels[y : y + self.chip_size, x : x + self.chip_size]
+
+        sample = {
+            "image": img,
+            "mask": labels,
+            "x": torch.tensor(x),
+            "y": torch.tensor(y),
+            "transform": transform,
+            "crs": crs,
+            "bounds": bounds,
+        }
+
+        if self.transforms is not None:
+            sample = self.transforms(sample)
+
+        return
+
+    def _load_single_scene(self, date: str, bands: Tuple[str, ...]) -> Tuple[Tensor, rasterio.Affine, CRS]:
+        """Load the imagery for a single date.
+
+        Optionally allows for subsetting of the bands that are loaded.
+
+        Args:
+            date: date of the imagery to load
+            bands: bands to load
+
+        Returns:
+            Tensor containing a single image tile, rasterio affine transform,
+            mapping pixel coordinates to geo coordinates, and coordinate
+            reference system of transform.
+
+        Raises:
+            AssertionError: if  ``date`` is invalid
+        """
+        assert date in self.dates
+
+        if self.verbose:
+            print(f"Loading imagery at {date}")
+
+        img = torch.zeros(len(bands), self.tile_height, self.tile_width, dtype=torch.float32)
+        for band_index, band_name in enumerate(self.bands):
+            filepath = os.path.join(
+                self.root,
+                "ts_cashew_benin_source",
+                f"ts_cashew_benin_source_00_{date}",
+                f"{band_name}.tif",
+            )
+            with rasterio.open(filepath) as src:
+                transform = src.transform  # same transform for every bands
+                crs = src.crs
+                array = src.read().astype(np.float32)
+                img[band_index] = torch.from_numpy(array)
+                roi = src.bounds
+
+        return img, transform, crs, roi
+
+    def _load_all_imagery(self, bands: Tuple[str, ...] = all_bands) -> Tuple[Tensor, rasterio.Affine, CRS]:
+        """Load all the imagery (across time) for the dataset.
+
+        Optionally allows for subsetting of the bands that are loaded.
+
+        Args:
+            bands: tuple of bands to load
+
+        Returns:
+            imagery of shape (70, number of bands, 1186, 1122) where 70 is the number
+            of points in time, 1186 is the tile height, and 1122 is the tile width
+            rasterio affine transform, mapping pixel coordinates to geo coordinates
+            coordinate reference system of transform
+        """
+        if self.verbose:
+            print("Loading all imagery")
+
+        img = torch.zeros(
+            len(self.dates),
+            len(bands),
+            self.tile_height,
+            self.tile_width,
+            dtype=torch.float32,
+        )
+
+        for date_index, date in enumerate(self.dates):
+            single_scene, transform, crs, bounds = self._load_single_scene(date, self.bands)
+            img[date_index] = single_scene
+
+        return img, transform, crs, bounds
+
+
 def get_sample_name(total_samples) -> str:
     """Return the name of the samples.
 
@@ -174,7 +327,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
     dataset_dir.mkdir(exist_ok=True, parents=True)
 
     print("Loading dataset from torchgeo")
-    cashew = BeninSmallHolderCashews(root=SRC_DATASET_DIR, download=True, checksum=True)
+    cashew = GeoBeninCashew(root=SRC_DATASET_DIR, download=True, checksum=True)
 
     if GROUP_BY_TIMESTEP:
         n_time_steps = len(noclouds_25) if NOCLOUDS else N_TIMESTEPS
