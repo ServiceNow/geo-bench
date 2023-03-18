@@ -17,11 +17,12 @@ from warnings import warn
 import h5py
 import numpy as np
 import rasterio
-from geobench_exp.io.label import LabelType
 from scipy.ndimage import zoom
 from torch import isin
 from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
+
+from geobench.io.label import LabelType
 
 check_ccb_dir = os.environ.get("CCB_DIR", None)
 

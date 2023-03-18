@@ -1,5 +1,5 @@
 """Geo-Bench io."""
 
-from geobench_exp.io.dataset import *
-from geobench_exp.io.label import *
-from geobench_exp.io.task import *
+from geobench.io.dataset import *
+from geobench.io.label import *
+from geobench.io.task import *
