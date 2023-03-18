@@ -10,10 +10,11 @@ from typing import Dict, List, Set
 from warnings import warn
 
 import numpy as np
-from geobench_exp import io
-from geobench_exp.io import bandstats
-from geobench_exp.io.task import TaskSpecifications
 from tqdm import tqdm
+
+from geobench import io
+from geobench.io import bandstats
+from geobench.io.task import TaskSpecifications
 
 
 def load_label(sample_path):
