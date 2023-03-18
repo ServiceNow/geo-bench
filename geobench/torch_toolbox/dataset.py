@@ -1,12 +1,11 @@
-"""GeobenchDataset."""
+"""GeobenchDataset Datamodule."""
 
 from pathlib import Path
 from typing import Sequence
 
 import pytorch_lightning as pl
+from geobench_exp import io
 from torch.utils.data import DataLoader
-
-from geobench import io
 
 
 class DataModule(pl.LightningDataModule):

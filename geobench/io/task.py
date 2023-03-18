@@ -8,10 +8,9 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
-
-from geobench import io
-from geobench.io.dataset import BandInfo, GeobenchDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
-from geobench.io.label import Classification
+from geobench_exp import io
+from geobench_exp.io.dataset import BandInfo, GeobenchDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
+from geobench_exp.io.label import Classification
 
 
 class TaskSpecifications:
@@ -27,21 +26,19 @@ class TaskSpecifications:
         n_time_steps: int = None,
         bands_stats=None,
         label_type=None,
-        eval_loss=None,
-        eval_metrics=None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
 
         Args:
             dataset_name: The name of the dataset.
+            bands_info: band info
+            spatial_resolution: physical distance between pixels in meters.
             benchmark_name: The name of the benchmark used. Defaults to "converted".
             patch_size: maximum image patch size across bands (width, height).
             n_time_steps: integer specifying the number of time steps for each sample.
                 This should be 1 for most dataset unless it's time series.
             bands_info: list of object of type BandInfo descrbing the type of each band.
             label_type: The type of the label e.g. Classification, SegmentationClasses, Regression.
-            eval_loss: Object of type Loss, e.g. Accuracy, SegmentationAccuracy.
-            spatial_resolution: physical distance between pixels in meters.
         """
         self.dataset_name = dataset_name
         self.benchmark_name = benchmark_name
@@ -50,12 +47,10 @@ class TaskSpecifications:
         self.bands_info = bands_info
         self.bands_stats = bands_stats
         self.label_type = label_type
-        self.eval_loss = eval_loss
-        self.eval_metrics = eval_metrics
         self.spatial_resolution = spatial_resolution
 
-    def __str__(self):
-        """Return string representation of TaskSpecs."""
+    def __str__(self) -> str:
+        """Return strin representation of class."""
         shape = "x".join([str(sz) for sz in self.patch_size])
         lines = [
             f"{self.benchmark_name}/{self.dataset_name}",
@@ -146,7 +141,7 @@ class TaskSpecifications:
             return None
 
 
-def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, None]:
+def task_iterator(benchmark_dir: str, task_filter: List[str] = None) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
@@ -158,8 +153,12 @@ def task_iterator(benchmark_dir: str) -> Generator[TaskSpecifications, None, Non
     benchmark_dir_path = Path(benchmark_dir)
 
     for dataset_dir in benchmark_dir_path.iterdir():
-        if not dataset_dir.is_dir() or dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
+        if not dataset_dir.is_dir():
             continue
+
+        if task_filter is not None:
+            if dataset_dir.name not in task_filter:
+                continue
 
         yield load_task_specs(dataset_dir)
 
@@ -181,109 +180,3 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     if rename_benchmark:
         task_specs.benchmark_name = dataset_dir.parent.name
     return task_specs
-
-
-class Loss(object):
-    """Loss.
-
-    Define a general loss object that is library agnostic.
-    """
-
-    def __call__(self, label, prediction) -> float:
-        """Define computation when Loss is called.
-
-        Args:
-            label: Array containing labels
-            predictions: model predictions
-
-        """
-        raise NotImplementedError()
-
-    def __repr__(self) -> str:
-        """Return string representation of loss object."""
-        return self.__class__.__name__
-
-    @property
-    def name(self):
-        """Return loss object name."""
-        return self.__class__.__name__.lower()
-
-
-class Accuracy(Loss):
-    """Accuracy.
-
-    Define Accuracy computations
-    """
-
-    def __call__(self, label, prediction) -> float:
-        """Define computation when Accuracy is called.
-
-        Args:
-            label: Array containing labels
-            predictions: model predictions
-
-        Returns:
-            accuracy scores
-        """
-        return float(label != prediction)
-
-
-class MultilabelAccuracy(Loss):
-    """Multilabel Accuracy.
-
-    Define Multi-label Accuracy computations
-    """
-
-    def __call__(self, prediction, label):
-        """Define computation when Accuracy is called.
-
-        Args:
-            label: Array containing labels
-            predictions: model predictions
-
-        Returns:
-            mulit-label accuracy scores
-        """
-        return np.mean(label != prediction)
-
-
-class AccuracyTop30(Loss):
-    """Top 30 Accuracy."""
-
-    # TODO: Could be integrated above or with extra argument for TopK
-    pass
-
-
-class CrossEntropy(Loss):
-    """Cross Entropy Loss."""
-
-    pass
-
-
-class SegmentationAccuracy(Loss):
-    """Segmentation Accuracy."""
-
-    pass
-
-
-mnist_task_specs = TaskSpecifications(
-    dataset_name="MNIST",
-    benchmark_name="test",
-    patch_size=(28, 28),
-    spatial_resolution=1.0,
-    bands_info=[BandInfo("grey")],
-    label_type=Classification(10),
-    eval_loss=CrossEntropy(),
-    eval_metrics=[Accuracy()],
-)
-
-imagenet_task_specs = TaskSpecifications(
-    dataset_name="imagenet",
-    benchmark_name="imagenet",
-    patch_size=(256, 256),
-    spatial_resolution=1.0,
-    bands_info=[BandInfo("red"), BandInfo("green"), BandInfo("blue")],
-    label_type=Classification(1000),
-    eval_loss=CrossEntropy(),
-    eval_metrics=[Accuracy()],
-)
