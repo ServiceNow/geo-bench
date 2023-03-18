@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 
 import numpy as np
-from geobench_exp import io
-from geobench_exp.io.dataset import BandInfo, GeobenchDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
-from geobench_exp.io.label import Classification
+
+from geobench import io
+from geobench.io.dataset import BandInfo, GeobenchDataset, Landsat8, Sentinel1, Sentinel2, SpectralBand
+from geobench.io.label import Classification
 
 
 class TaskSpecifications:
