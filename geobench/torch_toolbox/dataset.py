@@ -1,4 +1,4 @@
-"""GeobenchDataset."""
+"""GeobenchDataset Datamodule."""
 
 from pathlib import Path
 from typing import Sequence

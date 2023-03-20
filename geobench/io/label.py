@@ -9,6 +9,8 @@ import numpy as np
 class LabelType(object):
     """Label Type."""
 
+    # TODO write docstring about Loss and evalfunction for each type
+
     pass
 
     def assert_valid(self, value) -> None:
@@ -21,7 +23,11 @@ class LabelType(object):
 
 
 class Classification(LabelType):
-    """Classification label."""
+    """Classification label.
+
+    A classification label is trained with CrossEntropy Loss.
+
+    """
 
     def __init__(self, n_classes: int, class_names: List[str] = None) -> None:
         """Initialize new instance of classification label.
@@ -83,7 +89,10 @@ class Classification(LabelType):
 
 
 class SemanticSegmentation(Classification):
-    """Semantic Segmentation label."""
+    """Semantic Segmentation label.
+
+    A Semantic Segmentation label is trained with CrossEntropy.
+    """
 
     def assert_valid(self, value) -> None:
         """Check if a semantic segmentation label is valid.
@@ -97,71 +106,12 @@ class SemanticSegmentation(Classification):
         assert (value < self.n_classes).all(), f"{value} is >= to {self.n_classes}."
 
 
-class Regression(LabelType):
-    """Regression label."""
-
-    def __init__(self, min_val=None, max_val=None) -> None:
-        """Initialize new instance of regression label.
-
-        Args:
-            min_val: minimum value of regression targets
-            max_val: maximum value of regression targets
-        """
-        super().__init__()
-        self.min_val = min_val
-        self.max_val = max_val
-
-    def assert_valid(self, value):
-        """Check if a regression label is valid.
-
-        Args:
-            value: value to be checked
-        """
-        assert isinstance(value, float)
-        if self.min_val is not None:
-            assert value >= self.min_val
-        if self.max_val is not None:
-            assert value <= self.max_val
-
-
-class Detection(LabelType):
-    """Detection label."""
-
-    def assert_valid(self, value: List[dict]) -> None:
-        """Check if a semantic segmentation label is valid.
-
-        Args:
-            value: list of dictionary containing boxes and label
-        """
-        assert isinstance(value, (list, tuple))
-        for box in value:
-            assert isinstance(box, dict)
-            assert len(box) == 4
-            for key in ("xmin", "ymin", "xmax", "ymax"):
-                assert key in box
-                assert box[key] >= 0
-            assert box["xmin"] < box["xmax"]
-            assert box["ymin"] < box["ymax"]
-
-
-class PointAnnotation(LabelType):
-    """Point annotation label."""
-
-    def assert_valid(self, value: List[dict]) -> None:
-        """Check if a semantic segmentation label is valid.
-
-        Args:
-            value: list of dictionary containing boxes and label
-        """
-        assert isinstance(value, (list, tuple))
-        for point in value:
-            assert isinstance(point, (list, tuple))
-            assert len(point) == 2
-            assert tuple(point) >= (0, 0)
-
-
 class MultiLabelClassification(LabelType):
-    """Multi-label classification label."""
+    """Multi-label classification label.
+
+    A Multi-label classification task is trained with
+    balanced binary-cross-entropy.
+    """
 
     def __init__(self, n_classes, class_names=None) -> None:
         """Initialize new instance of classification label.
