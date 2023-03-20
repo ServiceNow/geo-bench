@@ -1,4 +1,4 @@
-"""Compute label_map.json and labels_stats.json to help resampling datasets when creating the benchmark.
+"""Compute dataset band statistics for each band and save them in bandstats.json.
 
 For the future, implement partitions and splits
 """
@@ -37,7 +37,7 @@ def load_label(sample_path):
 
 
 def clean_partition(partition: io.Partition):
-    """Clean partition. Used for testing if there are any redundent samples.
+    """Clean partition.
 
     Args:
         partition: partition to clean
@@ -152,10 +152,10 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    benchmark_dir = str(io.CCB_DIR / benchmark_name)
+    benchmark_dir = str(io.CCB_DIR / benchmark_name / "geobench")
     for task in io.task.task_iterator(benchmark_dir=benchmark_dir):
 
-        if task_filter is not None and task_filter(task):
+        if task_filter is not None and not task_filter(task):
 
             dataset_dir = task.get_dataset_dir(benchmark_dir=benchmark_dir)
 

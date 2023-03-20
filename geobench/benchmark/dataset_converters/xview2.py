@@ -132,7 +132,7 @@ def make_sample(image_A, image_B, mask, sample_name):
 
 
 def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
-    """Convert torchgeo.XView2 dataset into ccb dataset.
+    """Convert torchgeo.XView2 dataset into geobench dataset.
 
     Args:
         max_count int: Maximum number of images to be converted
