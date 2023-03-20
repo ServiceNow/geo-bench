@@ -77,7 +77,7 @@ jobs:
         python -m poetry install
     - name: Run isort checks
       run: |
-        poetry run python -m isort ccb/ --check --diff
+        poetry run python -m isort geobench/ --check --diff
   pydocstyle:
     name: pydocstyle
     runs-on: ubuntu-latest
@@ -100,4 +100,4 @@ jobs:
         python -m poetry lock --no-update
         python -m poetry install
     - name: Run pydocstyle checks
-      run: poetry run python -m pydocstyle ccb/
+      run: poetry run python -m pydocstyle geobench/
