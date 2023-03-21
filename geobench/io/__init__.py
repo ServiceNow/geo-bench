@@ -1,4 +1,4 @@
-"""CCB io."""
+"""Geo-Bench io."""
 
 from geobench.io.dataset import *
 from geobench.io.label import *
