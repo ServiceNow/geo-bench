@@ -232,7 +232,7 @@ class GeoBeninCashew(BeninSmallHolderCashews):
         if self.transforms is not None:
             sample = self.transforms(sample)
 
-        return
+        return sample
 
     def _load_single_scene(self, date: str, bands: Tuple[str, ...]) -> Tuple[Tensor, rasterio.Affine, CRS]:
         """Load the imagery for a single date.
@@ -341,7 +341,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
-        eval_loss=io.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
+        # eval_loss=io.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
         # either 50cm or 40cm, Airbus Pleiades 50cm, https://radiantearth.blob.core.windows.net/mlhub/technoserve-cashew-benin/Documentation.pdf
         spatial_resolution=SPATIAL_RESOLUTION,
     )
@@ -378,8 +378,8 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
                     band_info=band_info,
                     date=DATES[date_idx],
                     spatial_resolution=SPATIAL_RESOLUTION,
-                    transform=None,  # TODO can't find the GPS coordinates from torch geo.
-                    crs=None,
+                    transform=tg_sample["transform"],  # TODO can't find the GPS coordinates from torch geo.
+                    crs=tg_sample["crs"],
                     convert_to_int16=False,
                 )
                 current_bands.append(band)
