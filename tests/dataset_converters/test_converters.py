@@ -35,7 +35,7 @@ def test_brick_kiln():
 # @pytest.mark.slow
 # @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 # def test_cv4a_kenya_cropy_type():
-#     from ccb.benchmark.dataset_converters import cv4a_kenya_crop_type
+#     from geobench.benchmark.dataset_converters import cv4a_kenya_crop_type
 
 #     converter_tester(cv4a_kenya_crop_type)
 
