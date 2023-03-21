@@ -148,7 +148,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=rgb_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
-        eval_loss=io.SegmentationAccuracy,  # TODO probably not the final
+        # eval_loss=io.SegmentationAccuracy,  # TODO probably not the final
         # loss eval loss. To be discussed.
         spatial_resolution=1.24,  # Note varying res in dataset.
     )
