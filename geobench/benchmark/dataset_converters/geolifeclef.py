@@ -148,7 +148,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.Classification(N_LABELS, class_names=names),
-        eval_loss=io.Accuracy,
+        # eval_loss=io.Accuracy,
         spatial_resolution=SPATIAL_RESOLUTION,
     )
 

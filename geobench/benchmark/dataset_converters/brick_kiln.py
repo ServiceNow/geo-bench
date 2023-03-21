@@ -125,7 +125,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=io.sentinel2_13_bands,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.Classification(2, ["not brick kiln", "brick kiln"]),
-        eval_loss=io.Accuracy,
+        # eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir, overwrite=True)
