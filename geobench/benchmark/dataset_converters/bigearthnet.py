@@ -145,7 +145,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=io.sentinel2_13_bands[0:10] + io.sentinel2_13_bands[-2:],
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.MultiLabelClassification(43, class_names=BigEarthNet.class_sets[43]),
-        eval_loss=io.MultilabelAccuracy,
+        # eval_loss=io.MultilabelAccuracy,
         spatial_resolution=10,
     )
 
