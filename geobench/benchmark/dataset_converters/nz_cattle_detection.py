@@ -96,7 +96,7 @@ def load_sample(img_path: Path) -> io.Sample:
         bands.append(band_data)
 
     if SEGMENTATION:
-        label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=4), img_shape=data.shape[:2])
+        label_data = rasterize_box(boxes=point_to_boxes(points=coords, radius=6), img_shape=data.shape[:2])
         label = io.Band(
             data=label_data,
             band_info=label_type,
@@ -128,7 +128,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=label_type,
-        eval_loss=io.SegmentationAccuracy(),  # TODO decide on the loss
+        # eval_loss=io.SegmentationAccuracy(),  # TODO decide on the loss
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir, overwrite=True)

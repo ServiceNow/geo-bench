@@ -28,7 +28,7 @@ def convert(module_name: str) -> None:
     Args:
         module_name: name of dataset converter
     """
-    converter = import_module("ccb.dataset_converters." + module_name)
+    converter = import_module("geobench.dataset_converters." + module_name)
     assert Path(converter.DATASET_DIR).parent == Path(
         str(io.datasets_dir)
     ), f"{Path(converter.DATASET_DIR).parent} vs {io.datasets_dir}"

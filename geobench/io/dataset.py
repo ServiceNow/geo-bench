@@ -238,7 +238,7 @@ class SegmentationClasses(BandInfo, LabelType):
     """Segmentation classes."""
 
     def __init__(self, name: str, spatial_resolution: float, n_classes: int, class_names: List[str] = None) -> None:
-        """Initialize new instance of CloudProbability.
+        """Initialize new instance of Segmentation Classes.
 
         Args:
             name: The main name of the band. This name is used for sorting the band and providing an order.
@@ -476,11 +476,16 @@ class Band:
 
         return file_path
 
-    def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]):
-        """Crop from ratio."""
+    def crop_from_ratio(self, start_ratio: Union[tuple, np.ndarray], size_ratio: Union[tuple, np.ndarray]) -> None:
+        """Crop from ratio.
+
+        Args:
+            start_ratio:
+            size_ratio:
+        """
         shape = np.array(self.data.shape[:2])
-        start = np.round(shape * np.array(start_ratio)).astype(int)
-        size = np.round(shape * np.array(size_ratio)).astype(int)
+        start = np.round(shape * np.array(start_ratio)).astype(np.int32)
+        size = np.round(shape * np.array(size_ratio)).astype(np.int32)
         self.crop(start, size)
 
     def crop(self, start: Union[tuple, np.ndarray], size: Union[tuple, np.ndarray]):
@@ -490,10 +495,8 @@ class Band:
         self.data = self.data[x_start:x_end, y_start:y_end, ...]
 
         # TODO recalculate the new transform. Meanwhile, set to None to avoid silent errors.
-
-        north, west = self.transform * (x_start, y_start)
-        south, east = self.transform * (x_end, y_end)
-        self.transform = rasterio.transform.from_bounds(west, south, east, north, x_end - x_start, y_end - y_start)
+        self.transform = None
+        self.crs = None
 
 
 def load_band_tif(file_path) -> Band:
@@ -823,8 +826,6 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
                 spatial_resolution=band.spatial_resolution,
                 band_info=band.band_info,
                 meta_info=band.meta_info,
-                transform=band.transform,
-                crs=band.crs,
             )
             bands_order.append(band_descriptor)
             attr_dict[band_descriptor] = attrs
@@ -847,7 +848,6 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         loaded sample
     """
     with h5py.File(sample_path, "r") as fp:
-
         attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
         band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
@@ -1168,7 +1168,7 @@ class GeobenchDataset:
     ) -> None:
         """Initialize new Geobench dataset.
 
-        GeobenchDataset datasets can have different split partitions (e.g. for few-shot learning).
+        Geobench datasets can have different split partitions (e.g. for few-shot learning).
         The default partition is
 
         Args:
@@ -1337,6 +1337,7 @@ class GeobenchDataset:
             band_stats[band_name] = Stats(**stats_dict)
         return band_stats
 
+    # TODO(allac) save self.band_stats with canonical band names and make a function that returns canonical name from alt name or find a more clever way to do this.
     def rgb_stats(self):
         """Retrieve band statistics for RGB only."""
         try:

@@ -219,7 +219,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=bands_info,
         bands_stats=None,  # Will be automatically written with inspect script
         label_type=io.Classification(len(LABELS), LABELS),
-        eval_loss=io.Accuracy,  # TODO probably not the final
+        # eval_loss=io.Accuracy,  # TODO probably not the final
         # loss eval loss. To be discussed.
         spatial_resolution=SPATIAL_RESOLUTION,
     )

@@ -35,7 +35,7 @@ def test_brick_kiln():
 # @pytest.mark.slow
 # @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 # def test_cv4a_kenya_cropy_type():
-#     from ccb.benchmark.dataset_converters import cv4a_kenya_crop_type
+#     from geobench.benchmark.dataset_converters import cv4a_kenya_crop_type
 
 #     converter_tester(cv4a_kenya_crop_type)
 
@@ -147,11 +147,19 @@ def test_south_africa_crop_type():
 
     converter_tester(crop_type_south_africa)
 
+@pytest.mark.converter
+@pytest.mark.slow
+@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+def test_seasonet():
+    from geobench.benchmark.dataset_converters import seasonet
+
+    converter_tester(seasonet)
+
 
 if __name__ == "__main__":
     # test_brick_kiln()
     # test_cv4a_kenya_cropy_type()
-    # test_eurosat()
+    test_eurosat()
     # test_neon_tree()
     # # test_smallholder_cashews()
     # test_so2sat()
@@ -160,5 +168,6 @@ if __name__ == "__main__":
     # test_bigearthnet()
     # test_south_africa_crop_type()
     # test_chesapeake()
-    test_forestnet()
+    # test_forestnet()
     # test_pv4ger()
+    # test_seasonet()

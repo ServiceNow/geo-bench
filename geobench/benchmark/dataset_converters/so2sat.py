@@ -72,7 +72,7 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         bands_info=io.sentinel1_8_bands + io.sentinel2_13_bands[1:9] + io.sentinel2_13_bands[-2:],  # type: ignore
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=io.Classification(17, class_names=So2Sat.classes),
-        eval_loss=io.Accuracy,
+        # eval_loss=io.Accuracy,
         spatial_resolution=10,
     )
     task_specs.save(str(dataset_dir), overwrite=True)

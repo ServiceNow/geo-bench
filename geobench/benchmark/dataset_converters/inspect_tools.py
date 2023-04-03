@@ -477,10 +477,10 @@ DISPLAY_NAMES = {
 
 def collect_task_info(task, fix_task_shape=False):
     """Collect information for the given task."""
-    loss = task.eval_loss
+    # loss = task.eval_loss
 
-    if isinstance(loss, type):
-        loss = loss()
+    # if isinstance(loss, type):
+        # loss = loss()
     try:
         dataset = task.get_dataset(split="train")
         partition = dataset.active_partition.partition_dict
@@ -514,7 +514,7 @@ def collect_task_info(task, fix_task_shape=False):
     task_dict = {
         "Name": task.dataset_name,
         "Image Size": " x ".join([str(size) for size in task.patch_size]),
-        "Loss": str(loss),
+        # "Loss": str(loss),
         "Label Type": task.label_type.__class__.__name__,
         "# Classes": int(n_classes),
         "# Time Steps": task.n_time_steps,
