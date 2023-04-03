@@ -271,14 +271,14 @@ def extract_slices(rgb_data, chm_data, hs_data, boxes, slice_shape):
     # TODO slice boxes
     def get_patch(data, start_x, start_y, scale=1):
         start_x, start_y, size_x, size_y = tuple(
-            np.round(np.array([start_x, start_y, slice_shape[0], slice_shape[1]]) * scale).astype(np.int)
+            np.round(np.array([start_x, start_y, slice_shape[0], slice_shape[1]]) * scale).astype(int)
         )
         return data[start_x : start_x + size_x, start_y : start_y + size_y, :]
 
     shape = np.array(rgb_data.shape[:2])
     slice_shape = np.asarray(slice_shape)
-    n_tiles = np.ceil(shape / slice_shape).astype(np.int)
-    stride = np.floor((shape - slice_shape) / (n_tiles - 1)).astype(np.int)
+    n_tiles = np.ceil(shape / slice_shape).astype(int)
+    stride = np.floor((shape - slice_shape) / (n_tiles - 1)).astype(int)
     n_x, n_y = tuple(n_tiles)
     stride_x, stride_y = tuple(stride)
     data_list = []
@@ -384,7 +384,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         bands_info=BAND_INFO_LIST,
         bands_stats=None,  # Will be automatically written with the inspect script
         label_type=label_type,
-        eval_loss=io.Accuracy(),  # TODO what loss will we use?
+        # eval_loss=io.Accuracy(),  # TODO what loss will we use?
         spatial_resolution=0.1,
     )
     task_specs.save(dataset_dir, overwrite=True)

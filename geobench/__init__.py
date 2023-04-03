@@ -1,1 +1,1 @@
-"""CCB package."""
+"""geobench package."""

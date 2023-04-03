@@ -16,7 +16,7 @@ wandb:
   wandb_group: bigearthnet/swinv2_tiny_window16_256/1.00x_train_classification_v0.7_10-10-2022_18:45:47_swinv2_tiny_window16_256
   wandb_run_id: 1bnlo5gc
 model:
-  model_generator_module_name: ccb.torch_toolbox.model_generators.timm_generator
+  model_generator_module_name: geobench.torch_toolbox.model_generators.timm_generator
   head_type: linear
   loss_type: crossentropy
   backbone: swinv2_tiny_window16_256

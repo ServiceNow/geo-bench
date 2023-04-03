@@ -30,7 +30,7 @@ jobs:
         python -m poetry install
     - name: Run mypy checks
       shell: bash
-      run: poetry run python -m mypy ccb/ --ignore-missing-imports
+      run: poetry run python -m mypy geobench/ --ignore-missing-imports
   pytest:
     name: pytest
     runs-on: ${{ matrix.os }}
@@ -70,4 +70,4 @@ jobs:
         WANDB_API: ${{ secrets.WANDB_API_KEY }}
       run: |
         poetry run wandb login "$WANDB_API"
-        poetry run python -m pytest -v tests --cov=ccb --cov-report=xml
+        poetry run python -m pytest -v tests --cov=geobench --cov-report=xml
