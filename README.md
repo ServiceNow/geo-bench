@@ -1,4 +1,7 @@
 # Climate change benchmark
+
+GeoBench is a ServiceNow Research project.
+ 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Language: Python](https://img.shields.io/badge/language-Python%203.7%2B-green?logo=python&logoColor=green)](https://www.python.org)
 
