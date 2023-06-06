@@ -14,14 +14,7 @@ GeoBench is a [ServiceNow Research](https://www.servicenow.com/research) project
 
 The data can be downloaded from [Zenodo](https://zenodo.org/communities/geo-bench/).
 
-## Contributing
-
-Coming soon.
-
 ## Getting Started
 
 Coming soon.
 
-### Downloading and Converting Datasets
-
-Coming soon.
