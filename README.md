@@ -1,47 +1,25 @@
-# Climate change benchmark
+# GEO-Bench: Toward Foundation Models for Earth Monitoring
 
-GeoBench is a ServiceNow Research project.
+GeoBench is a [ServiceNow Research](https://www.servicenow.com/research) project.
  
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Language: Python](https://img.shields.io/badge/language-Python%203.7%2B-green?logo=python&logoColor=green)](https://www.python.org)
 
-<img src="https://github.com/ElementAI/climate-change-benchmark/raw/main/banner.png" />
-
-A set of climate change tasks to benchmark self-supervised learning algorithms.
+> Recent progress in self-supervision has shown that pre-training large neural networks on vast amounts of unsupervised data can lead to substantial increases in generalization to downstream tasks. Such models, recently coined foundation models, have been transformational to the field of natural language processing. Variants have also been proposed for image data, but their applicability to remote sensing tasks is limited. To stimulate the development of foundation models for Earth monitoring, we propose a benchmark comprised of six classification and six segmentation tasks, which were carefully curated and adapted to be both relevant to the field and well-suited for model evaluation. We accompany this benchmark with a robust methodology for evaluating models and reporting aggregated results to enable a reliable assessment of progress. Finally, we report results for 20 baselines to gain information about the performance of existing models. We believe that this benchmark will be a driver of progress across a variety of Earth monitoring tasks.
 
 
-## Visualizing the Content of the Benchmark
+## Downloading the data
 
-Simply run the notebook `instpect_benchmark.ipynb`
-
-## Basic Usage
-
-```bash
-export CCB_DIR=/path/to/the/benchmark_dir
-```
-
-```python
-from ccb import io
-
-def my_transform(sample):
-    data, _ = sample.pack_to_3d(band_names=("red", "green", "blue"))
-    return data
-
-for task in io.task_iterator(io.CCB_DIR / "classification_v0.7"):
-    print(task)
-    dataset = task.get_dataset(split="train", partition_name="default", transform=my_transform)
-    data = dataset[0] # load and transform the first sample
-    print(data.shape)
-```
+The data can be downloaded from [Zenodo](https://zenodo.org/communities/geo-bench/).
 
 ## Contributing
 
-We welcome your contributions! Please see [our wiki](https://github.com/ElementAI/climate-change-benchmark/wiki#instructions-for-contributing) for instructions on how to contribute.
+Coming soon.
 
 ## Getting Started
 
-Quick jump to [launching experiments](https://github.com/ElementAI/climate-change-benchmark/wiki/Running-Experiments-on-EAI-Toolkit).
+Coming soon.
 
 ### Downloading and Converting Datasets
 
-Read these [instructions](https://github.com/ElementAI/climate-change-benchmark/tree/main/ccb/dataset_converters#readme) for adding a new dataset or downloading & processing an existing dataset.
+Coming soon.
