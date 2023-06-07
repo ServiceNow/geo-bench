@@ -12,7 +12,10 @@ GeoBench is a [ServiceNow Research](https://www.servicenow.com/research) project
 
 ## Downloading the data
 
-The data can be downloaded from [Zenodo](https://zenodo.org/communities/geo-bench/).
+The data is hosted on [Zenodo](https://zenodo.org/communities/geo-bench/). You can download it using the following script:
+```
+python geobench-downloader.py --version v0.9.0
+```
 
 ## Getting Started
 
