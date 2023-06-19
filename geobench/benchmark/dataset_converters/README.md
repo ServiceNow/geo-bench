@@ -1,6 +1,6 @@
 # How to Convert Datasets
 
-This folder contains tools for converting heterogeneous datasets into a common format, which can be later read by the [GeobenchDataset](https://github.com/ElementAI/climate-change-benchmark/blob/main/geobench/io/dataset.py) class.
+This folder contains tools for converting heterogeneous datasets into a common format, which can be later read by the [GeobenchDataset](https://github.com/ServiceNow/geo-bench/blob/main/geobench/io/dataset.py) class.
 
 ## Folder Configuration
 Optionally, start by setting folders for *downloading* and *converting* datasets
