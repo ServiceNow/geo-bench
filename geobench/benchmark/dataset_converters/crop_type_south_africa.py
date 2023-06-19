@@ -1,4 +1,9 @@
-"""Crop Type South Africa dataset."""
+"""Crop Type South Africa dataset.
+
+Data from: https://mlhub.earth/data/ref_south_africa_crops_competition_v1
+"""
+
+
 import os
 import re
 from pathlib import Path
