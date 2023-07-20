@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "geo-bench"
+name = "geobench"
 version = "0.0.1"
 description = ""
 authors = ["ATG Vision <atg-vision@servicenow.com>"]
