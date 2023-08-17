@@ -106,7 +106,7 @@ class TaskSpecifications:
     def get_dataset_dir(self, benchmark_dir: Union[Path, str] = None):
         """Retrieve directory where dataset is read."""
         if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name  # type: ignore
+            benchmark_dir = io.GEO_BENCH_DIR / self.benchmark_name  # type: ignore
         return Path(benchmark_dir) / self.dataset_name
 
     def get_label_map(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[str]]]:

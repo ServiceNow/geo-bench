@@ -25,7 +25,7 @@ def generate_train_size_sweep(
 
 def generate_partitions_for_benchmark(benchmark_name, train_fractions):
     """Generate growing train size partition for all dataset in `benchmark_name`."""
-    for task in io.task_iterator(benchmark_dir=io.CCB_DIR / benchmark_name):
+    for task in io.task_iterator(benchmark_dir=io.GEO_BENCH_DIR / benchmark_name):
 
         # if not task.dataset_name.startswith("forest"): continue
 

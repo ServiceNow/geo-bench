@@ -365,10 +365,10 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
     """Create benchmark."""
     for dataset_name, (resampler, sample_converter) in specs.items():
         print(f"Transforming {dataset_name}.")
-        dataset_dir = io.CCB_DIR / src_benchmark_name / dataset_name
+        dataset_dir = io.GEO_BENCH_DIR / src_benchmark_name / dataset_name
         new_dataset_dir = transform_dataset(
             dataset_dir=dataset_dir,
-            new_benchmark_dir=io.CCB_DIR / new_benchmark_name,
+            new_benchmark_dir=io.GEO_BENCH_DIR / new_benchmark_name,
             partition_name="default",
             resampler=resampler,
             sample_converter=sample_converter,

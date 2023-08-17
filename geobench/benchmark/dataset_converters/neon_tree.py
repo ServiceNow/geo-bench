@@ -32,11 +32,11 @@ if SEGMENTATION:
 else:
     DATASET_NAME = "NeonTree_detection"
 
-SRC_DATASET_DIR = io.CCB_DIR / "source" / "NeonTree"  # type: ignore
+SRC_DATASET_DIR = io.GEO_BENCH_DIR / "source" / "NeonTree"  # type: ignore
 # ZENODO_DATASET_DIR = Path(io.src_datasets_dir, DATASET_NAME + "_zenodo")
 ZENODO_DATASET_DIR = SRC_DATASET_DIR / "_zenodo"  # type: ignore
 
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME
+DATASET_DIR = io.GEO_BENCH_DIR / "converted" / DATASET_NAME
 
 
 if SEGMENTATION:
