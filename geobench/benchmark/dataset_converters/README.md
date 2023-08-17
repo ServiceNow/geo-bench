@@ -2,13 +2,6 @@
 
 This folder contains tools for converting heterogeneous datasets into a common format, which can be later read by the [GeobenchDataset](https://github.com/ServiceNow/geo-bench/blob/main/geobench/io/dataset.py) class.
 
-## Folder Configuration
-Optionally, start by setting folders for *downloading* and *converting* datasets
-```
-export CC_BENCHMARK_SOURCE_DATASETS=/tmp/dataset
-export CC_BENCHMARK_CONVERTED_DATASETS=/tmp/converted_dataset
-```
-Otherwise, they default to `~/dataset` and `~/converted_dataset`.
 
 ## Adding New Datasets
 

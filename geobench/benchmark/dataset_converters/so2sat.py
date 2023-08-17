@@ -13,8 +13,8 @@ from geobench.io.dataset import Sample
 from geobench.io.task import TaskSpecifications
 
 DATASET_NAME = "so2sat"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
+SRC_DATASET_DIR = io.GEO_BENCH_DIR / "source" / DATASET_NAME  # type: ignore
+DATASET_DIR = io.GEO_BENCH_DIR / "converted" / DATASET_NAME  # type: ignore
 
 
 def make_sample(

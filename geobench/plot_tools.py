@@ -112,13 +112,13 @@ class Normalizer:
 
     def save(self, benchmark_name):
         """Save normalizer to json file."""
-        with open(io.CCB_DIR / benchmark_name / "normalizer.json", "w") as f:
+        with open(io.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "w") as f:
             json.dump(self.range_dict, f, indent=2)
 
 
 def load_normalizer(benchmark_name):
     """Load normalizer from json file."""
-    with open(io.CCB_DIR / benchmark_name / "normalizer.json", "r") as f:
+    with open(io.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "r") as f:
         range_dict = json.load(f)
     return Normalizer(range_dict)
 

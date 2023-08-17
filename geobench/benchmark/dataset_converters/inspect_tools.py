@@ -505,7 +505,7 @@ def collect_task_info(task, fix_task_shape=False):
     if task.patch_size != largest_shape:
         print(f" *WARNING* task.patch_size = {task.patch_size} != dataset[0].largest_shape() = {largest_shape}.")
         if fix_task_shape:
-            dataset_dir = io.CCB_DIR / task.benchmark_name / task.dataset_name
+            dataset_dir = io.GEO_BENCH_DIR / task.benchmark_name / task.dataset_name
 
             print(f"Overwritint task_info.pkl to {dataset_dir}.")
             task.patch_size = largest_shape
@@ -531,7 +531,7 @@ def collect_task_info(task, fix_task_shape=False):
 def collect_benchmark_info(benchmark_name):
     """Collect information for eacth task in the benchmark."""
     data = []
-    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+    for task in io.task_iterator(io.GEO_BENCH_DIR / benchmark_name):
         print(task.dataset_name)
 
         task_dict, _ = collect_task_info(task)
@@ -593,7 +593,7 @@ def replace_str(name):
 
 def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
     """Plot samples from every tasks of a given benchmark."""
-    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+    for task in io.task_iterator(io.GEO_BENCH_DIR / benchmark_name):
 
         print(f"Task: {task.dataset_name}")
 
@@ -649,7 +649,7 @@ def plot_benchmark(benchmark_name, n_samples, save_dir: Path = Path.home() / "fi
         "geolifeclef-2022": 0,
         "bigearthnet": 2,
     }
-    for task in io.task_iterator(io.CCB_DIR / benchmark_name):
+    for task in io.task_iterator(io.GEO_BENCH_DIR / benchmark_name):
 
         if task.dataset_name.startswith("geolifeclef"):
             continue

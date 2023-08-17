@@ -26,10 +26,10 @@ sys.path.append(str(Path.cwd()))
 
 
 DATASET_NAME = "pv4ger"
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
+SRC_DATASET_DIR = io.GEO_BENCH_DIR / "source" / DATASET_NAME  # type: ignore
 # CLS_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
 # SEG_DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
-DATASET_DIR = io.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"  # type: ignore
+DATASET_DIR = io.GEO_BENCH_DIR / "converted" / f"{DATASET_NAME}_classification"  # type: ignore
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
 BANDS_INFO = io.make_rgb_bands(SPATIAL_RESOLUTION)

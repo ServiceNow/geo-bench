@@ -68,4 +68,4 @@ def produce_all_band_stats(benchmark_dir: str) -> None:
 
 
 if __name__ == "__main__":
-    produce_all_band_stats(benchmark_dir="/mnt/data/cc_benchmark/segmentation_v0.2")
+    produce_all_band_stats(benchmark_dir=io.GEO_BENCH_DIR / "segmentation_v0.2")
