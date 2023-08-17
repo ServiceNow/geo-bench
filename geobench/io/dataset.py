@@ -18,31 +18,15 @@ import h5py
 import numpy as np
 import rasterio
 from scipy.ndimage import zoom
-from torch import isin
-from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
+
+from geobench.config import GEO_BENCH_DIR
 
 from geobench.io.label import LabelType
 
-check_ccb_dir = os.environ.get("CCB_DIR", None)
 
-if check_ccb_dir is None:
-    # Deprecated, use CCB_DIR instead
-    src_datasets_dir: Union[str, Path, None] = os.environ.get(
-        "CC_BENCHMARK_SOURCE_DATASETS", Path(os.path.expanduser("~/dataset/"))
-    )
-    datasets_dir: Union[str, Path, None] = os.environ.get(
-        "CC_BENCHMARK_CONVERTED_DATASETS", Path(os.path.expanduser("~/converted_dataset/"))
-    )
-
-    # src_datasets_dir should now be CCB_DIR / "source" and datasets_dir should be CCB_DIR / "converted"
-    if datasets_dir is not None:
-        CCB_DIR: Path = Path(datasets_dir).parent
-
-else:
-    CCB_DIR = Path(check_ccb_dir)
-    src_datasets_dir: Path = CCB_DIR / "source"  # type: ignore
-    datasets_dir: Path = CCB_DIR / "converted"  # type: ignore
+src_datasets_dir: Path = GEO_BENCH_DIR / "source"  # type: ignore
+datasets_dir: Path = GEO_BENCH_DIR / "converted"  # type: ignore
 
 
 class BandInfo(object):

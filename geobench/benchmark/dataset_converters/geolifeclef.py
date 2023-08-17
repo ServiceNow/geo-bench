@@ -26,9 +26,9 @@ SPATIAL_RESOLUTION = 1
 PATCH_SIZE = 256
 
 N_LABELS = 100
-SRC_DATASET_DIR = io.CCB_DIR / "source" / DATASET_NAME  # type: ignore
+SRC_DATASET_DIR = io.GEO_BENCH_DIR / "source" / DATASET_NAME  # type: ignore
 DATA_PATH = Path(SRC_DATASET_DIR)  # type: ignore
-DATASET_DIR = io.CCB_DIR / "converted" / DATASET_NAME  # type: ignore
+DATASET_DIR = io.GEO_BENCH_DIR / "converted" / DATASET_NAME  # type: ignore
 
 # US NAIP, FR aerial based (IGN)
 BAND_INFO_LIST: List[Any] = io.make_rgb_bands(spatial_resolution=SPATIAL_RESOLUTION)
