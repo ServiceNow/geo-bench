@@ -77,7 +77,6 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        benchmark_dir: str = None,
         split: Union[str, None] = None,
         partition_name: str = "default",
         transform=None,
@@ -87,15 +86,14 @@ class TaskSpecifications:
         """Retrieve dataset for a given split and partition with chosen transform, format and bands.
 
         Args:
-            benchmark_dir: path to benchmark directory where dataset can be found
             split: dataset split to choose
             partition_name: name of partition, i.e. 'default' for default_partition.json
-            transform: dataset transforms
+            transform: callable for transforming a sample after loading
             file_format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
         return GeobenchDataset(
-            dataset_dir=self.get_dataset_dir(benchmark_dir),
+            dataset_dir=self.get_dataset_dir(),
             split=split,
             partition_name=partition_name,
             transform=transform,
@@ -103,11 +101,9 @@ class TaskSpecifications:
             band_names=band_names,
         )
 
-    def get_dataset_dir(self, benchmark_dir: Union[Path, str] = None):
+    def get_dataset_dir(self):
         """Retrieve directory where dataset is read."""
-        if benchmark_dir is None:
-            benchmark_dir = io.CCB_DIR / self.benchmark_name  # type: ignore
-        return Path(benchmark_dir) / self.dataset_name
+        return io.GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
     def get_label_map(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
@@ -141,24 +137,61 @@ class TaskSpecifications:
         else:
             return None
 
+    def get_pytorch_data_module(
+        self,
+        partition_name: str = "default",
+        batch_size: int = 64,
+        num_workers: int = 8,
+        val_batch_size: int = None,
+        train_transform=None,
+        eval_transform=None,
+        collate_fn=None,
+        band_names: Sequence[str] = ("red", "green", "blue"),
+    ):
+        """return pytorch data module for this dataset."""
 
-def task_iterator(benchmark_dir: str, task_filter: List[str] = None) -> Generator[TaskSpecifications, None, None]:
+        # import this module only on demand to avoid strict dependency on pytorch
+        from geobench.torch_toolbox.dataset import DataModule
+
+        data_module = DataModule(
+            self,
+            partition_name=partition_name,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            val_batch_size=val_batch_size,
+            train_transform=train_transform,
+            eval_transform=eval_transform,
+            collate_fn=collate_fn,
+            band_names=band_names,
+        )
+        return data_module
+
+
+def task_iterator(
+    benchmark_name: str, ignore_task: List[str] = None, benchmark_dir: str = None
+) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
     Args:
         benchmark_name: name of the benchmark
+        ignore_task: list of task names to exclude
+        benchmark_dir: override default benchmark directory. If None, will
+            use $GEO_BENCH_DIR / benchmark_name
 
     Returns:
         task specifications for the desired benchmark dataset
     """
-    benchmark_dir_path = Path(benchmark_dir)
+    if benchmark_dir is None:
+        benchmark_dir_path = io.GEO_BENCH_DIR / benchmark_name
+    else:
+        benchmark_dir_path = Path(benchmark_dir)
 
     for dataset_dir in benchmark_dir_path.iterdir():
         if not dataset_dir.is_dir():
             continue
 
-        if task_filter is not None:
-            if dataset_dir.name not in task_filter:
+        if ignore_task is not None:
+            if dataset_dir.name not in ignore_task:
                 continue
 
         yield load_task_specs(dataset_dir)

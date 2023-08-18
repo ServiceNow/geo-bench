@@ -44,6 +44,7 @@ ipyleaflet = "^0.17.1"
 pandas = "^1.5.3"
 xmltodict = "^0.12.0"
 seaborn = "^0.12.0"
+sickle = "^0.7"
 
 
 [tool.poetry.dev-dependencies]
