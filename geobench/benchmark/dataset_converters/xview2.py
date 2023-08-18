@@ -4,8 +4,8 @@
 # Register at https://xview2.org/signup
 # Copy link address to download Challenge training set (~7.8GB) and test set (~2.6GB) from https://xview2.org/download-links
 # Insert link address to the curl to download datasets:
-# curl -o $CC_BENCHMARK_SOURCE_DATASETS/xview2/train_images_labels_targets.tar.gz --remote-name "https://download.xview2.org/train_images_labels_targets.tar.gz?Expires=<>&Signature=<>__&Key-Pair-Id=<>"
-# curl -o $CC_BENCHMARK_SOURCE_DATASETS/xview2/test_images_labels_targets.tar.gz --remote-name "INSERT_TEST_DATA_LINK_HERE"
+# curl -o $GEO_BENCH_DIR/source/xview2/train_images_labels_targets.tar.gz --remote-name "https://download.xview2.org/train_images_labels_targets.tar.gz?Expires=<>&Signature=<>__&Key-Pair-Id=<>"
+# curl -o $GEO_BENCH_DIR/source/xview2/test_images_labels_targets.tar.gz --remote-name "INSERT_TEST_DATA_LINK_HERE"
 # Verify download by visually comparing SHASUMs (todo: verify files through torchgeo.)
 # shasum -a 1 train_images_labels_targets.tar.gz
 # shasum -a 1 test_images_labels_targets.tar.gz

@@ -15,7 +15,7 @@ from tqdm import tqdm
 from geobench import io
 from geobench.io import bandstats
 from geobench.io.task import TaskSpecifications
-
+from geobench import config
 
 def load_label(sample_path):
     """Load a label.
@@ -152,7 +152,7 @@ def write_all_label_map(
         compute_band_stats: whether or not to compute band statistics
         task_filter: filter out some tasks
     """
-    benchmark_dir = str(io.CCB_DIR / benchmark_name / "geobench")
+    benchmark_dir = str(io.GEO_BENCH_DIR / benchmark_name / "geobench")
     for task in io.task.task_iterator(benchmark_dir=benchmark_dir):
 
         if task_filter is not None and not task_filter(task):
@@ -213,7 +213,7 @@ def print_label_map(label_map, prefix: str = "  ", max_count: int = 200) -> None
         print(f"{i:3d} {prefix}class {key}: {len(label_map[key])} samples.")
 
 
-def view_label_map_count(benchmark_dir: str = "/mnt/data/cc_benchmark/converted") -> None:
+def view_label_map_count(benchmark_dir: str = config.GEO_BENCH_DIR / "converted") -> None:
     """Print counts of label maps.
 
     Args:
