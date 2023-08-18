@@ -20,7 +20,7 @@ from tqdm import tqdm
 from geobench import io
 
 DATASET_NAME = "southAfricaCropType"
-SRC_DATASET_DIR = Path(io.CCB_DIR, "source", DATASET_NAME)  # type: ignore
+SRC_DATASET_DIR = Path(io.GEO_BENCH_DIR, "source", DATASET_NAME)  # type: ignore
 IMG_DIR = "ref_south_africa_crops_competition_v1_train_source_s2"
 LABEL_DIR = "ref_south_africa_crops_competition_v1_train_labels"
 SRC_TRANSFORM = Affine(10.0, 0.0, 331040.0, 0.0, -10.0, -3714560.0)
@@ -32,7 +32,7 @@ IMG_DIRECTORY_REGEX = r"""
     _(?P<month>[0-9]{2})
     _(?P<day>[0-9]{2})$"""
 PARTITION_CRS = SRC_CRS
-DATASET_DIR = Path(io.CCB_DIR, "converted", DATASET_NAME)
+DATASET_DIR = Path(io.GEO_BENCH_DIR, "converted", DATASET_NAME)
 
 CLOUD_P = (0.0, 0.1)
 

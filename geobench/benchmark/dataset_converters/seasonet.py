@@ -63,7 +63,7 @@ LABEL_BAND = io.SegmentationClasses(
     "label", spatial_resolution=SPATIAL_RESOLUTION, n_classes=len(LABELS), class_names=LABELS
 )
 
-DATASET_DIR = Path(io.CCB_DIR, "converted", DATASET_NAME)
+DATASET_DIR = Path(io.GEO_BENCH_DIR, "converted", DATASET_NAME)
 
 HEIGHT = 120
 WIDTH = 120
@@ -72,9 +72,10 @@ WIDTH = 120
 # specify from which you want to sample
 SEASONS = ["Fall"]
 
-train_split = "/mnt/data/cc_benchmark/source/seasonet/splits/train.csv"
-val_split = "/mnt/data/cc_benchmark/source/seasonet/splits/val.csv"
-test_split = "/mnt/data/cc_benchmark/source/seasonet/splits/test.csv"
+split_dir = io.src_datasets_dir / "seasonet" / "splits"
+train_split = split_dir / "train.csv"
+val_split = split_dir / "val.csv"
+test_split = split_dir / "test.csv"
 
 
 split_paths = list((SRC_DATASET_DIR / "splits").glob("*.csv"))
