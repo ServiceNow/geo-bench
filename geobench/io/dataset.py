@@ -88,11 +88,17 @@ class BandInfo(object):
 
     def __str__(self):
         """Return string representation of band."""
-        return f"Band {self.name} ({self.spatial_resolution:.1f}m resolution)"
+        res = self.spatial_resolution
+        if res is None:
+            res = np.nan
+        return f"Band {self.name} ({res:.1f}m resolution)"
 
     def __repr__(self):
         """Return representation of band."""
-        return f"BandInfo(name={self.name}, original_res={self.spatial_resolution:.1f}m)"
+        res = self.spatial_resolution
+        if res is None:
+            res = np.nan
+        return f"BandInfo(name={self.name}, original_res={res:.1f}m)"
 
     def expand_name(self):
         """Return the name of the band repated with the numbe or channels."""
@@ -110,7 +116,7 @@ class SpectralBand(BandInfo):
         Args:
             name: The main name of the band. This name is used for sorting the band and providing an order.
             alt_names: a tuple of alternative names for referencing to the band. e.g., red, green, blue, NIR.
-            spatial_resolution: original spatial resolution of this band.
+            spatial_resolution: original spatial resolution of this band, the ground sample distance in meters.
             wavelength: spectral band wavelength
         """
         super().__init__(name, alt_names, spatial_resolution)
@@ -127,8 +133,6 @@ class SpectralBand(BandInfo):
 
 class Sentinel1(SpectralBand):
     """Sentinel1 spectral band."""
-
-    pass
 
 
 class Sentinel2(SpectralBand):
@@ -278,14 +282,14 @@ class SegmentationClasses(BandInfo, LabelType):
 
 
 sentinel1_8_bands = [
-    Sentinel1("01 - VH.Real"),
-    Sentinel1("02 - VH.Imaginary"),
-    Sentinel1("03 - VV.Real"),
-    Sentinel1("04 - VV.Imaginary"),
-    Sentinel1("05 - VH.LEE Filtered"),
-    Sentinel1("06 - VV.LEE Filtered"),
-    Sentinel1("07 - VH.LEE Filtered.Real"),
-    Sentinel1("08 - VV.LEE Filtered.Imaginary"),
+    Sentinel1("01 - VH.Real", spatial_resolution=10),
+    Sentinel1("02 - VH.Imaginary", spatial_resolution=10),
+    Sentinel1("03 - VV.Real", spatial_resolution=10),
+    Sentinel1("04 - VV.Imaginary", spatial_resolution=10),
+    Sentinel1("05 - VH.LEE Filtered", spatial_resolution=10),
+    Sentinel1("06 - VV.LEE Filtered", spatial_resolution=10),
+    Sentinel1("07 - VH.LEE Filtered.Real", spatial_resolution=10),
+    Sentinel1("08 - VV.LEE Filtered.Imaginary", spatial_resolution=10),
 ]
 
 
@@ -1160,7 +1164,7 @@ class GeobenchDataset:
             partition_name: Each dataset can have more than 1 partitions. Use this field to specify the active_partition. without _partition.json
             band_names: Sequence of band names to select
             split: Specify split to use or None for all
-            transform: dataset transforms
+            transform: callable for transforming a sample after loading
             format: 'hdf5' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
