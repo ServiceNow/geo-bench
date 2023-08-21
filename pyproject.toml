@@ -1,12 +1,31 @@
 [tool.poetry]
-name = "geo-bench"
+name = "geo-benchmark"
 version = "0.0.1"
-description = ""
-authors = ["ATG Vision <atg-vision@servicenow.com>"]
+description = "A benchmark designed to advance foundation models for Earth monitoring, tailored for remote sensing. It encompasses six classification and six segmentation tasks, curated for precision and model evaluation. The package also features a comprehensive evaluation methodology and showcases results from 20 established baseline models."
+authors = [
+    "Alexandre Lacoste <alexandre.lacoste@servicenow.com>",
+    "Nils Lehmann",
+    "Pau Rodriguez",
+    "Evan David Sherwin",
+    "Hannah Kerner",
+    "Björn Lütjens",
+    "Jeremy Andrew Irvin",
+    "David Dao",
+    "Hamed Alemohammad",
+    "Alexandre Drouin",
+    "Mehmet Gunturkun",
+    "Gabriel Huang",
+    "David Vazquez",
+    "Dava Newman",
+    "Yoshua Bengio",
+    "Stefano Ermon",
+    "Xiao Xiang Zhu"
+]
+license = "Apache-2.0"
 packages = [
     { include = "geobench" }
 ]
-
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9.0,<4"
