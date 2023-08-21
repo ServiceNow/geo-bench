@@ -1,9 +1,9 @@
 """This script gives an example usage of the geobench package.
 """
 
-from geobench import io
+import geobench
 
-for task in io.task_iterator(benchmark_name="classification_v0.8.2"):
+for task in geobench.task_iterator(benchmark_name="classification_v0.8.2"):
     print(f"Task {task.dataset_name}:\n  {task}\n")
 
     dataset = task.get_dataset(split="train")
