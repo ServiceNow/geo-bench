@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from geobench import io
+import geobench as gb
 
 
 def converter_tester(converter):
@@ -13,20 +13,22 @@ def converter_tester(converter):
     with tempfile.TemporaryDirectory() as datasets_dir:
         dataset_dir = Path(datasets_dir, converter.DATASET_NAME)
         converter.convert(max_count=5, dataset_dir=Path(dataset_dir))
-        dataset = io.GeobenchDataset(dataset_dir, band_names=["red", "green", "blue"], partition_name="default")
+        dataset = gb.GeobenchDataset(
+            dataset_dir, band_names=["red", "green", "blue"], partition_name="default"
+        )
         samples = list(dataset.iter_dataset(5))
         assert len(dataset) == 5, f"returned dataset of length {len(dataset)}"
-        io.check_dataset_integrity(dataset, samples=samples)
+        gb.check_dataset_integrity(dataset, samples=samples)
 
 
-SRC_DIR_EXISTS = not Path(io.src_datasets_dir).exists()
+SRC_DIR_EXISTS = not Path(gb.src_datasets_dir).exists()
 
 
 @pytest.mark.converter
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_brick_kiln():
-    from geobench.benchmark.dataset_converters import brick_kiln
+    from make_benchmark.dataset_converters import brick_kiln
 
     converter_tester(brick_kiln)
 
@@ -35,7 +37,7 @@ def test_brick_kiln():
 # @pytest.mark.slow
 # @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 # def test_cv4a_kenya_cropy_type():
-#     from geobench.benchmark.dataset_converters import cv4a_kenya_crop_type
+#     from make_benchmark.dataset_converters import cv4a_kenya_crop_type
 
 #     converter_tester(cv4a_kenya_crop_type)
 
@@ -44,7 +46,7 @@ def test_brick_kiln():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_eurosat():
-    from geobench.benchmark.dataset_converters import eurosat
+    from make_benchmark.dataset_converters import eurosat
 
     converter_tester(eurosat)
 
@@ -53,7 +55,7 @@ def test_eurosat():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_neon_tree():
-    from geobench.benchmark.dataset_converters import neon_tree
+    from make_benchmark.dataset_converters import neon_tree
 
     converter_tester(neon_tree)
 
@@ -62,7 +64,7 @@ def test_neon_tree():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_smallholder_cashews():
-    from geobench.benchmark.dataset_converters import benin_smallholder_cashews
+    from make_benchmark.dataset_converters import benin_smallholder_cashews
 
     converter_tester(benin_smallholder_cashews)
 
@@ -71,7 +73,7 @@ def test_smallholder_cashews():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_so2sat():
-    from geobench.benchmark.dataset_converters import so2sat
+    from make_benchmark.dataset_converters import so2sat
 
     converter_tester(so2sat)
 
@@ -80,7 +82,7 @@ def test_so2sat():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_geolifeclef():
-    from geobench.benchmark.dataset_converters import geolifeclef
+    from make_benchmark.dataset_converters import geolifeclef
 
     converter_tester(geolifeclef)
 
@@ -89,7 +91,7 @@ def test_geolifeclef():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_nz_cattle_detection():
-    from geobench.benchmark.dataset_converters import nz_cattle_detection
+    from make_benchmark.dataset_converters import nz_cattle_detection
 
     converter_tester(nz_cattle_detection)
 
@@ -98,7 +100,7 @@ def test_nz_cattle_detection():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_xview2():
-    from geobench.benchmark.dataset_converters import xview2
+    from make_benchmark.dataset_converters import xview2
 
     converter_tester(xview2)
 
@@ -107,7 +109,7 @@ def test_xview2():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_pv4ger():
-    from geobench.benchmark.dataset_converters import pv4ger
+    from make_benchmark.dataset_converters import pv4ger
 
     converter_tester(pv4ger)
 
@@ -116,7 +118,7 @@ def test_pv4ger():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_chesapeake():
-    from geobench.benchmark.dataset_converters import chesapeake_land_cover
+    from make_benchmark.dataset_converters import chesapeake_land_cover
 
     converter_tester(chesapeake_land_cover)
 
@@ -125,7 +127,7 @@ def test_chesapeake():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_forestnet():
-    from geobench.benchmark.dataset_converters import forestnet
+    from make_benchmark.dataset_converters import forestnet
 
     converter_tester(forestnet)
 
@@ -134,7 +136,7 @@ def test_forestnet():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_bigearthnet():
-    from geobench.benchmark.dataset_converters import bigearthnet
+    from make_benchmark.dataset_converters import bigearthnet
 
     converter_tester(bigearthnet)
 
@@ -143,15 +145,16 @@ def test_bigearthnet():
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_south_africa_crop_type():
-    from geobench.benchmark.dataset_converters import crop_type_south_africa
+    from make_benchmark.dataset_converters import crop_type_south_africa
 
     converter_tester(crop_type_south_africa)
+
 
 @pytest.mark.converter
 @pytest.mark.slow
 @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
 def test_seasonet():
-    from geobench.benchmark.dataset_converters import seasonet
+    from make_benchmark.dataset_converters import seasonet
 
     converter_tester(seasonet)
 

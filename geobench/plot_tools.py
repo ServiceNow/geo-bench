@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 import seaborn as sns
 
-from geobench import io
+import geobench as gb
 
 # from geobench_exp.experiment import parse_results
 from matplotlib.ticker import FormatStrFormatter
@@ -12,8 +12,6 @@ import json
 from scipy.stats import trim_mean
 
 sns.set_style("dark", {"grid.color": "0.98", "axes.facecolor": "(0.95, 0.95, 0.97)"})
-
-
 
 
 def biqm(scores):
@@ -27,7 +25,9 @@ def iqm(scores):
     return trim_mean(scores, proportiontocut=0.25, axis=None)
 
 
-def bootstrap_iqm(df, group_keys=("model", "dataset", "partition name"), metric="test_metric", repeat=100):
+def bootstrap_iqm(
+    df, group_keys=("model", "dataset", "partition name"), metric="test_metric", repeat=100
+):
     """Boostram of seeds for all model and all datasets to comput iqm score distribution."""
     df_list = []
     for i in range(repeat):
@@ -53,7 +53,14 @@ def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
 
 
 def normalize_bootstrap_and_plot(
-    df, metric, benchmark_name, model_order, model_colors=None, repeat=100, fig_size=None, n_legend_rows=2
+    df,
+    metric,
+    benchmark_name,
+    model_order,
+    model_colors=None,
+    repeat=100,
+    fig_size=None,
+    n_legend_rows=2,
 ):
     """Add aggregated data as a new dataset."""
 
@@ -68,8 +75,12 @@ def normalize_bootstrap_and_plot(
     # create a new df containing bootstrapped samples of iqm
     bootstrapped_iqm = pd.concat(
         (
-            bootstrap_iqm_aggregate(df, metric=new_metric, repeat=repeat), # stratified bootstrap across all datasets
-            bootstrap_iqm(df, metric=new_metric, repeat=repeat), # bootstrapped iqm for each dataset
+            bootstrap_iqm_aggregate(
+                df, metric=new_metric, repeat=repeat
+            ),  # stratified bootstrap across all datasets
+            bootstrap_iqm(
+                df, metric=new_metric, repeat=repeat
+            ),  # bootstrapped iqm for each dataset
         )
     )
 
@@ -112,13 +123,13 @@ class Normalizer:
 
     def save(self, benchmark_name):
         """Save normalizer to json file."""
-        with open(io.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "w") as f:
+        with open(gb.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "w") as f:
             json.dump(self.range_dict, f, indent=2)
 
 
 def load_normalizer(benchmark_name):
     """Load normalizer from json file."""
-    with open(io.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "r") as f:
+    with open(gb.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "r") as f:
         range_dict = json.load(f)
     return Normalizer(range_dict)
 
@@ -135,7 +146,7 @@ def make_normalizer(data_frame, metrics=("test metric",), benchmark_name=None):
             data.append(sub_df[metric].to_numpy())
         range_dict[dataset] = (np.min(data), np.max(data))
 
-    normalizer =  Normalizer(range_dict)
+    normalizer = Normalizer(range_dict)
 
     if benchmark_name:
         normalizer.save(benchmark_name)
@@ -161,9 +172,9 @@ def plot_per_dataset(
     model_colors=None,
 ):
     """Violin plots for each datasets and each models.
-    
+
     If a dataset is named `aggregated_name` it will be the first and will be highlighted in light blue.
-    
+
     """
     datasets = sorted(df["dataset"].unique())
 
@@ -221,7 +232,6 @@ def plot_per_dataset(
 
 
 if __name__ == "__main__":
-
     csv_path = Path(__file__).parent.parent / "baseline_results.csv"
 
     df = pd.read_csv(csv_path)

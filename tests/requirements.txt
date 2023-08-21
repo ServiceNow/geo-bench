@@ -1,0 +1,4 @@
+geobench==0.1.0
+numpy==1.24.2
+pytest==7.1.2
+rasterio==1.3.6

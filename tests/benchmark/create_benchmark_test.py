@@ -4,8 +4,8 @@ from typing import Dict, List
 
 import numpy as np
 
-from geobench import io
-from geobench.benchmark.create_benchmark import resample, resample_from_stats
+import geobench as gb
+from make_benchmark.create_benchmark import resample, resample_from_stats
 
 
 def make_rand_partition(n=1000):
@@ -27,14 +27,13 @@ def make_rand_partition(n=1000):
         label_stats[sample_name] = eye[label]  # converts to one hot
 
     assert_no_verlap(partition_dict)
-    return io.Partition(partition_dict=partition_dict), label_map, reverse_label_map, label_stats
+    return gb.Partition(partition_dict=partition_dict), label_map, reverse_label_map, label_stats
 
 
 def assert_no_verlap(partition_dict: Dict[str, List[str]]):
     sample_set = set()
     total_count = 0
     for sample_names in partition_dict.values():
-
         sample_set.update(sample_names)
         total_count += len(sample_names)
 

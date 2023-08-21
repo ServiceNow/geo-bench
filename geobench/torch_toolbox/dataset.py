@@ -6,7 +6,7 @@ from typing import Sequence
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from geobench import io
+import geobench as gb
 
 
 class DataModule(pl.LightningDataModule):
@@ -19,7 +19,7 @@ class DataModule(pl.LightningDataModule):
 
     def __init__(
         self,
-        task_specs: io.TaskSpecifications,
+        task_specs: gb.TaskSpecifications,
         partition_name: str = "default",
         batch_size: int = 64,
         num_workers: int = 8,
