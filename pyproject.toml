@@ -33,9 +33,7 @@ python = ">=3.9.0,<4"
 h5py = "^3.8.0"
 pandas = "^1.5.3"
 seaborn = "^0.12.2"
-sickle = "^0.7.0"
 tqdm = "^4.65.0"
-
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
@@ -50,6 +48,7 @@ ipyplot = "^1.1.1"
 torchgeo = { git = "https://github.com/microsoft/torchgeo.git" }
 torchvision = "^0.13.0"
 xmltodict = "^0.12.0"
+sickle = "^0.7.0"
 
 [tool.isort]
 profile = "black"
