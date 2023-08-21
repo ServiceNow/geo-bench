@@ -5,7 +5,9 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-def rasterize_box(boxes: List[Dict[str, int]], img_shape: Tuple[int, int], scale=1) -> "np.typing.NDArray[np.int_]":
+def rasterize_box(
+    boxes: List[Dict[str, int]], img_shape: Tuple[int, int], scale=1
+) -> "np.typing.NDArray[np.int_]":
     """Rasterize box.
 
     Args:
@@ -28,7 +30,9 @@ def rasterize_box(boxes: List[Dict[str, int]], img_shape: Tuple[int, int], scale
             else:
                 d_x, d_y = (0, 0)
 
-            coord = np.array([[obj["xmin"] + d_x, obj["ymin"] + d_y], [obj["xmax"] - d_x, obj["ymax"] - d_y]])
+            coord = np.array(
+                [[obj["xmin"] + d_x, obj["ymin"] + d_y], [obj["xmax"] - d_x, obj["ymax"] - d_y]]
+            )
             ctxt.ellipse(list(coord.flat), fill=1)
 
     return np.array(im)
@@ -47,7 +51,12 @@ def point_to_boxes(points, radius):
     boxes = []
     for point in points:
         boxes.append(
-            {"xmin": point[0] - radius, "ymin": point[1] - radius, "xmax": point[0] + radius, "ymax": point[1] + radius}
+            {
+                "xmin": point[0] - radius,
+                "ymin": point[1] - radius,
+                "xmax": point[0] + radius,
+                "ymax": point[1] + radius,
+            }
         )
     return boxes
 
