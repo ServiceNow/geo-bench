@@ -3,7 +3,7 @@
 
 import geobench
 
-for task in geobench.task_iterator(benchmark_name="classification_v0.8.2"):
+for task in geobench.task_iterator(benchmark_name="classification_v0.9.0"):
     print(f"Task {task.dataset_name}:\n  {task}\n")
 
     dataset = task.get_dataset(split="train")
