@@ -127,7 +127,9 @@ def download_dataset(files, dataset_dir):
     (dataset_dir / "done.txt").touch()
 
 
-def download_benchmark(version="v0.9.0", benchmark_namse=("classification", "segmentation"), geobench_dir=None):
+def download_benchmark(
+    version="v0.9.0", benchmark_namse=("classification", "segmentation"), geobench_dir=None
+):
 
     if geobench_dir is None:
         geobench_dir = config.GEO_BENCH_DIR
