@@ -10,22 +10,12 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.9.0,<4"
-segmentation-models-pytorch = { git = "https://github.com/qubvel/segmentation_models.pytorch.git" }
-torchgeo = { git = "https://github.com/microsoft/torchgeo.git" }
-torchvision = "0.13.0"
-torchmetrics = "0.11.1"
 torch = ">=1.12.0"
-"ruamel.yaml" = "^0.17.21"
 h5py = "^3.8.0"
-wandb = "^0.13.10"
-pre-commit = "^3.0.4"
-ipykernel = "^6.15.2"
-ipyplot = "^1.1.1"
-ipyleaflet = "^0.17.1"
 pandas = "^1.5.3"
-xmltodict = "^0.12.0"
-seaborn = "^0.12.0"
-sickle = "^0.7"
+seaborn = "^0.12.2"
+sickle = "^0.7.0"
+tqdm = "^4.65.0"
 
 
 [tool.poetry.dev-dependencies]
@@ -36,15 +26,20 @@ isort = "^5.10.1"
 colorama = "^0.4.4"
 flake8 = "^4.0.1"
 pydocstyle = "^6.1.1"
+ipyleaflet = "^0.17.2"
+ipyplot = "^1.1.1"
+torchgeo = { git = "https://github.com/microsoft/torchgeo.git" }
+torchvision = "^0.13.0"
+xmltodict = "^0.12.0"
 
 [tool.isort]
 profile = "black"
 multi_line_output = 3
 include_trailing_comma = true
-line_length = 120
+line_length = 100
 
 [tool.flake8]
-max-line-length = 120
+max-line-length = 100
 max-complexity = 23
 
 [tool.mypy]
@@ -53,7 +48,7 @@ show_error_codes = true
 exclude = "(docs|data)/"
 
 [tool.black]
-line-length = 120
+line-length = 100
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -75,7 +70,4 @@ filterwarnings = [
 ]
 
 [tool.poetry.scripts]
-geobench-expgen = "geobench.experiment.experiment_generator:start"
-geobench-trainer = "geobench.torch_toolbox.trainer:start"
-geobench-sweep-trainer = "geobench.torch_toolbox.sweep_trainer:start"
-geobench-toolkit = "toolkit.dispatch_toolkit:start"
+geobench-download = "geobench.download_geobench:download_benchmark"
