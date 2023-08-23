@@ -54,7 +54,7 @@ DATASETS = [
     ("m-nz-cattle", f"segmentation_{VERSION}/nz_cattle_segmentation", "cc-by-4.0"),
     ("m-pv4ger-seg", f"segmentation_{VERSION}/pv4ger_segmentation", "mit"),
     ("m-cashew-plantation", f"segmentation_{VERSION}/smallholder_cashew", "cc-by-4.0"),
-    ("m-SA-crop-type", f"segmentation_{VERSION}/southAfricaCropType", "cc-by-4.0")
+    ("m-SA-crop-type", f"segmentation_{VERSION}/southAfricaCropType", "cc-by-4.0"),
     # Test dataset
     ("test-dataset", f"classification_test_{VERSION}/test_dataset", "mit"),
 ]
