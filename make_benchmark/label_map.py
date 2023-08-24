@@ -13,7 +13,7 @@ import numpy as np
 from tqdm import tqdm
 
 import geobench as gb
-from geobench import bandstats
+from make_benchmark import bandstats
 from geobench.task import TaskSpecifications
 from geobench import config
 
