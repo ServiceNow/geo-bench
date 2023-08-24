@@ -208,8 +208,10 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     with open(dataset_dir / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
 
+    # ensures consistency with benchmark directory name for backward compatibility
     if rename_benchmark:
         task_specs.benchmark_name = dataset_dir.parent.name
+        task_specs.dataset_name = dataset_dir.name
     return task_specs
 
 
