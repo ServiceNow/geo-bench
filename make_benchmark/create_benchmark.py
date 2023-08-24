@@ -10,7 +10,7 @@ import numpy as np
 from tqdm import tqdm
 
 import geobench as gb
-from geobench import bandstats
+from make_benchmark import bandstats
 from make_benchmark.generate_partitions import generate_train_size_sweep
 
 
