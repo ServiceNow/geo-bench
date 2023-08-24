@@ -7,8 +7,8 @@ import pytest
 
 
 def test_download_zenodo_file():
-    url = "https://zenodo.org/record/8263732/files/data.zip?download=1"
-    checksum = "md5:2849dc86c9bc33cf0c6777b0ebfa1d8c"
+    url = "https://zenodo.org/record/8274565/files/data.zip?download=1"
+    checksum = "md5:9151e88763a5c8a2d9ecf2e6ecff9444"
     wrong_checksum = "wrong_checksum_value"
 
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=True) as tmp_file:
@@ -33,12 +33,15 @@ def test_download_zenodo_file():
 
 
 def test_download_dataset():
-    record = download_geobench.get_zenodo_record_by_url("https://zenodo.org/record/8263732")
+    record = download_geobench.get_zenodo_record_by_url("https://zenodo.org/record/8274565")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         download_geobench.download_dataset(record["files"], tmp_dir)
 
         expected_files = [
+            "band_stats.json",
+            "default_partition.json",
+            "done.txt",
             "id_99972.hdf5",
             "id_99978.hdf5",
             "label_map.json",
@@ -55,6 +58,5 @@ def test_download_dataset():
 
 
 if __name__ == "__main__":
-    # test_download_zenodo_file()
-
+    test_download_zenodo_file()
     test_download_dataset()
