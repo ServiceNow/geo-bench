@@ -211,3 +211,11 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     if rename_benchmark:
         task_specs.benchmark_name = dataset_dir.parent.name
     return task_specs
+
+
+class SegmentationAccuracy:
+    """For loading old pickles"""
+
+
+class Accuracy:
+    """For loading old pickles"""
