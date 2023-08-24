@@ -5,7 +5,7 @@ import pytest
 import rasterio
 
 import geobench as gb
-from geobench.bandstats import produce_band_stats
+from make_benchmark.bandstats import produce_band_stats
 
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
