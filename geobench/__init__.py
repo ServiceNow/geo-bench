@@ -5,7 +5,8 @@ __version__ = "0.0.1"
 from geobench.dataset import *
 from geobench.label import *
 from geobench.task import *
-
+from geobench.config import *
+from geobench import config
 
 # for backward compatibility of pickled objects
 import geobench.task as task
