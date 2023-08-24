@@ -28,19 +28,36 @@ BENCHMARK_MAP = {
     ],
 }
 
+# IDENTIFIERS = {
+#     "m-NeonTree": "8008779",
+#     "m-pv4ger-seg": "8008791",
+#     "m-cashew-plantation": "8008799",
+#     "m-SA-crop-type": "8008824",
+#     "m-forestnet": "8008716",
+#     "m-bigearthnet": "8008684",
+#     "m-so2sat": "8008680",
+#     "m-brick-kiln": "8008702",
+#     "m-nz-cattle": "8008787",
+#     "m-eurosat": "8008737",
+#     "m-chesapeake-lancover": "8008757",
+#     "m-pv4ger": "8008747",
+#     "version": "v0.9.0",
+# }
+
 IDENTIFIERS = {
-    "m-NeonTree": "8008779",
-    "m-pv4ger-seg": "8008791",
-    "m-cashew-plantation": "8008799",
-    "m-SA-crop-type": "8008824",
-    "m-forestnet": "8008716",
-    "m-bigearthnet": "8008684",
-    "m-so2sat": "8008680",
-    "m-brick-kiln": "8008702",
-    "m-nz-cattle": "8008787",
-    "m-eurosat": "8008737",
-    "m-chesapeake-lancover": "8008757",
-    "m-pv4ger": "8008747",
+    "m-so2sat": "8276566",
+    "m-SA-crop-type": "8277133",
+    "m-forestnet": "8277532",
+    "m-NeonTree": "8277543",
+    "m-bigearthnet": "8277476",
+    "m-pv4ger-seg": "8277053",
+    "m-cashew-plantation": "8277065",
+    "m-chesapeake-lancover": "8276992",
+    "m-nz-cattle": "8277048",
+    "m-pv4ger": "8276974",
+    "m-eurosat": "8276932",
+    "m-brick-kiln": "8276814",
+    "version": "v0.9.1",
 }
 
 
@@ -106,7 +123,7 @@ def download_file(file_url, output_path, checksum=None):
 
 
 def _extract_flat_zip(zip_file):
-    """Extract a zip file to the same directory.
+    """Extract all zip file to the same root directory.
 
     This is temporary due to a bug in the upload
     """
@@ -147,7 +164,7 @@ def download_dataset(files: list, dataset_dir: str):
 
 
 def download_benchmark(
-    version="v0.9.0", benchmark_names=("classification", "segmentation"), geobench_dir=None
+    version="v0.9.1", benchmark_names=("classification", "segmentation"), geobench_dir=None
 ):
     """Download geobench from Zenodo.
 
@@ -160,6 +177,7 @@ def download_benchmark(
         geobench_dir = config.GEO_BENCH_DIR
     geobench_dir = Path(geobench_dir)
 
+    assert IDENTIFIERS["version"] == version
     all_files = []
 
     for benchmark_name in benchmark_names:
@@ -173,7 +191,7 @@ def download_benchmark(
     thread_map(lambda tuple: download_dataset(*tuple), all_files)
 
 
-def get_zenodo_records(version="v0.9.0", community="geo-bench"):
+def get_zenodo_records(version="v0.9.1", community="geo-bench"):
     """Get all records from a Zenodo community. This is used to get the identifiers of all datasets."""
 
     # Browse all records in the geo-bench community
@@ -207,5 +225,5 @@ def get_zenodo_records(version="v0.9.0", community="geo-bench"):
 
 
 if __name__ == "__main__":
-    download_benchmark()
-    # download_benchmark(geobench_dir=Path("~/geobench_test").expanduser())
+    download_benchmark(geobench_dir=Path("~/geobench_test").expanduser())
+    # get_zenodo_records()

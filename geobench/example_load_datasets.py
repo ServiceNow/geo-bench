@@ -1,9 +1,15 @@
 """This script gives an example usage of the geobench package.
 """
 
+from pathlib import Path
+import os
+
+os.environ["GEO_BENCH_DIR"] = str(Path("~/geobench_test").expanduser())
+
+
 import geobench
 
-print(geobench.GEO_BENCH_DIR)
+print("geobench dir:", geobench.GEO_BENCH_DIR)
 
 for benchmark_name in ("classification_v0.9.1", "segmentation_v0.9.1"):
     print(f"Benchmark {benchmark_name}:\n")
