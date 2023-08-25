@@ -34,6 +34,7 @@ h5py = "^3.8.0"
 pandas = "^1.5.3"
 seaborn = "^0.12.2"
 tqdm = "^4.65.0"
+scipy = "^1.11.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
@@ -89,3 +90,4 @@ filterwarnings = [
 
 [tool.poetry.scripts]
 geobench-download = "geobench.geobench_download:download_benchmark"
+geobench-test = "geobench.tests.launch_pytest:start"

@@ -24,3 +24,4 @@ sys.modules["ccb.io.task"] = task
 sys.modules["ccb.io.dataset"] = dataset
 sys.modules["ccb.io.label"] = label
 sys.modules["ccb.io"] = geobench
+sys.modules["ccb"] = geobench
