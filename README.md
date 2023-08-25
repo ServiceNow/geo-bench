@@ -44,14 +44,13 @@ This will download all datasets in parallel. If some files are already downloade
 See [`example_load_dataset.py`](https://github.com/ServiceNow/geo-bench/blob/main/geobench/example_load_datasets.py) for how to iterate over datasets.
 
 ```python
-from geobench import io
+import geobench
 
-for task in io.task_iterator(benchmark_name="classification_v0.9.1"):
+for task in geobench.task_iterator(benchmark_name="classification_v0.9.1"):
     dataset = task.get_dataset(split="train")
     sample = dataset[0]
     for band in sample.bands:
-        print(f"  {band.band_info.name}: {band.data.shape}")
-
+        print(f"{band.band_info.name}: {band.data.shape}")
 ```
 ## Visualizing Results
 
