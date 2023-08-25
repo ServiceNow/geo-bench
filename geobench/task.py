@@ -102,7 +102,7 @@ class TaskSpecifications:
         """Retrieve directory where dataset is read."""
         return GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
-    def get_label_map(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[str]]]:
+    def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
 
         Args:
@@ -112,7 +112,7 @@ class TaskSpecifications:
         Returns:
             label map if present or None
         """
-        label_map_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_map.json"
+        label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
                 label_map: Dict[str, List[str]] = json.load(fp)
