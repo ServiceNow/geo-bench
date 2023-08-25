@@ -88,4 +88,4 @@ filterwarnings = [
 ]
 
 [tool.poetry.scripts]
-geobench-download = "geobench.download_geobench:download_benchmark"
+geobench-download = "geobench.geobench_download:download_benchmark"

@@ -28,21 +28,6 @@ BENCHMARK_MAP = {
     ],
 }
 
-# IDENTIFIERS = {
-#     "m-NeonTree": "8008779",
-#     "m-pv4ger-seg": "8008791",
-#     "m-cashew-plantation": "8008799",
-#     "m-SA-crop-type": "8008824",
-#     "m-forestnet": "8008716",
-#     "m-bigearthnet": "8008684",
-#     "m-so2sat": "8008680",
-#     "m-brick-kiln": "8008702",
-#     "m-nz-cattle": "8008787",
-#     "m-eurosat": "8008737",
-#     "m-chesapeake-lancover": "8008757",
-#     "m-pv4ger": "8008747",
-#     "version": "v0.9.0",
-# }
 
 IDENTIFIERS = {
     "m-so2sat": "8276566",
@@ -225,5 +210,8 @@ def get_zenodo_records(version="v0.9.1", community="geo-bench"):
 
 
 if __name__ == "__main__":
-    download_benchmark(geobench_dir=Path("~/geobench_test").expanduser())
+    download_benchmark()
+
+    # # for developers
+    # download_benchmark(geobench_dir=Path("~/geobench_test").expanduser())
     # get_zenodo_records()
