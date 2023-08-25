@@ -23,10 +23,16 @@ Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored i
 
 Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/main/geobench/download_geobench.py). This will automatically download from [Zenodo](https://zenodo.org/communities/geo-bench/)
 
+Run the command:
+
 ```console
-cd geobench
-python download_geobench.py
+geobench_download
 ```
+
+The current version of the benchmark is 0.9.1. It will soon be updated to incorporate minor changes
+
+This will download all datasets in parallel. If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted.
+`m-bigearthnet` takes the longest time and Zenodo is a bit slow some days.
 
 ## Loading Datasets
 
@@ -35,7 +41,7 @@ See [`example_load_dataset.py`](https://github.com/ServiceNow/geo-bench/blob/mai
 ```python
 from geobench import io
 
-for task in io.task_iterator(benchmark_name="classification_v0.9.0"):
+for task in io.task_iterator(benchmark_name="classification_v0.9.1"):
     dataset = task.get_dataset(split="train")
     sample = dataset[0]
     for band in sample.bands:
