@@ -1,5 +1,5 @@
 from pathlib import Path
-from geobench import download_geobench
+from geobench import geobench_download
 import tempfile
 from contextlib import redirect_stdout
 from io import StringIO
@@ -16,11 +16,11 @@ def test_download_zenodo_file():
 
         # assert download file works
         with redirect_stdout(captured_output):
-            download_geobench.download_zenodo_file(url, tmp_file.name, checksum=checksum)
+            geobench_download.download_zenodo_file(url, tmp_file.name, checksum=checksum)
 
         # assert skip download on file exists
         with redirect_stdout(captured_output):
-            download_geobench.download_zenodo_file(url, tmp_file.name, checksum=checksum)
+            geobench_download.download_zenodo_file(url, tmp_file.name, checksum=checksum)
         output = captured_output.getvalue()
 
     assert output.strip().endswith("already exists and checksum is good.")
@@ -29,14 +29,14 @@ def test_download_zenodo_file():
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=True) as tmp_file:
         with pytest.raises(Exception):
             with redirect_stdout(captured_output):
-                download_geobench.download_zenodo_file(url, tmp_file.name, checksum=wrong_checksum)
+                geobench_download.download_zenodo_file(url, tmp_file.name, checksum=wrong_checksum)
 
 
 def test_download_dataset():
-    record = download_geobench.get_zenodo_record_by_url("https://zenodo.org/record/8274565")
+    record = geobench_download.get_zenodo_record_by_url("https://zenodo.org/record/8274565")
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        download_geobench.download_dataset(record["files"], tmp_dir)
+        geobench_download.download_dataset(record["files"], tmp_dir)
 
         expected_files = [
             "band_stats.json",
