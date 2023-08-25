@@ -14,7 +14,12 @@ GEO-Bench is a General Earth Observation benchmark for evaluating the performanc
 You can install GEO-Bench with [pip](https://pip.pypa.io/):
 
 ```console
-$ pip install geo-benchmark
+pip install geo-benchmark
+```
+
+Optionnaly run tests:
+```console
+geobench-test
 ```
 
 ## Downloading the data
@@ -26,7 +31,7 @@ Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/mai
 Run the command:
 
 ```console
-geobench_download
+geobench-download
 ```
 
 The current version of the benchmark is 0.9.1. It will soon be updated to incorporate minor changes
