@@ -17,11 +17,6 @@ You can install GEO-Bench with [pip](https://pip.pypa.io/):
 pip install geo-benchmark
 ```
 
-Optionnaly run tests:
-```console
-geobench-test
-```
-
 ## Downloading the data
 
 Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored in `$HOME/dataset/geobench`.
@@ -38,6 +33,13 @@ The current version of the benchmark is 0.9.1. It will soon be updated to incorp
 
 This will download all datasets in parallel. If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted.
 `m-bigearthnet` takes the longest time and Zenodo is a bit slow some days.
+
+## Tests installation
+
+Optionnaly run tests:
+```console
+geobench-test
+```
 
 ## Loading Datasets
 
