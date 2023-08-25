@@ -1,11 +1,6 @@
 """This script gives an example usage of the geobench package.
 """
 
-from pathlib import Path
-import os
-
-os.environ["GEO_BENCH_DIR"] = str(Path("~/geobench_test").expanduser())
-
 
 import geobench
 
