@@ -34,7 +34,7 @@ The current version of the benchmark is 0.9.1. It will soon be updated to incorp
 This will download all datasets in parallel. If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted or if you get `Error: TOO MANY REQUESTS`.
 `m-bigearthnet` takes the longest time and Zenodo is a bit slow some days.
 
-## Tests installation
+## Test installation
 
 Optionnaly run tests:
 ```console
