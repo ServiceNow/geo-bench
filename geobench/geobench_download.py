@@ -8,6 +8,7 @@ from geobench import config
 from tqdm.contrib.concurrent import thread_map
 import zipfile
 import hashlib
+import time
 
 BENCHMARK_MAP = {
     "classification": [
@@ -46,7 +47,7 @@ IDENTIFIERS = {
 }
 
 
-def download_zenodo_file(file_url: str, output_path: Path, checksum: str = None, n_retry=2):
+def download_zenodo_file(file_url: str, output_path: Path, checksum: str = None, n_retry=4):
     """Download a file from Zenodo and check the checksum. If the file already exists and the checksum is correct, skip the download."""
     output_path = Path(output_path)
     for attempt in range(n_retry):
@@ -59,7 +60,11 @@ def download_zenodo_file(file_url: str, output_path: Path, checksum: str = None,
             tqdm.write(f"Downloaded file: {file_url}")
             return
         except Exception as error:
-            tqdm.write(f"Attempt {attempt + 1} failed for file: {file_url}. Error: {error}")
+            tqdm.write(f"Attempt {attempt + 1} failed for file: {output_path}. Error: {error}")
+
+            # sleep 5 seconds before retrying
+            time.sleep(10)
+
             if attempt + 1 == n_retry:
                 raise error
 
@@ -80,12 +85,26 @@ def file_checksum(output_path: Path):
         return f"md5:{file_hash.hexdigest()}"
 
 
-def get_zenodo_record_by_url(url_or_identifier):
-    """Get the record data from a Zenodo URL."""
+def _get_zenodo_record_by_url(url_or_identifier):
     identifier = url_or_identifier.split("/")[-1]
     record = requests.get(f"https://zenodo.org/api/records/{identifier}")
     record.raise_for_status()  # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
     return record.json()
+
+
+def get_zenodo_record_by_url(url_or_identifier, retry=4):
+    """Get the record data from a Zenodo URL."""
+    for attempt in range(retry):
+        try:
+            return _get_zenodo_record_by_url(url_or_identifier)
+        except Exception as error:
+            tqdm.write(f"Attempt {attempt + 1} failed for url: {url_or_identifier}. Error: {error}")
+
+            # sleep 5 seconds before retrying
+            time.sleep(5)
+
+            if attempt + 1 == retry:
+                raise error
 
 
 def download_file(file_url, output_path, checksum=None):
@@ -140,7 +159,7 @@ def download_dataset(files: list, dataset_dir: str):
         output_path = dataset_dir / file["key"]
         url = file["links"]["self"]
         download_zenodo_file(url, output_path=output_path, checksum=file["checksum"])
-
+        time.sleep(1)  # to reduce changes of hitting rate limit
         if output_path.suffix == ".zip":
             _extract_flat_zip(output_path)
             output_path.unlink()
