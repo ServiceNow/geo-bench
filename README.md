@@ -21,7 +21,7 @@ pip install geo-benchmark
 
 Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored in `$HOME/dataset/geobench`.
 
-Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/main/geobench/download_geobench.py). This will automatically download from [Zenodo](https://zenodo.org/communities/geo-bench/)
+Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/main/geobench/geobench_download.py). This will automatically download from [Zenodo](https://zenodo.org/communities/geo-bench/)
 
 Run the command:
 
