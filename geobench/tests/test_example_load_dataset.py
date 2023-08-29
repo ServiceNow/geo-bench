@@ -3,10 +3,9 @@ import contextlib
 
 
 def test_load_dataset():
-    # just importing is enough to run it
-
     captured_output = io.StringIO()
     with contextlib.redirect_stdout(captured_output):
+        # just importing is enough to run it
         from geobench import example_load_datasets
 
     output = captured_output.getvalue()
