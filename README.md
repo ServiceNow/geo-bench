@@ -35,8 +35,9 @@ This will download all datasets in parallel. If some files are already downloade
 `m-bigearthnet` takes the longest time and Zenodo is a bit slow some days.
 
 ## Test installation
-Make sure the benchmark is downloaded before launching tests.
-Optionnaly run tests:
+You can run tests. 
+Note: Make sure the benchmark is downloaded before launching tests.
+
 ```console
 geobench-test
 ```
