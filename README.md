@@ -17,7 +17,7 @@ You can install GEO-Bench with [pip](https://pip.pypa.io/):
 pip install geo-benchmark
 ```
 
-Note, Python 3.9+ is required.
+Note: Python 3.9+ is required.
 
 ## Downloading the data
 
