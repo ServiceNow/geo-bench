@@ -27,8 +27,8 @@ sys.path.append(str(Path.cwd()))
 
 DATASET_NAME = "pv4ger"
 SRC_DATASET_DIR = gb.GEO_BENCH_DIR / "source" / DATASET_NAME  # type: ignore
-# CLS_DATASET_DIR = gb.CCB_DIR / "converted" / f"{DATASET_NAME}_classification"
-# SEG_DATASET_DIR = gb.CCB_DIR / "converted" / f"{DATASET_NAME}_segmentation"
+# CLS_DATASET_DIR = gb.GEO_BENCH_DIR / "converted" / f"{DATASET_NAME}_classification"
+# SEG_DATASET_DIR = gb.GEO_BENCH_DIR / "converted" / f"{DATASET_NAME}_segmentation"
 DATASET_DIR = gb.GEO_BENCH_DIR / "converted" / f"{DATASET_NAME}_classification"  # type: ignore
 SPATIAL_RESOLUTION = 0.1
 PATCH_SIZE = 320
