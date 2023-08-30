@@ -167,7 +167,10 @@ def download_dataset(files: list, dataset_dir: str):
 
 
 def download_benchmark(
-    version="v0.9.1", benchmark_names=("classification", "segmentation"), geobench_dir=None
+    version="v0.9.1",
+    benchmark_names=("classification", "segmentation"),
+    geobench_dir=None,
+    parallel=False,
 ):
     """Download geobench from Zenodo.
 
@@ -191,12 +194,11 @@ def download_benchmark(
             dataset_dir = geobench_dir / f"{benchmark_name}_{version}" / dataset_name
             all_files.append((record["files"], dataset_dir))
 
-    try:
+    if parallel:
         from tqdm.contrib.concurrent import thread_map
 
         thread_map(lambda tuple: download_dataset(*tuple), all_files)
-    except ImportError:
-        print("tqdm.contrib.concurrent not available. Using single thread.")
+    else:
         for files, dataset_dir in all_files:
             download_dataset(files, dataset_dir)
 
