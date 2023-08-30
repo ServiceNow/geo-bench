@@ -41,6 +41,10 @@ You can run tests.
 Note: Make sure the benchmark is downloaded before launching tests.
 
 ```console
+pip install pytest
+```
+
+```console
 geobench-test
 ```
 
