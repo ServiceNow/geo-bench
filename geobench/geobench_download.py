@@ -5,7 +5,6 @@ import requests
 
 from tqdm import tqdm
 from geobench import config
-from tqdm.contrib.concurrent import thread_map
 import zipfile
 import hashlib
 import time
@@ -192,7 +191,14 @@ def download_benchmark(
             dataset_dir = geobench_dir / f"{benchmark_name}_{version}" / dataset_name
             all_files.append((record["files"], dataset_dir))
 
-    thread_map(lambda tuple: download_dataset(*tuple), all_files)
+    try:
+        from tqdm.contrib.concurrent import thread_map
+
+        thread_map(lambda tuple: download_dataset(*tuple), all_files)
+    except ImportError:
+        print("tqdm.contrib.concurrent not available. Using single thread.")
+        for files, dataset_dir in all_files:
+            download_dataset(files, dataset_dir)
 
 
 def get_zenodo_records(version="v0.9.1", community="geo-bench"):
