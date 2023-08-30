@@ -17,6 +17,8 @@ You can install GEO-Bench with [pip](https://pip.pypa.io/):
 pip install geo-benchmark
 ```
 
+Note, Python 3.9+ is required.
+
 ## Downloading the data
 
 Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored in `$HOME/dataset/geobench`.
