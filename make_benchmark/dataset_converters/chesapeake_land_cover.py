@@ -1,4 +1,6 @@
 """Chesapeake Land Cover dataset."""
+# TODO (repaire this code since the recent torchgeo update)
+
 # Chesapeake Bay Land Cover dataset will be automatically downloaded by
 # TorchGeo (https://github.com/microsoft/torchgeo)
 
