@@ -31,10 +31,10 @@ Run the command:
 geobench-download
 ```
 
-The current version of the benchmark is 0.9.1. It will soon be updated to incorporate minor changes
+The current version of the benchmark is 0.9.1. It will soon be updated to incorporate minor changes.
 
-This will download all datasets in parallel. If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted or if you get `Error: TOO MANY REQUESTS`.
-`m-bigearthnet` takes the longest time and Zenodo is a bit slow some days.
+You need ~65 GB of free disk space for download and unzip (once all .zip are deleted it takes 57GB).
+If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted.
 
 ## Test installation
 You can run tests. 
