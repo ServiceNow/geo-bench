@@ -94,8 +94,8 @@ class BandInfo(object):
         assert isinstance(band, Band)
         assert band.band_info == self, f"{str(band.band_info)} vs {str(self)}"
         assert isinstance(band.data, np.ndarray)
-        if not (band.data.dtype == np.int16):
-            warn(f"band.data is expected to be int16, but has type {band.data.dtype}")
+        # if not (band.data.dtype == np.int16):
+        #     warn(f"band.data is expected to be int16, but has type {band.data.dtype}")
         if band.transform is None:
             warn(f"No geotransformation specified for band {band.band_info.name}.")
 
@@ -339,7 +339,7 @@ sentinel2_13_bands = [
     Sentinel2("05 - Vegetation Red Edge", ("5", "05"), 20, 0.705),
     Sentinel2("06 - Vegetation Red Edge", ("6", "06"), 20, 0.74),
     Sentinel2("07 - Vegetation Red Edge", ("7", "07"), 20, 0.783),
-    Sentinel2("08 - NIR", ("8", "08", "NIR"), 20, 0.842),
+    Sentinel2("08 - NIR", ("8", "08", "NIR"), 10, 0.842),
     Sentinel2("08A - Vegetation Red Edge", ("8A", "08A"), 20, 0.865),
     Sentinel2("09 - Water vapour", ("9", "09"), 60, 0.945),
     Sentinel2("10 - SWIR - Cirrus", ("10",), 60, 1.375),
@@ -443,7 +443,6 @@ class Band:
         #         warn("data has a 3rd dimension of size 1. Squeezing it out and continuing.")
 
         if self.convert_to_int16:
-
             if np.min(data) < -32768 or np.max(data) > 32767:
                 raise ValueError("Data out of range. Will not convert to int16.")
 
@@ -471,7 +470,6 @@ class Band:
             predictor=2,
             transform=self.transform,
         ) as dst:
-
             tags = dict(
                 date=self.date,
                 date_id=self.date_id,
@@ -858,6 +856,8 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
                 spatial_resolution=band.spatial_resolution,
                 band_info=band.band_info,
                 meta_info=band.meta_info,
+                transform=band.transform,
+                crs=band.crs,
             )
             bands_order.append(band_descriptor)
             attr_dict[band_descriptor] = attrs
@@ -887,7 +887,6 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         bands = []
         label = None
         for band_name in band_names:
-
             if label_only and not band_name.startswith("label"):
                 continue
 
@@ -977,7 +976,6 @@ def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
     bands = []
     label = None
     for band_name in band_names:
-
         if label_only and band_name != "label":
             continue
 
@@ -1227,6 +1225,8 @@ class GeobenchDataset:
             format: 'hdf5' or 'tif'
         """
         self.dataset_dir = Path(dataset_dir)
+        if not self.dataset_dir.exists():
+            raise ValueError(f"dataset_dir {dataset_dir} does not exist.")
         self.split = split
         assert format in [
             "hdf5",
@@ -1291,12 +1291,16 @@ class GeobenchDataset:
             self._sample_name_list.extend(sample_names)
 
     ### Task specifications
+    # (can't specify return type because of circular depencies, would have to refactor)
     @cached_property
-    def task_specs(self):
+    def task_specs(self):  # -> Task:
         """Load and return task specifications."""
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
             task = pickle.load(fd)
+
+        # for backward compatibility
         task.benchmark_name = self.dataset_dir.parent.name
+        task.dataset_name = self.dataset_dir.name
         return task
 
     #### Splits ####
@@ -1673,18 +1677,28 @@ def _format_date(date: Union[datetime.date, datetime.datetime]):
         raise ValueError(f"Unknown date of type: {type(date)}.")
 
 
-def _date_from_str(date_str):
-    """Create a datetime object from string.
+def _check_task_specs(dataset: GeobenchDataset, rewrite_if_necessary=False):
+    with open(dataset.dataset_dir / "task_specs.pkl", "rb") as fd:
+        _task_specs = pickle.load(fd)
 
-    Args:
-        date_str: string to be converted to date
-    """
-    if date_str == "NoDate":
-        return None
-    elif len(date_str) <= 12:
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-    else:
-        return datetime.datetime.strptime(date_str, "%Y-%m-%d_%H-%M-%S-%Z")
+    task_specs = dataset.task_specs
+
+    rewrite = False
+    if _task_specs.dataset_name != task_specs.dataset_name:
+        rewrite = True
+        print(f"dataset_name inconsitent: {_task_specs.dataset_name} vs {task_specs.dataset_name}")
+
+    if _task_specs.benchmark_name != task_specs.benchmark_name:
+        rewrite = True
+        print(
+            f"benchmark_name inconsitent: {_task_specs.benchmark_name} vs {task_specs.benchmark_name}"
+        )
+
+    if rewrite and rewrite_if_necessary:
+        print("Rewriting task_specs.pkl")
+        task_specs.save(dataset.dataset_dir, overwrite=True)
+
+    return task_specs
 
 
 def check_dataset_integrity(
@@ -1692,6 +1706,7 @@ def check_dataset_integrity(
     samples: List[Sample],
     max_count: int = None,
     assert_dense: bool = True,
+    rewrite_if_necessary=False,
 ) -> None:
     """Verify the intergrity, coherence and consistancy of a list of a dataset.
 
@@ -1701,12 +1716,35 @@ def check_dataset_integrity(
         max_count: max count of samples
         assert_dense: whether or not to check that there are no None values
     """
-    for partition_name in dataset._partition_path_dict.keys():
-        print(f"check integrity of {partition_name}")
-        partition = dataset.load_partition(partition_name)
-        check_partition_integrity(partition, partition_name)
 
-    task_specs = dataset.task_specs
+    partition_names = dataset._partition_path_dict.keys()
+
+    epxected_partition_names = [
+        "default",
+        "0.01x_train",
+        "0.02x_train",
+        "0.05x_train",
+        "0.10x_train",
+        "0.20x_train",
+        "0.50x_train",
+        "1.00x_train",
+    ]
+
+    if set(partition_names) != set(epxected_partition_names):
+        warn(
+            f"Partition names are not as expected. Found:\n {partition_names} vs:\n {epxected_partition_names}"
+        )
+
+    # list directory content for all hdf5 files
+    hdf5_names = [file.stem for file in dataset.dataset_dir.glob("*.hdf5")]
+
+    for partition_name in partition_names:
+        # print(f"check integrity of {partition_name}")
+        partition = dataset.load_partition(partition_name)
+        check_partition_integrity(partition, partition_name, file_names=hdf5_names)
+
+    task_specs = _check_task_specs(dataset, rewrite_if_necessary)
+
     if samples is None:
         samples = dataset.iter_dataset(max_count=max_count)
 
@@ -1723,6 +1761,8 @@ def check_dataset_integrity(
             shapes = []
             for band in sample.bands:
                 band.band_info.assert_valid(band)
+                # if dataset.dataset_dir.name == "m-so2sat":
+                #     print("so2sat")
                 shapes.append(band.data.shape[:2])
             max_shape = np.array(shapes).max(axis=0)
             assert np.all(
@@ -1736,8 +1776,11 @@ def check_dataset_integrity(
                 assert np.all(sample.band_array is not None)
 
 
-def check_partition_integrity(partition: Partition, partition_name: str) -> None:
+def check_partition_integrity(partition: Partition, partition_name: str, file_names=None) -> None:
     """Check the integretiy of a partition.
+
+    * check that all subset names are unique
+    * check that there is no overlap between subsets
 
     Args:
         partition: partition to check
@@ -1751,3 +1794,6 @@ def check_partition_integrity(partition: Partition, partition_name: str) -> None
         all_names.extend(names)
 
     assert len(set(all_names)) == len(all_names), "Overlap between the different subsets."
+    if file_names is not None:
+        # verify that all_names is a subset of file_names
+        assert set(all_names).issubset(set(file_names)), "Not all samples are present in dataset."
