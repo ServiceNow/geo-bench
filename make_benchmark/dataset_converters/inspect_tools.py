@@ -14,7 +14,9 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw
 from rasterio import warp
 from rasterio.crs import CRS
-from tqdm.auto import tqdm
+
+# from tqdm.auto import tqdm
+from tqdm import tqdm
 
 import geobench as gb
 from geobench import dataset as io_ds
@@ -36,8 +38,19 @@ def compare(a, b, name, src_a, src_b) -> None:
         )
 
 
+def _filter_percentile(arr, lower_percentile=1, upper_percentile=99):
+    lower = np.percentile(arr, lower_percentile)
+    upper = np.percentile(arr, upper_percentile)
+    return arr[(arr > lower) & (arr < upper)]
+
+
 def plot_band_stats(
-    band_values: Dict[str, np.ndarray], n_cols: int = 4, n_hist_bins: int = None
+    band_values: Dict[str, np.ndarray],
+    n_cols: int = 4,
+    n_hist_bins: int = None,
+    dataset_name=None,
+    lower_percentile=0.5,
+    upper_percentile=99.5,
 ) -> None:
     """Plot a histogram of band values for each band.
 
@@ -49,11 +62,17 @@ def plot_band_stats(
     items = list(band_values.items())
     items.sort(key=lambda item: item[0])
     n_rows = int(math.ceil(len(items) / n_cols))
-    fig1, ax_matrix = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(20, 5))
+    fig1, ax_matrix = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(20, 10))
+
+    if dataset_name is not None:
+        # set figure title
+        fig1.suptitle(dataset_name, fontsize=16)
+
     for i, (key, value) in enumerate(tqdm(items, desc="Plotting statistics")):
         ax = ax_matrix.flat[i]
         ax.set_title(key)
-        ax.hist(value, bins=n_hist_bins)
+        values_filtered = _filter_percentile(value, lower_percentile, upper_percentile)
+        ax.hist(values_filtered, bins=n_hist_bins)
     plt.tight_layout()
 
 
@@ -365,6 +384,31 @@ def leaflet_map(samples):
     return map
 
 
+def verify_benchmark_integrity(benchmark_name, n_samples=1000, rewrite_if_necessary=False):
+    for task in gb.task_iterator(benchmark_name=benchmark_name):
+        # if task.dataset_name != "m-so2sat":
+        #     continue
+
+        dataset_dir = task.get_dataset_dir()
+        print(f"Verifying {task.dataset_name} ({dataset_dir}).")
+        load_and_verify_samples(
+            dataset_dir, n_samples=n_samples, rewrite_if_necessary=rewrite_if_necessary
+        )
+        print()
+
+        print(task.bands_stats)
+
+        # diplay band stats
+        dataset = GeobenchDataset(dataset_dir)
+        df = pd.DataFrame(
+            [dict(name=name, **stats.__dict__) for name, stats in dataset.band_stats.items()]
+        )
+        df = df.set_index("name")
+        from IPython.display import display
+
+        display(df)
+
+
 def load_and_verify_samples(
     dataset_dir,
     n_samples,
@@ -372,16 +416,24 @@ def load_and_verify_samples(
     check_integrity=True,
     split=None,
     n_value_per_image=1000,
+    rewrite_if_necessary=False,
 ):
     """High level function. Loads samples, perform some statistics and plot histograms."""
     dataset = GeobenchDataset(dataset_dir, split=split)
     samples = list(tqdm(dataset.iter_dataset(n_samples), desc="Loading Samples"))
     if check_integrity:
-        gb.check_dataset_integrity(dataset, samples=samples)
+        gb.check_dataset_integrity(
+            dataset, samples=samples, rewrite_if_necessary=rewrite_if_necessary
+        )
+
     band_values, band_stats = compute_dataset_statistics(
         samples, n_value_per_image=n_value_per_image
     )
-    plot_band_stats(band_values=band_values, n_hist_bins=n_hist_bins)
+
+    plot_band_stats(
+        band_values=band_values, n_hist_bins=n_hist_bins, dataset_name=Path(dataset_dir).name
+    )
+
     return dataset, samples, band_values, band_stats
 
 
@@ -508,6 +560,8 @@ def collect_task_info(task, fix_task_shape=False):
     # loss = loss()
     try:
         dataset = task.get_dataset(split="train")
+        # check_module(dataset)
+
         partition = dataset.active_partition.partition_dict
         n_train = len(partition["train"])
         n_valid = len(partition["valid"])
@@ -517,6 +571,7 @@ def collect_task_info(task, fix_task_shape=False):
             if band.transform is not None:
                 n_geoinfo += 1
 
+        # check_module(band)
     except Exception as e:
         print(e)
         n_train, n_valid, n_test = -1, -1, -1
@@ -524,7 +579,9 @@ def collect_task_info(task, fix_task_shape=False):
     n_classes = getattr(task.label_type, "n_classes", -1)
 
     # shapes = [band.data.shape for band in dataset[0].bands]
-    largest_shape = dataset[0].largest_shape()
+    sample_0 = dataset[0]
+    # check_module(sample_0)
+    largest_shape = sample_0.largest_shape()
 
     if task.patch_size != largest_shape:
         print(
@@ -558,11 +615,49 @@ def collect_benchmark_info(benchmark_name):
     """Collect information for eacth task in the benchmark."""
     data = []
     for task in gb.task_iterator(gb.GEO_BENCH_DIR / benchmark_name):
+        # check_module(task)
+
         print(task.dataset_name)
 
         task_dict, _ = collect_task_info(task)
         data.append(task_dict)
     return data
+
+
+def check_module(obj, depth=10, current_depth=0, visited=None):
+    """Verifies how modules are reffered in memory after loading a pickle i.e.
+    are they referring to deprecated or new module names."""
+    if visited is None:
+        visited = set()
+
+    if current_depth > depth:
+        return
+
+    if id(obj) in visited:
+        return
+
+    visited.add(id(obj))
+
+    obj_type = type(obj)
+    module_name = getattr(obj_type, "__module__", "")
+
+    if module_name not in ("builtins", "geobench.dataset", "pathlib", "numpy"):
+        print("--" * (current_depth + 1) + module_name)
+    if module_name.startswith("ccb") or module_name.startswith("geobench.io"):
+        print(f"Warning: Object of type {obj_type} has old module name. Module name: {module_name}")
+
+    if isinstance(obj, (list, tuple, set)):
+        for item in obj:
+            check_module(item, depth, current_depth + 1, visited)
+
+    elif isinstance(obj, dict):
+        for key, value in obj.items():
+            check_module(key, depth, current_depth + 1, visited)
+            check_module(value, depth, current_depth + 1, visited)
+
+    elif hasattr(obj, "__dict__"):
+        for attr_name, attr_value in obj.__dict__.items():
+            check_module(attr_value, depth, current_depth + 1, visited)
 
 
 def benchmark_data_frame(benchmark_name):
@@ -647,7 +742,7 @@ def ipyplot_benchmark(benchmark_name, n_samples, img_width=None):
         for i, image in enumerate(images):
             if image.shape[2] > 3:
                 images[i] = pack_hyperspectral(image, 4, 4)
-
+        images = [np.array(image) for image in images]
         ipyplot.plot_class_tabs(
             images=images,
             labels=band_names,
@@ -702,7 +797,8 @@ def plot_benchmark(
             images, labels = extract_images(samples)
             label_names = [replace_str(task.label_type.value_to_str(label)) for label in labels]
 
-        plot_images(images, label_names, DISPLAY_NAMES[task.dataset_name], fig_size=fig_size)
+        name = DISPLAY_NAMES.get(task.dataset_name, task.dataset_name)
+        plot_images(images, label_names, name, fig_size=fig_size)
         plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
         if save_dir is not None:
             path = save_dir / f"{task.dataset_name}.png"
