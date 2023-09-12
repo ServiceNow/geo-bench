@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 import geobench as gb
 from make_benchmark import bandstats
+from make_benchmark.dataset_converters import inspect_tools
 from make_benchmark.generate_partitions import generate_train_size_sweep
 
 
@@ -209,6 +210,8 @@ def make_resampler_from_stats(max_sizes):
 
     def _resample(partition, task_specs, rng=np.random):
         label_stats = task_specs.label_stats()
+        if label_stats is None:
+            raise ValueError(f"No label stats found in directory {task_specs.get_dataset_dir()}.")
         return resample_from_stats(
             partition=partition, label_stats=label_stats, max_sizes=max_sizes, rng=rng
         )
@@ -264,6 +267,14 @@ def resample_from_stats(
         return new_partition
 
 
+def rewrite(sample):
+    """If the sample transformer is not None, it will write the returned Sample.
+
+    By rewriting, you override the old module names in the pickles.
+    """
+    return sample
+
+
 def max_shape_center_crop(max_shape):
     """Ensure that the largest band has `max_shape` or less.
 
@@ -312,6 +323,7 @@ def transform_dataset(
     partition_name: str,
     resampler=None,
     sample_converter=None,
+    new_dataset_name=None,
     delete_existing: bool = False,
     hdf5: bool = True,
 ) -> Union[Path, None]:
@@ -328,8 +340,13 @@ def transform_dataset(
     """
     dataset = gb.GeobenchDataset(dataset_dir, partition_name=partition_name)
     task_specs = dataset.task_specs
+    assert isinstance(task_specs, gb.TaskSpecifications)
+
     task_specs.benchmark_name = dataset_dir.parent.name
-    new_dataset_dir = new_benchmark_dir / dataset_dir.name
+    if new_dataset_name is None:
+        new_dataset_dir = new_benchmark_dir / dataset_dir.name
+    else:
+        new_dataset_dir = new_benchmark_dir / new_dataset_name
 
     if new_dataset_dir.exists():
         if delete_existing:
@@ -373,21 +390,36 @@ def transform_dataset(
                 new_sample.write(new_dataset_dir, format=format)
 
     new_partition.save(new_dataset_dir, "default")
+
+    # get 10 random samples from dataset
+
+    samples = [dataset[i] for i in np.random.choice(len(dataset), 10)]
+
+    # update task_specs and save it again to make sure info is consistent and
+    # that module paths are updated
+    task_specs.dataset_name = new_dataset_dir.name
+    task_specs.self_update_info(samples=samples, verbose=True)
+    task_specs.save(new_dataset_dir, overwrite=True)
+
     return new_dataset_dir
 
 
 def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
     """Create benchmark."""
     for dataset_name, (resampler, sample_converter) in specs.items():
-        print(f"Transforming {dataset_name}.")
-        dataset_dir = gb.GEO_BENCH_DIR / src_benchmark_name / dataset_name
+        dataset_name_old = dataset_name
+        dataset_name = inspect_tools.DISPLAY_NAMES.get(dataset_name, dataset_name)
+
+        print(f"Transforming {dataset_name} ({dataset_name_old}).")
+        dataset_dir = gb.GEO_BENCH_DIR / src_benchmark_name / dataset_name_old
         new_dataset_dir = transform_dataset(
             dataset_dir=dataset_dir,
             new_benchmark_dir=gb.GEO_BENCH_DIR / new_benchmark_name,
             partition_name="default",
             resampler=resampler,
             sample_converter=sample_converter,
-            delete_existing=False,
+            new_dataset_name=dataset_name,
+            delete_existing=True,
         )
 
         if new_dataset_dir is not None:
@@ -406,8 +438,6 @@ def _make_benchmark(new_benchmark_name, specs, src_benchmark_name="converted"):
                 dataset_dir=dataset.dataset_dir,
             )
 
-            print()
-
 
 def make_classification_benchmark():
     """Enrtypoint for creating the classification benchmark."""
@@ -415,16 +445,16 @@ def make_classification_benchmark():
     # max_sizes = {"train": 10, "valid": 100, "test": 100}
     default_resampler = make_resampler(max_sizes=max_sizes)
     specs = {
-        # "forestnet_v1.0": (default_resampler, max_shape_center_crop((256, 256))),
-        "eurosat": (default_resampler, None),
-        # "brick_kiln_v1.0": (default_resampler, None),
-        # "so2sat": (default_resampler, None),
-        # "pv4ger_classification": (default_resampler, max_shape_center_crop((256, 256))),
+        # "forestnet_v1.0": (default_resampler, rewrite),
+        # "eurosat": (default_resampler, rewrite),
+        # "brick_kiln_v1.0": (default_resampler, rewrite),
+        "so2sat": (default_resampler, rewrite),
+        # "pv4ger_classification": (default_resampler, rewrite),
         # # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
         # "geolifeclef-2022": (default_resampler, None),
-        # "bigearthnet": (make_resampler_from_stats(max_sizes), None),
+        # "bigearthnet": (make_resampler_from_stats(max_sizes), rewrite),
     }
-    _make_benchmark("classification_v0.8.2", specs)
+    _make_benchmark("classification_v0.8.5", specs)
 
 
 def make_segmentation_benchmark():
