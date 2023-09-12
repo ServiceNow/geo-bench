@@ -8,7 +8,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from geobench import GEO_BENCH_DIR
-from geobench.dataset import GeobenchDataset
+from geobench.dataset import GeobenchDataset, Sample
 
 
 class TaskSpecifications:
@@ -68,7 +68,7 @@ class TaskSpecifications:
         """
         file_path = Path(directory, "task_specs.pkl")
         if file_path.exists() and not overwrite:
-            raise Exception("task_specifications.pkl alread exists and overwrite is set to False.")
+            raise Exception("task_specs.pkl alread exists and overwrite is set to False.")
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
@@ -98,7 +98,7 @@ class TaskSpecifications:
             band_names=band_names,
         )
 
-    def get_dataset_dir(self):
+    def get_dataset_dir(self) -> Path:
         """Retrieve directory where dataset is read."""
         return GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
@@ -126,7 +126,7 @@ class TaskSpecifications:
         Returns:
             label stats if present or None
         """
-        label_stats_path = self.get_dataset_dir(benchmark_dir=benchmark_dir) / "label_stats.json"
+        label_stats_path = self.get_dataset_dir() / "label_stats.json"
         if label_stats_path.exists():
             with open(label_stats_path, "r") as fp:
                 label_stats = json.load(fp)
@@ -163,9 +163,43 @@ class TaskSpecifications:
         )
         return data_module
 
+    def self_update_info(self, samples: List[Sample], verbose=False):
+        old_bands_info = self.bands_info
+        old_shapes = self.patch_size
+        old_resolutions = self.spatial_resolution
+
+        bands_info = None
+        shapes = None
+        for sample in samples:
+            if bands_info is None:
+                bands_info = [band.band_info for band in sample.bands]
+                shapes = [band.data.shape for band in sample.bands]
+            else:
+                assert len(bands_info) == len(sample.bands)
+                for i, band_info in enumerate(bands_info):
+                    assert band_info == sample.bands[i].band_info
+                for i, shape in enumerate(shapes):
+                    assert shape == sample.bands[i].data.shape
+
+        resolutions = [band_info.spatial_resolution for band_info in bands_info]
+
+        self.bands_info = bands_info
+        # remove None
+        self.spatial_resolution = np.min([res for res in resolutions if res is not None])
+        areas = [shape[0] * shape[1] for shape in shapes]
+        self.patch_size = shapes[np.argmax(areas)]
+
+        if verbose:
+            print(f"Updated task specs for {self.dataset_name}")
+            print(f"  patch_size: {old_shapes} -> {self.patch_size}")
+            print(f"  spatial_resolution: {old_resolutions} -> {self.spatial_resolution}")
+
+            for old_band_info, band_info in zip(old_bands_info, self.bands_info):
+                print(f"  ´{old_band_info} -> {band_info}")
+
 
 def task_iterator(
-    benchmark_name: str, ignore_task: List[str] = None, benchmark_dir: str = None
+    benchmark_name: str = None, ignore_task: List[str] = None, benchmark_dir: str = None
 ) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
@@ -185,6 +219,9 @@ def task_iterator(
 
     for dataset_dir in benchmark_dir_path.iterdir():
         if not dataset_dir.is_dir():
+            continue
+
+        if dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
         if ignore_task is not None:
@@ -207,6 +244,7 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     dataset_dir = Path(dataset_dir)
     with open(dataset_dir / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
+    assert isinstance(task_specs, TaskSpecifications)
 
     # ensures consistency with benchmark directory name for backward compatibility
     if rename_benchmark:
@@ -220,4 +258,8 @@ class SegmentationAccuracy:
 
 
 class Accuracy:
+    """For loading old pickles"""
+
+
+class MultilabelAccuracy:
     """For loading old pickles"""
