@@ -148,3 +148,7 @@ class MultiLabelClassification(LabelType):
             if active == 1:
                 names.append(self.class_name[i])
         return " &\n".join(names)
+
+
+class Detection:
+    pass
