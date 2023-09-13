@@ -1,5 +1,6 @@
 """Task."""
 
+from functools import cached_property
 import json
 import pickle
 from pathlib import Path
@@ -8,7 +9,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from geobench import GEO_BENCH_DIR
-from geobench.dataset import GeobenchDataset, Sample
+from geobench.dataset import GeobenchDataset, Sample, _load_band_stats
 
 
 class TaskSpecifications:
@@ -22,7 +23,7 @@ class TaskSpecifications:
         benchmark_name: str = None,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        bands_stats=None,
+        # bands_stats=None, # deprecated
         label_type=None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
@@ -43,7 +44,6 @@ class TaskSpecifications:
         self.patch_size = patch_size
         self.n_time_steps = n_time_steps
         self.bands_info = bands_info
-        self.bands_stats = bands_stats
         self.label_type = label_type
         self.spatial_resolution = spatial_resolution
 
@@ -133,6 +133,11 @@ class TaskSpecifications:
             return label_stats
         else:
             return None
+
+    @cached_property
+    def band_stats(self):
+        """Retrieve band stats."""
+        return _load_band_stats(self.get_dataset_dir())
 
     def get_pytorch_data_module(
         self,
