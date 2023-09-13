@@ -41,10 +41,10 @@ def compare(a, b, name, src_a, src_b) -> None:
 def _filter_percentile(arr, lower_percentile=1, upper_percentile=99):
     lower = np.percentile(arr, lower_percentile)
     upper = np.percentile(arr, upper_percentile)
-    return arr[(arr > lower) & (arr < upper)]
+    return arr[(arr >= lower) & (arr <= upper)]
 
 
-def plot_band_stats(
+def plot_band_hist(
     band_values: Dict[str, np.ndarray],
     n_cols: int = 4,
     n_hist_bins: int = None,
@@ -384,7 +384,9 @@ def leaflet_map(samples):
     return map
 
 
-def verify_benchmark_integrity(benchmark_name, n_samples=1000, rewrite_if_necessary=False):
+def verify_benchmark_integrity(
+    benchmark_name, n_samples=1000, display_band_stats=False, rewrite_if_necessary=False
+):
     for task in gb.task_iterator(benchmark_name=benchmark_name):
         # if task.dataset_name != "m-so2sat":
         #     continue
@@ -394,19 +396,16 @@ def verify_benchmark_integrity(benchmark_name, n_samples=1000, rewrite_if_necess
         load_and_verify_samples(
             dataset_dir, n_samples=n_samples, rewrite_if_necessary=rewrite_if_necessary
         )
+        if display_band_stats:
+            df = pd.DataFrame(
+                [dict(name=name, **stats.__dict__) for name, stats in task.band_stats.items()]
+            )
+            df = df.set_index("name")
+            from IPython.display import display
+
+            display(df)
+
         print()
-
-        print(task.bands_stats)
-
-        # diplay band stats
-        dataset = GeobenchDataset(dataset_dir)
-        df = pd.DataFrame(
-            [dict(name=name, **stats.__dict__) for name, stats in dataset.band_stats.items()]
-        )
-        df = df.set_index("name")
-        from IPython.display import display
-
-        display(df)
 
 
 def load_and_verify_samples(
@@ -430,7 +429,7 @@ def load_and_verify_samples(
         samples, n_value_per_image=n_value_per_image
     )
 
-    plot_band_stats(
+    plot_band_hist(
         band_values=band_values, n_hist_bins=n_hist_bins, dataset_name=Path(dataset_dir).name
     )
 
