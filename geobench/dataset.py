@@ -1198,6 +1198,13 @@ class GeneratorWithLength(object):
         """Return the generator to iteratre over."""
         return self.generator
 
+def _load_band_stats(dataset_dir):
+    with open(dataset_dir / "band_stats.json", "r") as fd:
+        all_band_stats_dict = json.load(fd)
+    band_stats = {}
+    for band_name, stats_dict in all_band_stats_dict.items():
+        band_stats[band_name] = Stats(**stats_dict)
+    return band_stats
 
 class GeobenchDataset:
     """GeobenchDataset."""
@@ -1386,12 +1393,7 @@ class GeobenchDataset:
     @cached_property
     def band_stats(self) -> Dict[str, Stats]:
         """Retrieve band statistics."""
-        with open(self.dataset_dir / "band_stats.json", "r") as fd:
-            all_band_stats_dict = json.load(fd)
-        band_stats = {}
-        for band_name, stats_dict in all_band_stats_dict.items():
-            band_stats[band_name] = Stats(**stats_dict)
-        return band_stats
+        return _load_band_stats(self.dataset_dir)
 
     # TODO(allac) save self.band_stats with canonical band names and make a function that returns canonical name from alt name or find a more clever way to do this.
     def rgb_stats(self):

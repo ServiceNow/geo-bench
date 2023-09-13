@@ -444,11 +444,16 @@ def make_classification_benchmark():
     max_sizes = {"train": 20000, "valid": 1000, "test": 1000}
     # max_sizes = {"train": 10, "valid": 100, "test": 100}
     default_resampler = make_resampler(max_sizes=max_sizes)
+
     specs = {
         # "forestnet_v1.0": (default_resampler, rewrite),
         # "eurosat": (default_resampler, rewrite),
+        "eurosat": (
+            make_resampler(max_sizes={"train": 2000, "valid": 1000, "test": 1000}),
+            rewrite,
+        ),
         # "brick_kiln_v1.0": (default_resampler, rewrite),
-        "so2sat": (default_resampler, rewrite),
+        # "so2sat": (default_resampler, rewrite),
         # "pv4ger_classification": (default_resampler, rewrite),
         # # "geolifeclef-2021": (make_resampler(max_sizes={"train": 10000, "valid": 5000, "test": 5000}), None),
         # "geolifeclef-2022": (default_resampler, None),
