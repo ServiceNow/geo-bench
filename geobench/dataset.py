@@ -1198,6 +1198,7 @@ class GeneratorWithLength(object):
         """Return the generator to iteratre over."""
         return self.generator
 
+
 def _load_band_stats(dataset_dir):
     with open(dataset_dir / "band_stats.json", "r") as fd:
         all_band_stats_dict = json.load(fd)
@@ -1205,6 +1206,7 @@ def _load_band_stats(dataset_dir):
     for band_name, stats_dict in all_band_stats_dict.items():
         band_stats[band_name] = Stats(**stats_dict)
     return band_stats
+
 
 class GeobenchDataset:
     """GeobenchDataset."""
@@ -1695,6 +1697,16 @@ def _check_task_specs(dataset: GeobenchDataset, rewrite_if_necessary=False):
         print(
             f"benchmark_name inconsitent: {_task_specs.benchmark_name} vs {task_specs.benchmark_name}"
         )
+
+    if hasattr(task_specs, "bands_stats"):
+        rewrite = True
+        print("bands_stats is deprecated (will delete).")
+        del task_specs.bands_stats
+
+    if hasattr(task_specs, "eval_loss"):
+        rewrite = True
+        print("eval_loss is deprecated (will delete).")
+        del task_specs.eval_loss
 
     if rewrite and rewrite_if_necessary:
         print("Rewriting task_specs.pkl")
