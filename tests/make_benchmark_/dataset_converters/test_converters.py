@@ -161,7 +161,7 @@ def test_seasonet():
 
 
 if __name__ == "__main__":
-    # test_brick_kiln()
+    test_brick_kiln()
     # test_cv4a_kenya_cropy_type()
     # test_eurosat()
     # test_neon_tree()
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     # test_xview2()
     # test_bigearthnet()
     # test_south_africa_crop_type()
-    test_chesapeake()
+    # test_chesapeake()
     # test_forestnet()
     # test_pv4ger()
     # test_seasonet()
