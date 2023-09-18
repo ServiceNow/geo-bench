@@ -73,7 +73,6 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         patch_size=(32, 32),
         n_time_steps=1,
         bands_info=gb.sentinel1_8_bands + gb.sentinel2_13_bands[1:9] + gb.sentinel2_13_bands[-2:],  # type: ignore
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=gb.Classification(17, class_names=So2Sat.classes),
         # eval_loss=gb.Accuracy,
         spatial_resolution=10,

@@ -160,7 +160,6 @@ def convert(max_count: int = None, dataset_dir: Path = DATASET_DIR) -> None:
         patch_size=(PATCH_SIZE, PATCH_SIZE),
         n_time_steps=1,
         bands_info=BAND_INFO_LIST,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=gb.Classification(N_LABELS, class_names=names),
         # eval_loss=gb.Accuracy,
         spatial_resolution=SPATIAL_RESOLUTION,

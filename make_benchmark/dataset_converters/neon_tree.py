@@ -423,7 +423,6 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(400, 400),
         n_time_steps=1,
         bands_info=BAND_INFO_LIST,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=label_type,
         # eval_loss=gb.Accuracy(),  # TODO what loss will we use?
         spatial_resolution=0.1,

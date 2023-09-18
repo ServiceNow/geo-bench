@@ -257,9 +257,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         # n_time_steps=76,  # this is not the same for all images but the max
         n_time_steps=1,  # we yield different instance for each time steps.
         bands_info=BAND_INFO_LIST,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
-        # eval_loss=gb.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir, overwrite=True)
