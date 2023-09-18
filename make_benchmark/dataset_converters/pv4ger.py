@@ -162,7 +162,6 @@ def convert(
         patch_size=(PATCH_SIZE, PATCH_SIZE),
         n_time_steps=1,
         bands_info=BANDS_INFO,
-        bands_stats=None,  # Will be automatically written with inspect script
         label_type=label_type,
         spatial_resolution=SPATIAL_RESOLUTION,
     )

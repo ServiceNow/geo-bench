@@ -23,7 +23,6 @@ class TaskSpecifications:
         benchmark_name: str = None,
         patch_size: Tuple[int, int] = None,
         n_time_steps: int = None,
-        # bands_stats=None, # deprecated
         label_type=None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.

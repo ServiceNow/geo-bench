@@ -249,10 +249,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(PATCH_SIZE, PATCH_SIZE),
         n_time_steps=1,  # multiple time steps are decomposed into multiple samples
         bands_info=bands_info,
-        bands_stats=None,  # Will be automatically written with inspect script
         label_type=gb.Classification(len(LABELS), LABELS),
-        # eval_loss=gb.Accuracy,  # TODO probably not the final
-        # loss eval loss. To be discussed.
         spatial_resolution=SPATIAL_RESOLUTION,
     )
     task_specs.save(dataset_dir, overwrite=True)
