@@ -148,10 +148,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(1024, 1024),
         n_time_steps=1,
         bands_info=rgb_bands,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
-        # eval_loss=gb.SegmentationAccuracy,  # TODO probably not the final
-        # loss eval loss. To be discussed.
         spatial_resolution=1.24,  # Note varying res in dataset.
     )
     task_specs.save(dataset_dir)

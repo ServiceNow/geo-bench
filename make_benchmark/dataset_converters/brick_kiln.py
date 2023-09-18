@@ -126,9 +126,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(64, 64),
         n_time_steps=1,
         bands_info=gb.sentinel2_13_bands,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=gb.Classification(2, ["not brick kiln", "brick kiln"]),
-        # eval_loss=gb.Accuracy,
         spatial_resolution=10,
     )
     task_specs.save(dataset_dir, overwrite=True)

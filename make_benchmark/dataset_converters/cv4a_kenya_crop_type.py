@@ -298,7 +298,6 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(128, 128),
         n_time_steps=13,
         bands_info=BAND_INFO_LIST,
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=LABEL_BAND,
         eval_loss=gb.SegmentationAccuracy,  # TODO probably not the final loss eval loss. To be discussed.
         spatial_resolution=10,

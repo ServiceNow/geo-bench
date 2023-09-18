@@ -143,7 +143,6 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         patch_size=(120, 120),
         n_time_steps=1,
         bands_info=gb.sentinel2_13_bands[0:10] + gb.sentinel2_13_bands[-2:],
-        bands_stats=None,  # Will be automatically written with the inspect script
         label_type=gb.MultiLabelClassification(43, class_names=BigEarthNet.class_sets[43]),
         # eval_loss=gb.MultilabelAccuracy,
         spatial_resolution=10,
