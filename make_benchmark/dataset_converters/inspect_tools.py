@@ -57,12 +57,16 @@ def plot_band_hist(
     Args:
         band_values: dict of 1d arryay representing flattenned values for each band.
         n_cols: number of columns in the histogram gird
-        n_hist_bins: number of bins to use for histograms. See pyplot.hist's bins argument for more details
+        n_hist_bins: number of bins to use for histograms. See pyplot.hist's
+        bins argument for more details
+        dataset_name: name of the dataset to be used as figure title
+        lower_percentile: lower percentile to use for filtering
+        upper_percentile: upper percentile to use for filtering
     """
     items = list(band_values.items())
     items.sort(key=lambda item: item[0])
     n_rows = int(math.ceil(len(items) / n_cols))
-    fig1, ax_matrix = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(20, 10))
+    fig1, ax_matrix = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(10, 2 * n_rows))
 
     if dataset_name is not None:
         # set figure title
