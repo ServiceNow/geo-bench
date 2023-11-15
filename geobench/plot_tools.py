@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
     df = df[(df["partition name"] == "1.00x train") | (df["partition name"] == "default")].copy()
 
-    normalizer = load_normalizer(benchmark_name="classification_v0.8.2")
+    normalizer = load_normalizer(benchmark_name="classification_v1.0")
     normalizer.normalize_data_frame(df, ["test metric", "val metric"])
 
     model_order = "ResNet18-Rnd,ResNet18-timm,ResNet18-MoCo-S2,ResNet50-MillionAID,ResNet50-MoCo-S2,ResNet50-timm,ConvNeXt-B-timm,ViT-T-timm,ViT-S-timm,SwinV2-T-timm".split(

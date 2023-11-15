@@ -31,8 +31,6 @@ Run the command:
 geobench-download
 ```
 
-The current version of the benchmark is 0.9.1. It will soon be updated to incorporate minor changes.
-
 You need ~65 GB of free disk space for download and unzip (once all .zip are deleted it takes 57GB).
 If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted.
 
@@ -55,7 +53,7 @@ See [`example_load_dataset.py`](https://github.com/ServiceNow/geo-bench/blob/mai
 ```python
 import geobench
 
-for task in geobench.task_iterator(benchmark_name="classification_v0.9.1"):
+for task in geobench.task_iterator(benchmark_name="classification_v1.0"):
     dataset = task.get_dataset(split="train")
     sample = dataset[0]
     for band in sample.bands:
