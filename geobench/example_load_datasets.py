@@ -6,7 +6,7 @@ import geobench
 
 print("geobench dir:", geobench.GEO_BENCH_DIR)
 
-for benchmark_name in ("classification_v0.9.1", "segmentation_v0.9.1"):
+for benchmark_name in ("classification_v1.0", "segmentation_v1.0"):
     print(f"Benchmark {benchmark_name}:\n")
     for task in geobench.task_iterator(benchmark_name=benchmark_name):
         print(f"Task {task.dataset_name}:\n  {task}\n")
