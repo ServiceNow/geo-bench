@@ -23,7 +23,7 @@ Note: Python 3.9+ is required.
 
 Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored in `$HOME/dataset/geobench`.
 
-Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/main/geobench/geobench_download.py). This will automatically download from [Zenodo](https://zenodo.org/communities/geo-bench/)
+Next, use the [download script](https://github.com/ServiceNow/geo-bench/blob/main/geobench/geobench_download.py). This will automatically download from [Hugging Face](https://huggingface.co/datasets/recursix/geo-bench-1.0)
 
 Run the command:
 
