@@ -14,7 +14,7 @@ GEO-Bench is a General Earth Observation benchmark for evaluating the performanc
 You can install GEO-Bench with [pip](https://pip.pypa.io/):
 
 ```console
-pip install geo-benchmark
+pip install geobench
 ```
 
 Note: Python 3.9+ is required.
