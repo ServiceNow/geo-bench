@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "geo-benchmark"
+name = "geobench"
 version = "0.0.3"
 description = "A benchmark designed to advance foundation models for Earth monitoring, tailored for remote sensing. It encompasses six classification and six segmentation tasks, curated for precision and model evaluation. The package also features a comprehensive evaluation methodology and showcases results from 20 established baseline models."
 authors = [
