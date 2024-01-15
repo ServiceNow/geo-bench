@@ -1,4 +1,6 @@
 """SeasonNet dataset."""
+# download from zenodo
+
 import datetime
 from pathlib import Path
 from typing import Any, List
