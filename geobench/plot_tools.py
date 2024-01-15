@@ -52,6 +52,22 @@ def bootstrap_iqm_aggregate(df, metric="test_metric", repeat=100):
     return new_df
 
 
+def avergage_seeds(df, group_keys=("model", "dataset", "partition name"), metric="test metric"):
+    """Average seeds for all model and all datasets."""
+    df_avg = df.groupby(list(group_keys))[metric].mean()
+    df_avg = df_avg.unstack(level="dataset")
+
+    df_avg = df_avg.round(3)
+    return df_avg
+
+
+def extract_1x_data(df_all):
+    """Extract only resutls trained on 100% of the data"""
+    return df_all[
+        (df_all["partition name"] == "1.00x train") | (df_all["partition name"] == "default")
+    ].copy()
+
+
 def normalize_bootstrap_and_plot(
     df,
     metric,
