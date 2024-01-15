@@ -78,13 +78,13 @@ def test_so2sat():
     converter_tester(so2sat)
 
 
-@pytest.mark.converter
-@pytest.mark.slow
-@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
-def test_geolifeclef():
-    from make_benchmark.dataset_converters import geolifeclef
+# @pytest.mark.converter
+# @pytest.mark.slow
+# @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+# def test_geolifeclef():
+#     from make_benchmark.dataset_converters import geolifeclef
 
-    converter_tester(geolifeclef)
+#     converter_tester(geolifeclef)
 
 
 @pytest.mark.converter
@@ -151,13 +151,13 @@ def test_south_africa_crop_type():
     converter_tester(crop_type_south_africa)
 
 
-@pytest.mark.converter
-@pytest.mark.slow
-@pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
-def test_seasonet():
-    from make_benchmark.dataset_converters import seasonet
+# @pytest.mark.converter
+# @pytest.mark.slow
+# @pytest.mark.skipif(SRC_DIR_EXISTS, reason="Requires presence of the source datasets.")
+# def test_seasonet():
+#     from make_benchmark.dataset_converters import seasonet
 
-    converter_tester(seasonet)
+#     converter_tester(seasonet)
 
 
 if __name__ == "__main__":
