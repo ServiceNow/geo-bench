@@ -59,6 +59,13 @@ for task in geobench.task_iterator(benchmark_name="classification_v1.0"):
     for band in sample.bands:
         print(f"{band.band_info.name}: {band.data.shape}")
 ```
+
+## Fine-tuning and reproducing experiments
+
+See the code for reproducing experiments as a starting point for fine-tuning:
+
+[geo-bench-experiments](https://github.com/ServiceNow/geo-bench-experiments)
+
 ## Visualizing Results
 
 See the notebook [`baseline_results.ipynb`](https://github.com/ServiceNow/geo-bench/blob/main/geobench/baseline_results.ipynb) for an example of how to visualize the results.
