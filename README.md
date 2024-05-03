@@ -5,7 +5,7 @@ GEO-Bench is a [ServiceNow Research](https://www.servicenow.com/research) projec
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Language: Python](https://img.shields.io/badge/language-Python%203.9%2B-green?logo=python&logoColor=green)](https://www.python.org)
 
-GEO-Bench is a General Earth Observation benchmark for evaluating the performances of large pre-trained models on geospatial data. Read the [full paper](https://arxiv.org/abs/2306.03831) for usage details and evaluation of existing pre-trained vision models.
+GEO-Bench is a **G**eneral **E**arth **O**bservation benchmark for evaluating the performances of large pre-trained models on geospatial data. Read the [full paper](https://arxiv.org/abs/2306.03831) for usage details and evaluation of existing pre-trained vision models.
 
 <img src="https://github.com/ServiceNow/geo-bench/raw/main/banner.png" width="500" />
 
