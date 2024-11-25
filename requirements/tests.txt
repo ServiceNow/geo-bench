@@ -1,0 +1,6 @@
+# tests
+pytest==8.3.3
+nbmake==1.5.4
+pytest-cov==6.0.0
+timm==0.9.16
+h5py==3.12.1
