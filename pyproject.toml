@@ -1,101 +1,84 @@
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
+[project]
 name = "geobench"
 version = "1.0.1"
 description = "A benchmark designed to advance foundation models for Earth monitoring, tailored for remote sensing. It encompasses six classification and six segmentation tasks, curated for precision and model evaluation. The package also features a comprehensive evaluation methodology and showcases results from 20 established baseline models."
 authors = [
-    "Alexandre Lacoste <alexandre.lacoste@servicenow.com>",
-    "Nils Lehmann",
-    "Pau Rodriguez",
-    "Evan David Sherwin",
-    "Hannah Kerner",
-    "Björn Lütjens",
-    "Jeremy Andrew Irvin",
-    "David Dao",
-    "Hamed Alemohammad",
-    "Alexandre Drouin",
-    "Mehmet Gunturkun",
-    "Gabriel Huang",
-    "David Vazquez",
-    "Dava Newman",
-    "Yoshua Bengio",
-    "Stefano Ermon",
-    "Xiao Xiang Zhu"
+    { name = "Alexandre Lacoste", email = "alexandre.lacoste@servicenow.com" },
+    { name = "Nils Lehmann" },
+    { name = "Pau Rodriguez" },
+    { name = "Evan David Sherwin" },
+    { name = "Hannah Kerner" },
+    { name = "Björn Lütjens" },
+    { name = "Jeremy Andrew Irvin" },
+    { name = "David Dao" },
+    { name = "Hamed Alemohammad" },
+    { name = "Alexandre Drouin" },
+    { name = "Mehmet Gunturkun" },
+    { name = "Gabriel Huang" },
+    { name = "David Vazquez" },
+    { name = "Dava Newman" },
+    { name = "Yoshua Bengio" },
+    { name = "Stefano Ermon" },
+    { name = "Xiao Xiang Zhu" }
 ]
-license = "Apache-2.0"
-packages = [
-    { include = "geobench" }
-]
+license = { text = "Apache-2.0" }
 readme = "README.md"
 
-[tool.poetry.dependencies]
-python = ">=3.9.0,<3.13"
-# torch = "^1.12.0"  # optional dependencies
-h5py = ">=3.8.0"
-pandas = ">=1.5.3"
-seaborn = ">=0.12.2"
-tqdm = ">=4.65.0"
-scipy = ">=1.11.2"
-rasterio = ">=1.3.8"
-requests = ">=2.26.0"
-huggingface_hub = ">=0.19.3"
-
-[tool.poetry.dev-dependencies]
-black = "^22.3.0"
-pytest = "^7.1.2"
-pytest-cov = "^3.0.0"
-isort = "^5.10.1"
-colorama = "^0.4.4"
-flake8 = "^4.0.1"
-pydocstyle = "^6.1.1"
-ipyleaflet = "^0.17.2"
-ipyplot = "^1.1.1"
-torchgeo = { git = "https://github.com/microsoft/torchgeo.git" }
-torchvision = "^0.13.0"
-xmltodict = "^0.12.0"
-sickle = "^0.7.0"
-tifffile = ">=2023.8.25"
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-include_trailing_comma = true
-line_length = 100
-
-[tool.flake8]
-max-line-length = 100
-max-complexity = 23
-
-[tool.mypy]
-ignore_missing_imports = true
-show_error_codes = true
-exclude = "(docs|data)/"
-
-[tool.black]
-line-length = 100
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-
-[tool.pytest.ini_options]
-filterwarnings = [
-  "ignore::PossibleUserWarning",
+dependencies = [
+    "torch>=1.12.0",
+    "h5py>=3.8.0",
+    "pandas>=1.5.3",
+    "seaborn>=0.12.2",
+    "tqdm>=4.65.0",
+    "scipy>=1.10.1",
+    "rasterio>=1.3.8",
+    "requests>=2.26.0",
+    "huggingface_hub>=0.19.3",
 ]
 
-[tool.poetry.scripts]
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.3",
+    "nbmake==1.5.4",
+    "pytest-cov==6.0.0",
+    "timm==0.9.16",
+    "h5py==3.12.1",
+    "colorama>=0.4.4",
+    "flake8>=4.0.1",
+    "ipyleaflet>=0.17.2",
+    "ipyplot>=1.1.1",
+    "torchvision>=0.13.0",
+    "xmltodict>=0.12.0",
+    "sickle>=0.7.0",
+    "tifffile>=2023.8.25",
+    "torchgeo @ git+https://github.com/microsoft/torchgeo.git",
+]
+
+[project.scripts]
 geobench-download = "geobench.geobench_download:download_benchmark"
 geobench-test = "geobench.tests.launch_pytest:start"
+
+[tool.setuptools.dynamic]
+version = {attr = "geobench.__version__"}
+
+[tool.setuptools.package-data]
+geobench = ["py.typed"]
+
+[tool.setuptools.packages.find]
+include = ["geobench"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+extend-select = ["D", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/**" = ["D"]
+"tests/**" = ["D"]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
