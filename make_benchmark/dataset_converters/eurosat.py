@@ -19,10 +19,18 @@ DATASET_NAME = "eurosat"
 SRC_DATASET_DIR = Path(gb.src_datasets_dir, DATASET_NAME)  # type: ignore
 DATASET_DIR = Path(gb.datasets_dir, DATASET_NAME)  # type: ignore
 
+# Band info for each channel, in the physical order of the EuroSAT GeoTIFFs
+# (B8A last). Used to be assumed equal to gb.sentinel2_13_bands, which mislabels
+# every channel from index 8 on (geo-bench issue #28).
+EUROSAT_BAND_INFO = [gb.sentinel2_13_bands[i] for i in (0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 8)]
+
 
 class GeoEuroSAT(EuroSAT):
     """Wrapper around EuroSAT Dataset to extract geo information."""
 
+    # B8A is the last band in the EuroSAT GeoTIFFs, not at index 8. See
+    # https://github.com/phelber/EuroSAT/issues/7 and
+    # https://github.com/torchgeo/torchgeo/pull/2480 (geo-bench issue #28).
     all_band_names = (
         "B01",
         "B02",
@@ -32,11 +40,11 @@ class GeoEuroSAT(EuroSAT):
         "B06",
         "B07",
         "B08",
-        "B08A",
         "B09",
         "B10",
         "B11",
         "B12",
+        "B08A",
     )
 
     rgb_bands = ("B04", "B03", "B02")
@@ -129,7 +137,7 @@ def make_sample(images: "np.typing.NDArray[np.float_]", label, sample_name: str)
     for band_idx in range(n_bands):
         band_data = images[band_idx, :, :]
 
-        band_info = gb.sentinel2_13_bands[band_idx]
+        band_info = EUROSAT_BAND_INFO[band_idx]
 
         band = gb.Band(
             data=band_data.astype(np.int16),
@@ -158,7 +166,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         dataset_name=DATASET_NAME,
         patch_size=(64, 64),
         n_time_steps=1,
-        bands_info=gb.sentinel2_13_bands,
+        bands_info=EUROSAT_BAND_INFO,
         label_type=gb.Classification(10, class_names=EuroSAT.classes),
         # eval_loss=gb.Accuracy,
         spatial_resolution=10,

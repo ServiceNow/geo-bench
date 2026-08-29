@@ -19,6 +19,15 @@ DATASET_NAME = "brick_kiln_v1.0"
 SRC_DATASET_DIR = Path(gb.src_datasets_dir, DATASET_NAME)  # type: ignore
 DATASET_DIR = Path(gb.datasets_dir, DATASET_NAME)  # type: ignore
 
+# Band info for each channel, following the order actually exported by
+# kiln-scaling/notebooks/get_images.ipynb:
+#   ['B1', 'B2', 'B3', 'B4', 'B5', 'B7', 'B8A', 'B8', 'B11', 'B12', 'TCI_R', 'TCI_G', 'TCI_B']
+# B6, B9 and B10 are absent and the last three channels are 8-bit true-colour RGB.
+# Used to be assumed equal to gb.sentinel2_13_bands (geo-bench issue #29).
+BRICK_KILN_BAND_INFO = [
+    gb.sentinel2_13_bands[i] for i in (0, 1, 2, 3, 4, 6, 8, 7, 11, 12)
+] + gb.make_rgb_bands(10)
+
 
 def load_examples_bloc(file_path):
     """Load a .h5py bloc of images with their labels.
@@ -102,7 +111,7 @@ def make_sample(src_bands, label, coord_box, sample_name) -> gb.Sample:
     for i, band in enumerate(src_bands):
         band_data = gb.Band(
             data=band,
-            band_info=gb.sentinel2_13_bands[i],
+            band_info=BRICK_KILN_BAND_INFO[i],
             spatial_resolution=10,
             transform=transform,
             crs="EPSG:4326",
@@ -125,7 +134,7 @@ def convert(max_count=None, dataset_dir=DATASET_DIR) -> None:
         dataset_name=DATASET_NAME,
         patch_size=(64, 64),
         n_time_steps=1,
-        bands_info=gb.sentinel2_13_bands,
+        bands_info=BRICK_KILN_BAND_INFO,
         label_type=gb.Classification(2, ["not brick kiln", "brick kiln"]),
         spatial_resolution=10,
     )
