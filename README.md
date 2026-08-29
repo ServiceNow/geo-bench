@@ -11,11 +11,15 @@ GEO-Bench is a **G**eneral **E**arth **O**bservation benchmark for evaluating th
 
 ## Installation
 
-You can install GEO-Bench with [pip](https://pip.pypa.io/):
+The release on PyPI (`1.0.0`) pins outdated upper bounds on its dependencies, which conflicts with
+current versions of the scientific-Python stack ([#20](https://github.com/ServiceNow/geo-bench/pull/20)
+relaxes them on `main`). Install from `main`:
 
 ```console
-pip install geobench
+pip install git+https://github.com/ServiceNow/geo-bench.git
 ```
+
+The PyPI release is still available with `pip install geobench`.
 
 Note: Python 3.9+ is required.
 
@@ -59,6 +63,38 @@ for task in geobench.task_iterator(benchmark_name="classification_v1.0"):
     for band in sample.bands:
         print(f"{band.band_info.name}: {band.data.shape}")
 ```
+
+## Known issues
+
+The `m-eurosat` and `m-brick-kiln` datasets in `classification_v1.0` record the wrong Sentinel-2
+band for most of their channels. The pixel data is unaffected; only the band name and wavelength
+stored for each channel are wrong, so selecting channels by band name returns the wrong channel.
+Reported by @gabrieltseng in [#28](https://github.com/ServiceNow/geo-bench/issues/28) and
+[#29](https://github.com/ServiceNow/geo-bench/issues/29).
+
+The 13 channels are actually in this order:
+
+| Channel | `m-eurosat` | `m-brick-kiln` |
+| --- | --- | --- |
+| 0–4 | B01–B05 | B01–B05 |
+| 5 | B06 | B07 |
+| 6 | B07 | B8A |
+| 7 | B08 | B08 |
+| 8 | B09 | B11 |
+| 9 | B10 | B12 |
+| 10 | B11 | TCI_R |
+| 11 | B12 | TCI_G |
+| 12 | B8A | TCI_B |
+
+The stored metadata instead labels all 13 channels, in both datasets, as
+`B01, B02, B03, B04, B05, B06, B07, B08, B8A, B09, B10, B11, B12`. In `m-brick-kiln` the source
+pipeline ([mliu356/kiln-scaling](https://github.com/mliu356/kiln-scaling)) does not export `B06`,
+`B09` or `B10`, and its last three channels are 8-bit true-colour composites rather than reflectance
+bands.
+
+The converters in `make_benchmark/dataset_converters/` now record the order above; the data on
+Hugging Face is not regenerated, so apply this mapping when loading it. Loading either dataset
+through `GeobenchDataset` emits a warning to this effect.
 
 ## Fine-tuning and reproducing experiments
 

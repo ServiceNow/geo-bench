@@ -1208,6 +1208,15 @@ def _load_band_stats(dataset_dir):
     return band_stats
 
 
+# Datasets in the published geo-bench-1.0 benchmark whose stored band names and
+# wavelengths do not match the actual channel order (geo-bench issues #28, #29).
+# The pixel data is fine; only the per-channel band_info is wrong.
+_WRONG_BAND_ORDER = {
+    "m-eurosat": "https://github.com/ServiceNow/geo-bench/issues/28",
+    "m-brick-kiln": "https://github.com/ServiceNow/geo-bench/issues/29",
+}
+
+
 class GeobenchDataset:
     """GeobenchDataset."""
 
@@ -1236,6 +1245,16 @@ class GeobenchDataset:
         self.dataset_dir = Path(dataset_dir)
         if not self.dataset_dir.exists():
             raise ValueError(f"dataset_dir {dataset_dir} does not exist.")
+
+        issue_url = _WRONG_BAND_ORDER.get(self.dataset_dir.name)
+        if issue_url is not None:
+            warn(
+                f"{self.dataset_dir.name} in the published geo-bench-1.0 benchmark stores incorrect "
+                f"band names and wavelengths for most channels (the pixel data is unaffected), so "
+                f"selecting bands by name returns the wrong channel. See {issue_url} and the "
+                f"'Known issues' section of the geo-bench README for the correct channel order."
+            )
+
         self.split = split
         assert format in [
             "hdf5",
