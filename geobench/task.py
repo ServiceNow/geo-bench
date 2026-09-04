@@ -242,9 +242,8 @@ def task_iterator(
         if dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
-        if ignore_task is not None:
-            if dataset_dir.name not in ignore_task:
-                continue
+        if ignore_task is not None and dataset_dir.name in ignore_task:
+            continue
 
         yield load_task_specs(dataset_dir)
 

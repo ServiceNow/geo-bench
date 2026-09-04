@@ -86,3 +86,8 @@ def test_saved_task_specs_do_not_carry_the_dataset_dir(benchmark_dir, tmp_path):
     task_specs.save(str(elsewhere))
     with open(elsewhere / "task_specs.pkl", "rb") as fd:
         assert pickle.load(fd).dataset_dir is None
+
+
+def test_ignore_task_excludes_the_named_tasks(benchmark_dir):
+    tasks = gb.task_iterator(benchmark_dir=benchmark_dir, ignore_task=["m-two"])
+    assert [task.dataset_name for task in tasks] == ["m-one"]
