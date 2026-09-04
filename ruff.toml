@@ -1,0 +1,14 @@
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*.ipynb", "make_benchmark"]
+
+[lint]
+extend-select = ["E", "W", "I", "D", "NPY"]
+ignore = ["E501", "E203", "E731", "D105", "D107", "D203", "D213", "NPY002"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.per-file-ignores]
+"geobench/__init__.py" = ["F401", "F403", "E402", "I001"]
+"geobench/tests/*" = ["D"]
