@@ -51,7 +51,7 @@ class Classification(LabelType):
         """Check if classification label is valid.
 
         Args:
-            value to check
+            value: label to check. Must be an int in [0, n_classes).
         """
         assert isinstance(value, int)
         assert value >= 0, f"{value} is smaller than 0."
@@ -149,4 +149,4 @@ class MultiLabelClassification(LabelType):
 
 
 class Detection:
-    pass
+    """Object detection label type. Not implemented."""

@@ -37,10 +37,11 @@ class DataModule(pl.LightningDataModule):
             batch_size: The size of the mini-batch.
             num_workers: The number of parallel workers for loading samples from the hard-drive.
             val_batch_size: Tes size of the batch for the validation set and test set. If None, will use batch_size.
-            transform: Callable transforming a Sample. Executed on a worker and the output will be provided to collate_fn.
+            train_transform: Callable transforming a Sample, used for the train split. Executed on a worker and the output will be provided to collate_fn.
+            eval_transform: Callable transforming a Sample, used for the validation and test splits.
             collate_fn: A callable passed to the DataLoader. Maps a list of Sample to dictionnary of stacked torch tensors.
             band_names: multi spectral bands to select
-            file_format: 'hdf5' or 'tif'
+            format: 'hdf5' or 'tif'
         """
         super().__init__()
         self.task_specs = task_specs

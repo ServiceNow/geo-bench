@@ -97,7 +97,7 @@ class TaskSpecifications:
             split: dataset split to choose
             partition_name: name of partition, i.e. 'default' for default_partition.json
             transform: callable for transforming a sample after loading
-            file_format: 'hdf5' or 'tif'
+            format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
         return GeobenchDataset(
@@ -181,6 +181,16 @@ class TaskSpecifications:
         return data_module
 
     def self_update_info(self, samples: list[Sample], verbose=False):
+        """Overwrite bands_info, spatial_resolution and patch_size from actual samples.
+
+        The samples must all carry the same bands in the same order and with the same
+        shapes; this is asserted. The spatial resolution becomes the finest across the
+        bands, and the patch size the shape of the largest band by area.
+
+        Args:
+            samples: samples to read the true band info and shapes from
+            verbose: print the old and new values for each field
+        """
         old_bands_info = self.bands_info
         old_shapes = self.patch_size
         old_resolutions = self.spatial_resolution

@@ -1,3 +1,5 @@
+"""Plotting helpers for aggregating and comparing benchmark results."""
+
 import json
 from pathlib import Path
 

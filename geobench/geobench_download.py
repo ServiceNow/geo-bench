@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Download and unpack the geobench benchmarks from the Hugging Face Hub."""
 
 import zipfile
 from pathlib import Path
@@ -31,6 +32,7 @@ def decompress_zip_with_progress(zip_file_path, extract_to_folder=None):
 
 
 def download_benchmark():
+    """Download every benchmark file into GEO_BENCH_DIR and unpack the zip archives."""
     local_directory = Path(GEO_BENCH_DIR)
     dataset_repo = "recursix/geo-bench-1.0"
 

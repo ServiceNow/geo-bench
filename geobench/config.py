@@ -1,3 +1,5 @@
+"""Resolution of the geobench data directory, from $GEO_BENCH_DIR or a default."""
+
 import os
 from pathlib import Path
 

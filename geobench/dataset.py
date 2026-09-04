@@ -482,8 +482,9 @@ class Band:
         """Crop from ratio.
 
         Args:
-            start_ratio:
-            size_ratio:
+            start_ratio: upper-left corner of the crop, as a fraction of the band's
+                height and width.
+            size_ratio: size of the crop, as a fraction of the band's height and width.
         """
         shape = np.array(self.data.shape[:2])
         start = np.round(shape * np.array(start_ratio)).astype(np.int32)
@@ -529,7 +530,8 @@ def _make_map(elements) -> tuple[Any, Any]:
     """Make a enumerated map.
 
     Args:
-        elements:
+        elements: iterable of sortable elements. Sorted before enumerating, so the
+            mapping does not depend on iteration order.
 
     Returns:
         original and enumerated map
@@ -728,7 +730,7 @@ class Sample:
             band_names: list of band names to pack into 3d array
             resample: whether to resample or not
             fill_value: fills missing bands with this value.
-            resample_order
+            resample_order: spline order passed to scipy.ndimage.zoom when resampling.
 
         Returns:
             data array and band names
@@ -1102,7 +1104,8 @@ class Partition:
         """If `partition_dict` is None, it will initialize to a dict of empty lists.
 
         Args:
-            partiton_dict: mapping from 'train', 'valid', 'test' to samples
+            partition_dict: mapping from 'train', 'valid', 'test' to sample names.
+                Every key is checked against those three split names.
         """
         if partition_dict is None:
             self.partition_dict: dict[str, list[str]] = {"train": [], "valid": [], "test": []}
@@ -1548,18 +1551,21 @@ class Stats:
     ) -> None:
         """Initialize new instance of Stats.
 
+        All values are cast to float on assignment, so int16 band data does not
+        break serialization.
+
         Args:
-            min:
-            max:
-            mean:
-            std:
-            median:
-            percentile_0_1:
-            percentile_1:
-            percentile_5:
-            percentile_95:
-            percentile_99:
-            percentile_99_9:
+            min: smallest value observed.
+            max: largest value observed.
+            mean: arithmetic mean of the values.
+            std: standard deviation of the values.
+            median: 50th percentile of the values.
+            percentile_0_1: 0.1st percentile of the values.
+            percentile_1: 1st percentile of the values.
+            percentile_5: 5th percentile of the values.
+            percentile_95: 95th percentile of the values.
+            percentile_99: 99th percentile of the values.
+            percentile_99_9: 99.9th percentile of the values.
         """
         # Convert all to float to avoid serialization issues with int16
         self.min = float(min)
@@ -1614,8 +1620,9 @@ def compute_dataset_statistics(
 
     Args:
         dataset: dataset to compute statistics over
-        n_value_per_image: number of values to consider per image
-        n_sample: number of samples
+        n_value_per_image: number of pixel values sampled per band per image
+        n_samples: number of dataset samples to draw statistics from. If None, or
+            larger than the dataset, every sample is used.
 
     Returns:
         band values and computed band statistics
@@ -1668,13 +1675,13 @@ def _format_date(date: datetime.date | datetime.datetime):
     """Format date.
 
     Args:
-        date in datetime or date format
+        date: date to format, as a datetime.date or datetime.datetime.
 
     Return:
-        datetime date
+        the date rendered as a YYYY-MM-DD string.
 
     Raises:
-        ValueError if date is of wrong type
+        ValueError: if date is neither a date nor a datetime.
     """
     if isinstance(date, datetime.date):
         return date.strftime("%Y-%m-%d")
@@ -1731,9 +1738,11 @@ def check_dataset_integrity(
 
     Args:
         dataset: dataset to check
-        sample: list of samples
+        samples: list of samples the dataset is expected to contain
         max_count: max count of samples
         assert_dense: whether or not to check that there are no None values
+        rewrite_if_necessary: if the task specs on disk disagree with the samples,
+            overwrite task_specs.pkl rather than only reporting the difference.
     """
     partition_names = dataset._partition_path_dict.keys()
 
@@ -1803,6 +1812,7 @@ def check_partition_integrity(partition: Partition, partition_name: str, file_na
     Args:
         partition: partition to check
         partition_name: name of the partition
+        file_names: if given, every sample name in the partition must appear in it.
     """
     all_names = []
     for split, names in partition.partition_dict.items():
