@@ -1,6 +1,10 @@
 line-length = 100
 target-version = "py312"
 extend-exclude = ["*.ipynb", "make_benchmark"]
+# Honour extend-exclude for paths named on the command line too, so the
+# pre-commit hooks -- which pass staged filenames explicitly -- do not lint and
+# autofix the notebook and make_benchmark/.
+force-exclude = true
 
 [lint]
 extend-select = ["E", "W", "I", "D", "NPY"]
