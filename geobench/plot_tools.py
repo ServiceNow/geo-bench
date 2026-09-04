@@ -259,7 +259,18 @@ if __name__ == "__main__":
     normalizer = load_normalizer(benchmark_name="classification_v1.0")
     normalizer.normalize_data_frame(df, ["test metric", "val metric"])
 
-    model_order = ["ResNet18-Rnd", "ResNet18-timm", "ResNet18-MoCo-S2", "ResNet50-MillionAID", "ResNet50-MoCo-S2", "ResNet50-timm", "ConvNeXt-B-timm", "ViT-T-timm", "ViT-S-timm", "SwinV2-T-timm"]
+    model_order = [
+        "ResNet18-Rnd",
+        "ResNet18-timm",
+        "ResNet18-MoCo-S2",
+        "ResNet50-MillionAID",
+        "ResNet50-MoCo-S2",
+        "ResNet50-timm",
+        "ConvNeXt-B-timm",
+        "ViT-T-timm",
+        "ViT-S-timm",
+        "SwinV2-T-timm",
+    ]
     model_colors = dict(zip(model_order, sns.color_palette("colorblind")[: len(model_order)]))
 
     plot_per_dataset(

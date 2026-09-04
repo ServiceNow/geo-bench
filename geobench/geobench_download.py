@@ -60,7 +60,7 @@ def download_benchmark():
     zip_files = [file for file in dataset_files if file.endswith(".zip")]
 
     for i, zip_file in enumerate(zip_files):
-        print(f"Decompressing {i+1}/{len(zip_files)}: {zip_file}  ...")
+        print(f"Decompressing {i + 1}/{len(zip_files)}: {zip_file}  ...")
         decompress_zip_with_progress(local_directory / zip_file)
 
     print("Download and decompression process completed.")

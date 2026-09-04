@@ -226,7 +226,9 @@ class TaskSpecifications:
 
 
 def task_iterator(
-    benchmark_name: str | None = None, ignore_task: list[str] | None = None, benchmark_dir: str | None = None
+    benchmark_name: str | None = None,
+    ignore_task: list[str] | None = None,
+    benchmark_dir: str | None = None,
 ) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 

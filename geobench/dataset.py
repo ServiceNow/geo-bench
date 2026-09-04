@@ -1,4 +1,5 @@
 """GeobenchDataset."""
+
 from __future__ import annotations
 
 import ast
@@ -146,7 +147,6 @@ class Sentinel2(SpectralBand):
     """Sentinel2 spectral band."""
 
 
-
 class Landsat8(SpectralBand):
     """Spectral band of type Landsat 8."""
 
@@ -159,10 +159,8 @@ class Mask(BandInfo):
     """Mask band info."""
 
 
-
 class ElevationBand(BandInfo):
     """Elevation band info."""
-
 
 
 class MultiBand(BandInfo):
@@ -220,7 +218,9 @@ class HyperSpectralBands(MultiBand):
 class CloudProbability(Mask):
     """Cloud Probability mask."""
 
-    def __init__(self, alt_names: Sequence[str] = (), spatial_resolution: float | None = None) -> None:
+    def __init__(
+        self, alt_names: Sequence[str] = (), spatial_resolution: float | None = None
+    ) -> None:
         """Initialize new instance of CloudProbability.
 
         Args:
@@ -236,7 +236,11 @@ class SegmentationClasses(BandInfo, LabelType):
     """Segmentation classes."""
 
     def __init__(
-        self, name: str, spatial_resolution: float, n_classes: int, class_names: list[str] | None = None
+        self,
+        name: str,
+        spatial_resolution: float,
+        n_classes: int,
+        class_names: list[str] | None = None,
     ) -> None:
         """Initialize new instance of Segmentation Classes.
 
@@ -1391,7 +1395,9 @@ class GeobenchDataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = next(iter(self._partition_path_dict.keys()))  # take any partition??
+                partition_name = next(
+                    iter(self._partition_path_dict.keys())
+                )  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(
@@ -1529,7 +1535,7 @@ class GeobenchDataset:
 
     def __repr__(self):
         """Return representation of dataset."""
-        return f"GeobenchDataset(dataset_dir={ self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
+        return f"GeobenchDataset(dataset_dir={self.dataset_dir}, split={self.split}, active_partition={self.active_partition_name}, n_samples={len(self)})"
 
 
 class Stats:
@@ -1792,9 +1798,9 @@ def check_dataset_integrity(
                 #     print("so2sat")
                 shapes.append(band.data.shape[:2])
             max_shape = np.array(shapes).max(axis=0)
-            assert np.all(
-                max_shape == task_specs.patch_size
-            ), f"{max_shape} vs {task_specs.patch_size}"
+            assert np.all(max_shape == task_specs.patch_size), (
+                f"{max_shape} vs {task_specs.patch_size}"
+            )
 
             assert isinstance(task_specs.label_type, LabelType)
             task_specs.label_type.assert_valid(sample.label)

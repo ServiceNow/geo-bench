@@ -1,6 +1,5 @@
 """Label."""
 
-
 import numpy as np
 
 
@@ -8,7 +7,6 @@ class LabelType:
     """Label Type."""
 
     # TODO write docstring about Loss and evalfunction for each type
-
 
     def assert_valid(self, value) -> None:
         """Check if label type is valid."""

@@ -1,6 +1,5 @@
 """This script gives an example usage of the geobench package."""
 
-
 import geobench
 
 print("geobench dir:", geobench.GEO_BENCH_DIR)
