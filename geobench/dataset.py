@@ -31,6 +31,7 @@ import rasterio
 from scipy.ndimage import zoom
 from tqdm import tqdm
 
+from geobench._safe_pickle import safe_load, safe_loads
 from geobench.config import GEO_BENCH_DIR
 
 from geobench.label import LabelType
@@ -526,7 +527,7 @@ def load_band_tif(file_path) -> Band:
         Band object of tif file
     """
     with rasterio.open(file_path) as src:
-        tags = pickle.loads(ast.literal_eval(src.tags()["data"]))
+        tags = safe_loads(ast.literal_eval(src.tags()["data"]))
         data = src.read()
         if data.ndim == 3:
             data = np.moveaxis(data, 0, 2)
@@ -882,7 +883,7 @@ def load_sample_hdf5(sample_path: Path, band_names=None, label_only=False):
         loaded sample
     """
     with h5py.File(sample_path, "r") as fp:
-        attr_dict = pickle.loads(ast.literal_eval(fp.attrs["pickle"]))
+        attr_dict = safe_loads(ast.literal_eval(fp.attrs["pickle"]))
         band_names = attr_dict.get("bands_order", fp.keys())
         bands = []
         label = None
@@ -968,8 +969,8 @@ def load_sample_npz(sample_path: Path, band_names=None, label_only=False):
     Return
         loaded sample
     """
-    band_dict = np.load(sample_path, allow_pickle=True)
-    attr_dict = pickle.loads(ast.literal_eval(str(band_dict["pickle"])))
+    band_dict = np.load(sample_path, allow_pickle=False)
+    attr_dict = safe_loads(ast.literal_eval(str(band_dict["pickle"])))
     # attr_dict = band_dict["attr"]
 
     band_names = attr_dict["bands_order"]
@@ -1324,7 +1325,7 @@ class GeobenchDataset:
     def task_specs(self):  # -> Task:
         """Load and return task specifications."""
         with open(self.dataset_dir / "task_specs.pkl", "rb") as fd:
-            task = pickle.load(fd)
+            task = safe_load(fd)
 
         # for backward compatibility
         task.benchmark_name = self.dataset_dir.parent.name
@@ -1702,7 +1703,7 @@ def _format_date(date: Union[datetime.date, datetime.datetime]):
 
 def _check_task_specs(dataset: GeobenchDataset, rewrite_if_necessary=False):
     with open(dataset.dataset_dir / "task_specs.pkl", "rb") as fd:
-        _task_specs = pickle.load(fd)
+        _task_specs = safe_load(fd)
 
     task_specs = dataset.task_specs
 
