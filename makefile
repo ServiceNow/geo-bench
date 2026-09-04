@@ -1,7 +1,8 @@
-release-pypi:
-	poetry build
-	poetry publish --repository pypi
+build:
+	uv build
 
-release-testpypi:
-	poetry build
-	poetry publish --repository testpypi
+release-pypi: build
+	uv publish
+
+release-testpypi: build
+	uv publish --publish-url https://test.pypi.org/legacy/
