@@ -355,7 +355,7 @@ landsat8_9_bands = [
     Landsat8("05 - NIR", ("5", "05", "B5", "nir"), 30, 0.8647),
     Landsat8("06 - SWIR1", ("6", "06", "B6", "swir1"), 30, 1.6089),
     Landsat8("07 - SWIR2", ("7", "07", "B7", "swir2"), 30, 2.2007),
-    Landsat8("09 - Cirrus", ("9", "09" "B9", "cirrus"), 30, 1.370),
+    Landsat8("09 - Cirrus", ("9", "09", "B9", "cirrus"), 30, 1.370),
     Landsat8("10 - Tirs1", ("10", "B10", "tirs1"), 100, 10.9),
 ]
 

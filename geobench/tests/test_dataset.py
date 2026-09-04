@@ -291,6 +291,17 @@ def test_dataset_withnopartition():
             _ = gb.GeobenchDataset(dataset_dir, band_names=band_names, partition_name="default")
 
 
+def test_band_alt_names_have_no_welded_forms():
+    """A missing comma inside a band's alt_names welds a numeric form onto a B-prefixed one."""
+    assert not [
+        (band.name, alt_name)
+        for bands in (gb.sentinel2_13_bands, gb.landsat8_9_bands)
+        for band in bands
+        for alt_name in band.alt_names
+        if re.search(r"\dB", alt_name)
+    ]
+
+
 def test_class_id():
     from geobench import dataset
 
