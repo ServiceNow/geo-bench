@@ -9,6 +9,7 @@ from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
 import numpy as np
 
 from geobench import GEO_BENCH_DIR
+from geobench._safe_pickle import safe_load
 from geobench.dataset import GeobenchDataset, Sample, _load_band_stats
 
 
@@ -247,7 +248,7 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     """
     dataset_dir = Path(dataset_dir)
     with open(dataset_dir / "task_specs.pkl", "rb") as fd:
-        task_specs = pickle.load(fd)
+        task_specs = safe_load(fd)
     assert isinstance(task_specs, TaskSpecifications)
 
     # ensures consistency with benchmark directory name for backward compatibility
