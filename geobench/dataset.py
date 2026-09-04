@@ -9,7 +9,7 @@ import os
 import pathlib
 import pickle
 from collections import OrderedDict, defaultdict
-from functools import cached_property, lru_cache
+from functools import cached_property
 from pathlib import Path
 from typing import (
     Any,
@@ -1309,6 +1309,7 @@ class GeobenchDataset:
             active_partition_name: name of active partition
         """
         self._partition_path_dict = {}
+        self._partition_cache: dict[str, Partition] = {}
         for p in self.dataset_dir.glob("*_partition.json"):
             partition_name = p.name.split("_partition.json")[0]
             self._partition_path_dict[partition_name] = p
@@ -1365,15 +1366,16 @@ class GeobenchDataset:
         """List available partitions."""
         return list(self._partition_path_dict.keys())
 
-    @lru_cache(maxsize=3)
     def load_partition(self, partition_name: str) -> Partition:
         """Load and return partition content from json file.
 
         Args:
             partition_name: name of partition
         """
-        with open(self._partition_path_dict[partition_name], "r") as fd:
-            return Partition(json.load(fd))
+        if partition_name not in self._partition_cache:
+            with open(self._partition_path_dict[partition_name], "r") as fd:
+                self._partition_cache[partition_name] = Partition(json.load(fd))
+        return self._partition_cache[partition_name]
 
     def _load_partition(self, partition_name) -> None:
         """Load a partition.
