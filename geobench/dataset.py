@@ -674,7 +674,7 @@ class Sample(object):
                     else:
                         if band_names is not None:
                             raise ValueError(
-                                f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None."
+                                f"Missing band {band_names[j]} for date {dates[i]}, but fill_vlaue is None."
                             )
                         else:
                             raise ValueError(f"Missing band names got {band_names}")
