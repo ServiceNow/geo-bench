@@ -49,6 +49,34 @@ geobench-download
 You need ~65 GB of free disk space for download and unzip (once all .zip are deleted it takes 57GB).
 If some files are already downloaded, it will verify the md5 checksum. Feel free to restart the downloader if it is interrupted.
 
+## Using data you already have
+
+If the benchmark is already on disk, either from an earlier download or from a copy shared with you,
+there are two ways to point geobench at it.
+
+The first is `$GEO_BENCH_DIR`, which is read when `geobench` is imported and therefore has to be set
+in the environment before Python starts:
+
+```console
+export GEO_BENCH_DIR=/path/to/geobench
+```
+
+Setting `os.environ["GEO_BENCH_DIR"]` or reassigning `geobench.GEO_BENCH_DIR` after the import has
+no effect.
+
+The second is `benchmark_dir`, which reads a benchmark from elsewhere without changing that
+default. The tasks `task_iterator` yields read their datasets from the directory given here too.
+
+```python
+import geobench
+
+for task in geobench.task_iterator(benchmark_dir="/shared/geobench/classification_v1.0"):
+    dataset = task.get_dataset(split="train")
+```
+
+`benchmark_dir` is the path to a single benchmark rather than to the directory holding several of
+them, and it takes the place of both `$GEO_BENCH_DIR` and `benchmark_name`.
+
 ## Test installation
 You can run tests. 
 Note: Make sure the benchmark is downloaded before launching tests.
