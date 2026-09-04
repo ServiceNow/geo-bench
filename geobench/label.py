@@ -1,16 +1,14 @@
 """Label."""
 
-from typing import List, Optional
 
 import numpy as np
 
 
-class LabelType(object):
+class LabelType:
     """Label Type."""
 
     # TODO write docstring about Loss and evalfunction for each type
 
-    pass
 
     def assert_valid(self, value) -> None:
         """Check if label type is valid."""
@@ -28,7 +26,7 @@ class Classification(LabelType):
 
     """
 
-    def __init__(self, n_classes: int, class_names: List[str] = None) -> None:
+    def __init__(self, n_classes: int, class_names: list[str] = None) -> None:
         """Initialize new instance of classification label.
 
         Args:
@@ -42,7 +40,7 @@ class Classification(LabelType):
         self._class_names = class_names
 
     @property
-    def class_names(self) -> Optional[List[str]]:
+    def class_names(self) -> list[str] | None:
         """Return class names."""
         if hasattr(self, "_class_names"):
             return self._class_names

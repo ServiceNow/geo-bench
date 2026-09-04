@@ -1,10 +1,11 @@
 """Task."""
 
-from functools import cached_property
 import json
 import pickle
+from collections.abc import Generator, Sequence
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -18,15 +19,15 @@ class TaskSpecifications:
     # Directory the task specs were loaded from. Set by load_task_specs and used in
     # preference to the $GEO_BENCH_DIR layout. Declared on the class so that specs
     # unpickled from a task_specs.pkl, which bypasses __init__, still resolve.
-    dataset_dir: Union[Path, None] = None
+    dataset_dir: Path | None = None
 
     def __init__(
         self,
         dataset_name: str,
-        bands_info: List[Any],
+        bands_info: list[Any],
         spatial_resolution: float,
         benchmark_name: str = None,
-        patch_size: Tuple[int, int] = None,
+        patch_size: tuple[int, int] = None,
         n_time_steps: int = None,
         label_type=None,
     ) -> None:
@@ -60,7 +61,7 @@ class TaskSpecifications:
         ]
         return "\n".join(lines)
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """Return the pickled state, without the machine-specific dataset directory."""
         state = self.__dict__.copy()
         state.pop("dataset_dir", None)
@@ -84,7 +85,7 @@ class TaskSpecifications:
 
     def get_dataset(
         self,
-        split: Union[str, None] = None,
+        split: str | None = None,
         partition_name: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
@@ -118,7 +119,7 @@ class TaskSpecifications:
             return Path(self.dataset_dir)
         return GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
-    def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
+    def get_label_map(self) -> None | dict[str, list[str]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
 
         Returns:
@@ -127,12 +128,12 @@ class TaskSpecifications:
         label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
             with open(label_map_path, "r") as fp:
-                label_map: Dict[str, List[str]] = json.load(fp)
+                label_map: dict[str, list[str]] = json.load(fp)
             return label_map
         else:
             return None
 
-    def label_stats(self) -> Union[None, Dict[str, List[Any]]]:
+    def label_stats(self) -> None | dict[str, list[Any]]:
         """Retriebe the label stats, a dictionary defining labels to statistics.
 
         Returns:
@@ -162,8 +163,7 @@ class TaskSpecifications:
         collate_fn=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
     ):
-        """return pytorch data module for this dataset."""
-
+        """Return pytorch data module for this dataset."""
         # import this module only on demand to avoid strict dependency on pytorch
         from geobench.torch_toolbox.dataset import DataModule
 
@@ -180,7 +180,7 @@ class TaskSpecifications:
         )
         return data_module
 
-    def self_update_info(self, samples: List[Sample], verbose=False):
+    def self_update_info(self, samples: list[Sample], verbose=False):
         old_bands_info = self.bands_info
         old_shapes = self.patch_size
         old_resolutions = self.spatial_resolution
@@ -216,7 +216,7 @@ class TaskSpecifications:
 
 
 def task_iterator(
-    benchmark_name: str = None, ignore_task: List[str] = None, benchmark_dir: str = None
+    benchmark_name: str = None, ignore_task: list[str] = None, benchmark_dir: str = None
 ) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 

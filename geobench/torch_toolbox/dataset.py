@@ -1,7 +1,6 @@
 """GeobenchDataset Datamodule."""
 
-from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader

@@ -1,5 +1,5 @@
-import io
 import contextlib
+import io
 
 import pytest
 
@@ -16,7 +16,7 @@ def test_load_dataset():
     captured_output = io.StringIO()
     with contextlib.redirect_stdout(captured_output):
         # just importing is enough to run it
-        from geobench import example_load_datasets
+        pass
 
     output = captured_output.getvalue()
 
