@@ -1,7 +1,8 @@
-release-pypi:
-	poetry build
-	poetry publish --repository pypi
+build:
+	python -m build
 
-release-testpypi:
-	poetry build
-	poetry publish --repository testpypi
+release-pypi: build
+	twine upload dist/*
+
+release-testpypi: build
+	twine upload --repository testpypi dist/*
