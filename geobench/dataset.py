@@ -1625,7 +1625,7 @@ def compute_stats(values) -> Stats:
 
 def compute_dataset_statistics(
     dataset: GeobenchDataset, n_value_per_image: int = 1000, n_samples: int = None
-) -> Tuple[Dict[str, "np.typing.NDArray[np.float_]"], Dict[str, Stats]]:
+) -> Tuple[Dict[str, "np.typing.NDArray[np.float64]"], Dict[str, Stats]]:
     """Compute statistics over an entire dataset.
 
     Args:
@@ -1670,7 +1670,7 @@ def compute_dataset_statistics(
         else:
             accumulator["label"].append(sample.label)
 
-    band_values: Dict[str, "np.typing.NDArray[np.float_]"] = {}
+    band_values: Dict[str, "np.typing.NDArray[np.float64]"] = {}
     band_stats: Dict[str, Stats] = {}
     for name, values in accumulator.items():
         stacked_values = np.hstack(values)
