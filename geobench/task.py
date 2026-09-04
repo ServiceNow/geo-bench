@@ -26,9 +26,9 @@ class TaskSpecifications:
         dataset_name: str,
         bands_info: list[Any],
         spatial_resolution: float,
-        benchmark_name: str = None,
-        patch_size: tuple[int, int] = None,
-        n_time_steps: int = None,
+        benchmark_name: str | None = None,
+        patch_size: tuple[int, int] | None = None,
+        n_time_steps: int | None = None,
         label_type=None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
@@ -157,7 +157,7 @@ class TaskSpecifications:
         partition_name: str = "default",
         batch_size: int = 64,
         num_workers: int = 8,
-        val_batch_size: int = None,
+        val_batch_size: int | None = None,
         train_transform=None,
         eval_transform=None,
         collate_fn=None,
@@ -216,7 +216,7 @@ class TaskSpecifications:
 
 
 def task_iterator(
-    benchmark_name: str = None, ignore_task: list[str] = None, benchmark_dir: str = None
+    benchmark_name: str | None = None, ignore_task: list[str] | None = None, benchmark_dir: str | None = None
 ) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 

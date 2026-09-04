@@ -34,7 +34,7 @@ class BandInfo:
     """Base class for storing non pixel information about bands such as band name, wavelenth and spatial resolution."""
 
     def __init__(
-        self, name: str, alt_names: Sequence[str] = (), spatial_resolution: float = None
+        self, name: str, alt_names: Sequence[str] = (), spatial_resolution: float | None = None
     ) -> None:
         """Initialize new instance of BandInfo.
 
@@ -115,8 +115,8 @@ class SpectralBand(BandInfo):
         self,
         name=None,
         alt_names: Sequence[str] = (),
-        spatial_resolution: float = None,
-        wavelength: float = None,
+        spatial_resolution: float | None = None,
+        wavelength: float | None = None,
     ) -> None:
         """Initialize new instance of SpectralBand.
 
@@ -172,8 +172,8 @@ class MultiBand(BandInfo):
         self,
         name: str,
         alt_names: Sequence[str] = (),
-        spatial_resolution: float = None,
-        n_bands: int = None,
+        spatial_resolution: float | None = None,
+        n_bands: int | None = None,
     ) -> None:
         """Initialize new instance of MultiBand.
 
@@ -198,8 +198,8 @@ class HyperSpectralBands(MultiBand):
         self,
         name: str,
         alt_names: Sequence[str] = (),
-        spatial_resolution: float = None,
-        n_bands: int = None,
+        spatial_resolution: float | None = None,
+        n_bands: int | None = None,
         wavelength_range=None,
     ) -> None:
         """Initialize new instance of MultiBand.
@@ -220,7 +220,7 @@ class HyperSpectralBands(MultiBand):
 class CloudProbability(Mask):
     """Cloud Probability mask."""
 
-    def __init__(self, alt_names: Sequence[str] = (), spatial_resolution: float = None) -> None:
+    def __init__(self, alt_names: Sequence[str] = (), spatial_resolution: float | None = None) -> None:
         """Initialize new instance of CloudProbability.
 
         Args:
@@ -236,7 +236,7 @@ class SegmentationClasses(BandInfo, LabelType):
     """Segmentation classes."""
 
     def __init__(
-        self, name: str, spatial_resolution: float, n_classes: int, class_names: list[str] = None
+        self, name: str, spatial_resolution: float, n_classes: int, class_names: list[str] | None = None
     ) -> None:
         """Initialize new instance of Segmentation Classes.
 
@@ -353,7 +353,7 @@ class Band:
         data: np.typing.NDArray[np.int_],
         band_info: BandInfo,
         spatial_resolution: float,
-        date: datetime.datetime | datetime.date = None,
+        date: datetime.datetime | datetime.date | None = None,
         date_id=None,
         transform=None,
         crs=None,
@@ -620,9 +620,9 @@ class Sample:
     def pack_to_4d(
         self,
         dates=None,
-        band_names: Sequence[str] = None,
+        band_names: Sequence[str] | None = None,
         resample: bool = False,
-        fill_value: float = None,
+        fill_value: float | None = None,
         resample_order: int = 3,
     ) -> tuple[np.ndarray, list[datetime.date], list[str]]:
         """Pack all bands into an 4d array of shape (n_dates, height, width, n_bands).
@@ -691,8 +691,8 @@ class Sample:
 
     def get_band_array(
         self,
-        dates: list[datetime.date | datetime.datetime] = None,
-        band_names: Sequence[str] = None,
+        dates: list[datetime.date | datetime.datetime] | None = None,
+        band_names: Sequence[str] | None = None,
     ) -> Any:
         """Retrieve an array for selected datase and band_names.
 
@@ -1099,7 +1099,7 @@ class Partition:
                 f"split_name must be one of 'train', 'valid', 'test'. Got {split_name}."
             )
 
-    def __init__(self, partition_dict: dict[str, list[str]] = None) -> None:
+    def __init__(self, partition_dict: dict[str, list[str]] | None = None) -> None:
         """If `partition_dict` is None, it will initialize to a dict of empty lists.
 
         Args:
@@ -1209,9 +1209,9 @@ class GeobenchDataset:
         self,
         dataset_dir,
         partition_name: str = "default",
-        band_names: Sequence[str] = None,
+        band_names: Sequence[str] | None = None,
         split=None,
-        transform: Callable[[Sample], Sample] = None,
+        transform: Callable[[Sample], Sample] | None = None,
         format="hdf5",
     ) -> None:
         """Initialize new Geobench dataset.
@@ -1493,7 +1493,7 @@ class GeobenchDataset:
         # for sample_name in sample_names:
         #     yield load_sample(Path(self.dataset_dir, sample_name))
 
-    def iter_dataset(self, max_count: int = None) -> GeneratorWithLength:
+    def iter_dataset(self, max_count: int | None = None) -> GeneratorWithLength:
         """Iterate over dataset.
 
         Args:
@@ -1609,7 +1609,7 @@ def compute_stats(values) -> Stats:
 
 
 def compute_dataset_statistics(
-    dataset: GeobenchDataset, n_value_per_image: int = 1000, n_samples: int = None
+    dataset: GeobenchDataset, n_value_per_image: int = 1000, n_samples: int | None = None
 ) -> tuple[dict[str, np.typing.NDArray[np.float64]], dict[str, Stats]]:
     """Compute statistics over an entire dataset.
 
@@ -1724,7 +1724,7 @@ def _check_task_specs(dataset: GeobenchDataset, rewrite_if_necessary=False):
 def check_dataset_integrity(
     dataset: GeobenchDataset,
     samples: list[Sample],
-    max_count: int = None,
+    max_count: int | None = None,
     assert_dense: bool = True,
     rewrite_if_necessary=False,
 ) -> None:

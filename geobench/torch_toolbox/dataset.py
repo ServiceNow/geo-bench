@@ -22,7 +22,7 @@ class DataModule(pl.LightningDataModule):
         partition_name: str = "default",
         batch_size: int = 64,
         num_workers: int = 8,
-        val_batch_size: int = None,
+        val_batch_size: int | None = None,
         train_transform=None,
         eval_transform=None,
         collate_fn=None,

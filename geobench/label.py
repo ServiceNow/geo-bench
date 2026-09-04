@@ -26,7 +26,7 @@ class Classification(LabelType):
 
     """
 
-    def __init__(self, n_classes: int, class_names: list[str] = None) -> None:
+    def __init__(self, n_classes: int, class_names: list[str] | None = None) -> None:
         """Initialize new instance of classification label.
 
         Args:
