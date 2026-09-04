@@ -1,4 +1,5 @@
 """geobench package."""
+
 __version__ = "0.0.3"
 
 
@@ -9,9 +10,9 @@ from geobench.config import *
 from geobench import config
 
 # for backward compatibility of pickled objects
-import geobench.task as task
-import geobench.dataset as dataset
-import geobench.label as label
+from geobench import task
+from geobench import dataset
+from geobench import label
 import geobench
 
 import sys

@@ -1,7 +1,6 @@
 """GeobenchDataset Datamodule."""
 
-from pathlib import Path
-from typing import Sequence
+from collections.abc import Sequence
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
@@ -23,7 +22,7 @@ class DataModule(pl.LightningDataModule):
         partition_name: str = "default",
         batch_size: int = 64,
         num_workers: int = 8,
-        val_batch_size: int = None,
+        val_batch_size: int | None = None,
         train_transform=None,
         eval_transform=None,
         collate_fn=None,
@@ -38,10 +37,11 @@ class DataModule(pl.LightningDataModule):
             batch_size: The size of the mini-batch.
             num_workers: The number of parallel workers for loading samples from the hard-drive.
             val_batch_size: Tes size of the batch for the validation set and test set. If None, will use batch_size.
-            transform: Callable transforming a Sample. Executed on a worker and the output will be provided to collate_fn.
+            train_transform: Callable transforming a Sample, used for the train split. Executed on a worker and the output will be provided to collate_fn.
+            eval_transform: Callable transforming a Sample, used for the validation and test splits.
             collate_fn: A callable passed to the DataLoader. Maps a list of Sample to dictionnary of stacked torch tensors.
             band_names: multi spectral bands to select
-            file_format: 'hdf5' or 'tif'
+            format: 'hdf5' or 'tif'
         """
         super().__init__()
         self.task_specs = task_specs

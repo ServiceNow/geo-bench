@@ -1,6 +1,4 @@
-"""This script gives an example usage of the geobench package.
-"""
-
+"""This script gives an example usage of the geobench package."""
 
 import geobench
 
