@@ -793,7 +793,7 @@ def write_sample_tif(sample: Sample, dataset_dir: str) -> Path:
     if sample.label is not None:
         if isinstance(sample.label, Band):
             if not isinstance(sample.label.band_info, LabelType):
-                raise ValueError(
+                raise TypeError(
                     "The label is of type Band, but its band_info is not instance of Label."
                 )
             sample.label.write_to_geotiff(dst_dir)
@@ -824,7 +824,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
         if sample.label is not None:
             if isinstance(sample.label, Band):
                 if not isinstance(sample.label.band_info, LabelType):
-                    raise ValueError(
+                    raise TypeError(
                         "The label is of type Band, but its band_info is not instance of Label."
                     )
                 assert sample.label.band_info.name == "label"
@@ -900,7 +900,6 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     Return:
         path to sample
     """
-    sample
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
 
     bands = list(sample.bands)
@@ -911,7 +910,7 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     if sample.label is not None:
         if isinstance(sample.label, Band):
             if not isinstance(sample.label.band_info, LabelType):
-                raise ValueError(
+                raise TypeError(
                     "The label is of type Band, but its band_info is not instance of Label."
                 )
             assert sample.label.band_info.name == "label"

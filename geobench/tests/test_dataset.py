@@ -239,7 +239,7 @@ def test_dataset_partition():
         try:
             assert_same_sample(ds[0], sample2)
             assert_same_sample(ds[1], sample3)
-        except Exception:
+        except AssertionError:
             assert_same_sample(ds[0], sample3)
             assert_same_sample(ds[1], sample2)
         assert len(ds) == 2

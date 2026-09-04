@@ -75,11 +75,11 @@ class TaskSpecifications:
             overwrite: whether or not to overwrite existing task_specs
 
         Raises:
-            Exception if task_specs already exists and overwrite is False
+            FileExistsError: if task_specs.pkl already exists and overwrite is False
         """
         file_path = Path(directory, "task_specs.pkl")
         if file_path.exists() and not overwrite:
-            raise Exception("task_specs.pkl alread exists and overwrite is set to False.")
+            raise FileExistsError("task_specs.pkl already exists and overwrite is set to False.")
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
