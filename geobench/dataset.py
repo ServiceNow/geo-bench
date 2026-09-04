@@ -432,7 +432,7 @@ class Band:
             ValueError: when values of image are not in range (-32768, 32767)
         """
         data = self.data
-        assert type(data) == np.ndarray, f"got type {type(data)}."
+        assert isinstance(data, np.ndarray), f"got type {type(data)}."
 
         if data.ndim == 2:
             data = np.expand_dims(data, 2)
