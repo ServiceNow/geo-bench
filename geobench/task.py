@@ -274,12 +274,12 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
 
 
 class SegmentationAccuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""
 
 
 class Accuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""
 
 
 class MultilabelAccuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""

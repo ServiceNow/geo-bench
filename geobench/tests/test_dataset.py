@@ -129,7 +129,7 @@ def test_write_read():
         partition.add("train", sample.sample_name)
         partition.save(directory=dataset_dir, partition_name="default")
         ds = gb.GeobenchDataset(dataset_dir, band_names=band_names, partition_name="default")
-        sample_ = list(ds.iter_dataset(1))[0]
+        sample_ = next(iter(ds.iter_dataset(1)))
 
     assert len(sample.bands) == len(sample_.bands)
     # TODO need to review test here
@@ -217,9 +217,9 @@ def test_dataset_partition():
 
         # Test 1: load partition default, no split
         ds = gb.GeobenchDataset(dataset_dir, band_names=band_names, partition_name="default")
-        assert set(ds.list_partitions()) == set(["funky", "default"])
+        assert set(ds.list_partitions()) == {"funky", "default"}
         assert ds.active_partition_name == "default"  # use default normally
-        assert set(ds.list_splits()) == set(["train", "valid", "test"])
+        assert set(ds.list_splits()) == {"train", "valid", "test"}
         assert ds.split is None
         assert len(ds) == 3
 
@@ -251,9 +251,9 @@ def test_dataset_partition():
             ds[0]
 
         ds = gb.GeobenchDataset(dataset_dir, band_names=band_names, partition_name="funky")
-        assert set(ds.list_partitions()) == set(["funky", "default"])
+        assert set(ds.list_partitions()) == {"funky", "default"}
         assert ds.active_partition_name == "funky"  # use default normally
-        assert set(ds.list_splits()) == set(["train", "valid", "test"])
+        assert set(ds.list_splits()) == {"train", "valid", "test"}
         assert len(ds) == 3
 
         ds.set_split("train")

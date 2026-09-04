@@ -455,13 +455,13 @@ class Band:
             predictor=2,
             transform=self.transform,
         ) as dst:
-            tags = dict(
-                date=self.date,
-                date_id=self.date_id,
-                spatial_resolution=self.spatial_resolution,
-                band_info=self.band_info,
-                meta_info=self.meta_info,
-            )
+            tags = {
+                "date": self.date,
+                "date_id": self.date_id,
+                "spatial_resolution": self.spatial_resolution,
+                "band_info": self.band_info,
+                "meta_info": self.meta_info,
+            }
             dst.update_tags(data=str(pickle.dumps(tags)))
 
             dst.nodata = 0  # we use 0 as the nodata value.
@@ -752,7 +752,7 @@ class Sample:
         Returns:
             callable function of correct writer for file format options
         """
-        writer = dict(hdf5=write_sample_hdf5, tif=write_sample_tif)[format]
+        writer = {"hdf5": write_sample_hdf5, "tif": write_sample_tif}[format]
         return writer(sample=self, dataset_dir=dataset_dir)
 
 
@@ -835,15 +835,15 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
         for band in bands:
             band_descriptor = band.get_descriptor()
             fp.create_dataset(name=band_descriptor, data=band.data)
-            attrs = dict(
-                date=band.date,
-                date_id=band.date_id,
-                spatial_resolution=band.spatial_resolution,
-                band_info=band.band_info,
-                meta_info=band.meta_info,
-                transform=band.transform,
-                crs=band.crs,
-            )
+            attrs = {
+                "date": band.date,
+                "date_id": band.date_id,
+                "spatial_resolution": band.spatial_resolution,
+                "band_info": band.band_info,
+                "meta_info": band.meta_info,
+                "transform": band.transform,
+                "crs": band.crs,
+            }
             bands_order.append(band_descriptor)
             attr_dict[band_descriptor] = attrs
 
@@ -922,13 +922,13 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     for band in bands:
         band_descriptor = band.get_descriptor()
         band_dict[band_descriptor] = band.data
-        attrs = dict(
-            date=band.date,
-            date_id=band.date_id,
-            spatial_resolution=band.spatial_resolution,
-            band_info=band.band_info,
-            meta_info=band.meta_info,
-        )
+        attrs = {
+            "date": band.date,
+            "date_id": band.date_id,
+            "spatial_resolution": band.spatial_resolution,
+            "band_info": band.band_info,
+            "meta_info": band.meta_info,
+        }
         bands_order.append(band_descriptor)
         attr_dict[band_descriptor] = attrs
 
@@ -1389,7 +1389,7 @@ class GeobenchDataset:
             if "original" in self._partition_path_dict:
                 partition_name = "original"
             else:
-                partition_name = list(self._partition_path_dict.keys())[0]  # take any partition??
+                partition_name = next(iter(self._partition_path_dict.keys()))  # take any partition??
 
             self._partition_path_dict["default"] = self._partition_path_dict[partition_name]
             warn(

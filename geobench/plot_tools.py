@@ -63,7 +63,7 @@ def avergage_seeds(df, group_keys=("model", "dataset", "partition name"), metric
 
 
 def extract_1x_data(df_all):
-    """Extract only resutls trained on 100% of the data"""
+    """Extract only resutls trained on 100% of the data."""
     return df_all[
         (df_all["partition name"] == "1.00x train") | (df_all["partition name"] == "default")
     ].copy()
