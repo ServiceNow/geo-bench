@@ -166,7 +166,7 @@ def assert_same_sample(sample, sample_):
     assert sample.sample_name == sample_.sample_name
     assert len(sample.bands) == len(sample_.bands)
     for band in sample.bands:
-        len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
+        assert len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
 
 
 def test_dataset_partition():
