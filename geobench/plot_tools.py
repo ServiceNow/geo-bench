@@ -145,7 +145,7 @@ class Normalizer:
 
 def load_normalizer(benchmark_name):
     """Load normalizer from json file."""
-    with open(gb.GEO_BENCH_DIR / benchmark_name / "normalizer.json", "r") as f:
+    with open(gb.GEO_BENCH_DIR / benchmark_name / "normalizer.json") as f:
         range_dict = json.load(f)
     return Normalizer(range_dict)
 

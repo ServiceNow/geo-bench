@@ -127,7 +127,7 @@ class TaskSpecifications:
         """
         label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
-            with open(label_map_path, "r") as fp:
+            with open(label_map_path) as fp:
                 label_map: dict[str, list[str]] = json.load(fp)
             return label_map
         else:
@@ -141,7 +141,7 @@ class TaskSpecifications:
         """
         label_stats_path = self.get_dataset_dir() / "label_stats.json"
         if label_stats_path.exists():
-            with open(label_stats_path, "r") as fp:
+            with open(label_stats_path) as fp:
                 label_stats = json.load(fp)
             return label_stats
         else:

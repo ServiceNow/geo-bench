@@ -987,7 +987,7 @@ def load_sample_tif(sample_dir: Path, band_names: list[str]) -> Sample:
         loaded sample
     """
     band_list = []
-    with open(sample_dir / "band_index.json", "r") as fd:
+    with open(sample_dir / "band_index.json") as fd:
         band_index = OrderedDict(json.load(fd))
 
     for band_name in band_names:
@@ -997,7 +997,7 @@ def load_sample_tif(sample_dir: Path, band_names: list[str]) -> Sample:
     label_file = sample_dir / "label.json"
     label_file_tif = sample_dir / "label.tif"
     if label_file.exists():
-        with open(label_file, "r") as fd:
+        with open(label_file) as fd:
             label = json.load(fd)
     elif label_file_tif.exists():
         label = load_band_tif(label_file_tif)
@@ -1185,7 +1185,7 @@ class GeneratorWithLength:
 
 
 def _load_band_stats(dataset_dir):
-    with open(dataset_dir / "band_stats.json", "r") as fd:
+    with open(dataset_dir / "band_stats.json") as fd:
         all_band_stats_dict = json.load(fd)
     band_stats = {}
     for band_name, stats_dict in all_band_stats_dict.items():
@@ -1358,7 +1358,7 @@ class GeobenchDataset:
             partition_name: name of partition
         """
         if partition_name not in self._partition_cache:
-            with open(self._partition_path_dict[partition_name], "r") as fd:
+            with open(self._partition_path_dict[partition_name]) as fd:
                 self._partition_cache[partition_name] = Partition(json.load(fd))
         return self._partition_cache[partition_name]
 
