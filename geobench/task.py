@@ -15,6 +15,11 @@ from geobench.dataset import GeobenchDataset, Sample, _load_band_stats
 class TaskSpecifications:
     """Task Specifications define information necessary to run a training/evaluation on a dataset."""
 
+    # Directory the task specs were loaded from. Set by load_task_specs and used in
+    # preference to the $GEO_BENCH_DIR layout. Declared on the class so that specs
+    # unpickled from a task_specs.pkl, which bypasses __init__, still resolve.
+    dataset_dir: Union[Path, None] = None
+
     def __init__(
         self,
         dataset_name: str,
@@ -54,6 +59,12 @@ class TaskSpecifications:
             f"  {len(self.bands_info)} bands, max shape {shape} @ {self.spatial_resolution}m resolution.",
         ]
         return "\n".join(lines)
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """Return the pickled state, without the machine-specific dataset directory."""
+        state = self.__dict__.copy()
+        state.pop("dataset_dir", None)
+        return state
 
     def save(self, directory: str, overwrite: bool = False) -> None:
         """Save task specs.
@@ -98,15 +109,17 @@ class TaskSpecifications:
         )
 
     def get_dataset_dir(self) -> Path:
-        """Retrieve directory where dataset is read."""
+        """Retrieve directory where dataset is read.
+
+        This is the directory the task specs were loaded from, if any, and
+        $GEO_BENCH_DIR / benchmark_name / dataset_name otherwise.
+        """
+        if self.dataset_dir is not None:
+            return Path(self.dataset_dir)
         return GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
     def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
-
-        Args:
-            benchmark_dir: benchmark directory from which to retrieve dataset
-
 
         Returns:
             label map if present or None
@@ -119,7 +132,7 @@ class TaskSpecifications:
         else:
             return None
 
-    def label_stats(self, benchmark_dir: str = None) -> Union[None, Dict[str, List[Any]]]:
+    def label_stats(self) -> Union[None, Dict[str, List[Any]]]:
         """Retriebe the label stats, a dictionary defining labels to statistics.
 
         Returns:
@@ -210,8 +223,9 @@ def task_iterator(
     Args:
         benchmark_name: name of the benchmark
         ignore_task: list of task names to exclude
-        benchmark_dir: override default benchmark directory. If None, will
-            use $GEO_BENCH_DIR / benchmark_name
+        benchmark_dir: path to the benchmark directory. If None, will
+            use $GEO_BENCH_DIR / benchmark_name, otherwise benchmark_name is
+            unused. The datasets are loaded from this directory too.
 
     Returns:
         task specifications for the desired benchmark dataset
@@ -228,9 +242,8 @@ def task_iterator(
         if dataset_dir.name.startswith("_") or dataset_dir.name.startswith("."):
             continue
 
-        if ignore_task is not None:
-            if dataset_dir.name not in ignore_task:
-                continue
+        if ignore_task is not None and dataset_dir.name in ignore_task:
+            continue
 
         yield load_task_specs(dataset_dir)
 
@@ -249,6 +262,9 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
     with open(dataset_dir / "task_specs.pkl", "rb") as fd:
         task_specs = pickle.load(fd)
     assert isinstance(task_specs, TaskSpecifications)
+
+    # the dataset is read from where its specs were found, not from $GEO_BENCH_DIR
+    task_specs.dataset_dir = dataset_dir
 
     # ensures consistency with benchmark directory name for backward compatibility
     if rename_benchmark:
