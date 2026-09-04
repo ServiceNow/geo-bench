@@ -831,7 +831,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.hdf5"
 
     with h5py.File(sample_path, "w") as fp:
-        bands = sample.bands
+        bands = list(sample.bands)
 
         attr_dict: Dict[str, Any] = {}
         bands_order = []
@@ -918,7 +918,7 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     sample
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
 
-    bands = sample.bands
+    bands = list(sample.bands)
     band_dict: Dict[str, Any] = {}
     attr_dict: Dict[str, Any] = {}
     bands_order = []

@@ -1,10 +1,13 @@
+import re
 import tempfile
+from pathlib import Path
 
 import numpy as np
 import pytest
 import rasterio
 
 import geobench as gb
+from geobench import dataset as dataset_module
 
 
 def random_band(shape=(16, 16), band_name="test_band", alt_band_names=("alt_name",)):
@@ -29,6 +32,25 @@ def random_sample(n_bands=3, name="test_sample"):
         random_band(band_name=f"{i:2d}", alt_band_names=(f"alt_{i:2d}")) for i in range(n_bands)
     ]
     return gb.Sample(bands, np.random.randint(2), name)
+
+
+def random_segmentation_sample(n_bands=3, name="test_sample", n_classes=4):
+    bands = [
+        random_band(band_name=f"{i:2d}", alt_band_names=(f"alt_{i:2d}")) for i in range(n_bands)
+    ]
+    label = gb.Band(
+        data=np.random.randint(0, n_classes, (16, 16), dtype=np.int16),
+        band_info=gb.SegmentationClasses(
+            "label",
+            spatial_resolution=20,
+            n_classes=n_classes,
+            class_names=[f"class_{i}" for i in range(n_classes)],
+        ),
+        spatial_resolution=10,
+        transform=rasterio.transform.from_bounds(1, 2, 3, 3, 4, 5),
+        crs="EPSG:4326",
+    )
+    return gb.Sample(bands, label, name)
 
 
 def test_pack_4d_dense():
@@ -114,6 +136,30 @@ def test_write_read():
     for band in sample.bands:
         assert len(list(filter(lambda band_: band.band_info == band_.band_info, sample_.bands))) > 0
         # assert len(list(filter(lambda band_: band.crs == band_.crs, sample_.bands))) > 0
+
+
+@pytest.mark.parametrize(
+    "writer,loader,suffix",
+    [
+        (dataset_module.write_sample_hdf5, dataset_module.load_sample_hdf5, ".hdf5"),
+        (dataset_module.write_sample_npz, dataset_module.load_sample_npz, ".npz"),
+    ],
+)
+def test_write_segmentation_sample_twice(writer, loader, suffix):
+    """Writing a segmentation sample must not append its label to sample.bands."""
+    sample = random_segmentation_sample()
+
+    with tempfile.TemporaryDirectory() as dataset_dir:
+        for _ in range(2):
+            sample_path = writer(sample, dataset_dir)
+            assert len(sample.bands) == 3
+            assert all(band.band_info.name != "label" for band in sample.bands)
+
+            sample_ = loader(Path(sample_path))
+            assert len(sample_.bands) == 3
+            assert isinstance(sample_.label, gb.Band)
+
+    assert Path(sample_path).suffix == suffix
 
 
 def assert_same_sample(sample, sample_):
