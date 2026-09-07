@@ -83,6 +83,19 @@ dev = [
   "mypy>=1.11",
   "ruff>=0.6",
 ]
+make-benchmark = [
+  "ipyleaflet>=0.20",
+  "ipyplot>=1.1.2",
+  "matplotlib>=3.11",
+  "pandas>=3",
+  "pillow>=12.3",
+  "pyproj>=3.8",
+  "tifffile>=2026.8",
+  "torch>=2.14",
+  "torchgeo>=0.9",
+  "torchvision>=0.29",
+  "xmltodict>=1",
+]
 
 [tool.uv.build-backend]
 module-name = "geobench"
