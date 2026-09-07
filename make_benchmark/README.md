@@ -1,4 +1,19 @@
 
+## Set up the environment
+
+The converters need more than the geobench package itself: torchgeo and torchvision to fetch
+several of the source datasets, Pillow, tifffile, pyproj and xmltodict for the others, and
+ipyleaflet and ipyplot for the inspection notebooks. They are declared as the `make-benchmark`
+dependency group, so from the repository root run
+
+```shell
+uv sync --group make-benchmark
+```
+
+The group tracks current releases of those packages. The converters were written against
+torchgeo 0.5 and torch 1.12, so a converter may need adjusting to a changed upstream API
+before it runs.
+
 ## Download original datasets
 Download each original dataset and store them in GEO_BENCH_DIR/source.
 
