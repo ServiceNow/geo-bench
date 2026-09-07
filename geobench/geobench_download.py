@@ -1,13 +1,12 @@
 #!/usr/bin/env python
+"""Download and unpack the geobench benchmarks from the Hugging Face Hub."""
 
-import os
-
-os.environ["GEO_BENCH_DIR"] = "/mnt/home/dataset/geobench-1.0_test-zip"
-
+import zipfile
 from pathlib import Path
+
 from huggingface_hub import HfApi, hf_hub_download
 from tqdm import tqdm
-import zipfile
+
 from geobench import GEO_BENCH_DIR
 
 
@@ -33,6 +32,7 @@ def decompress_zip_with_progress(zip_file_path, extract_to_folder=None):
 
 
 def download_benchmark():
+    """Download every benchmark file into GEO_BENCH_DIR and unpack the zip archives."""
     local_directory = Path(GEO_BENCH_DIR)
     dataset_repo = "recursix/geo-bench-1.0"
 
@@ -60,7 +60,7 @@ def download_benchmark():
     zip_files = [file for file in dataset_files if file.endswith(".zip")]
 
     for i, zip_file in enumerate(zip_files):
-        print(f"Decompressing {i+1}/{len(zip_files)}: {zip_file}  ...")
+        print(f"Decompressing {i + 1}/{len(zip_files)}: {zip_file}  ...")
         decompress_zip_with_progress(local_directory / zip_file)
 
     print("Download and decompression process completed.")
