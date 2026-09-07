@@ -51,6 +51,9 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Image Processing",
 ]
 dependencies = [
+  # v1.0 data pickled Affine while it was a namedtuple; affine 3 rebuilt it on
+  # attrs, and the stored payload silently reconstructs with no attributes set.
+  "affine<3",
   "h5py>=3.10",
   "huggingface-hub>=0.19.3",
   "numpy>=1.26",

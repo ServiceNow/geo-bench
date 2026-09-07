@@ -1,3 +1,4 @@
+import pickle
 import re
 import tempfile
 from pathlib import Path
@@ -307,3 +308,24 @@ def test_class_id():
 
     assert isinstance(dataset.sentinel2_13_bands[0], gb.SpectralBand)
     assert isinstance(gb.sentinel2_13_bands[0], dataset.SpectralBand)
+
+
+def test_published_transform_reconstructs():
+    """A transform pickled by v1.0 still carries its coefficients.
+
+    Taken verbatim from `m-eurosat/id_0001.hdf5`. affine 2 made `Affine` a
+    namedtuple, so the payload rebuilds it through `__new__` with six positional
+    floats. affine 3 moved to attrs, whose `__new__` accepts those arguments and
+    discards them, leaving every attribute unset without raising.
+    """
+    payload = (
+        b"\x80\x04\x95P\x00\x00\x00\x00\x00\x00\x00\x8c\x06affine\x94\x8c\x06Affine"
+        b"\x94\x93\x94(G@$\x02\xec\x03[Q\xdbG\x00\x00\x00\x00\x00\x00\x00\x00GA#\x0f"
+        b"\xb4x=\x84\x13G\x00\x00\x00\x00\x00\x00\x00\x00G\xc0#\xfc\xf9\x1d\x8d\xae"
+        b"\x14GAR\x9a\xf9\x82'\x1b\xcet\x94\x81\x94."
+    )
+
+    transform = pickle.loads(payload)
+
+    assert transform.a == pytest.approx(10.00570688714736)
+    assert transform.f == pytest.approx(4877286.033637)
