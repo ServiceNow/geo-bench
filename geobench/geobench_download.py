@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
-import os
-
-os.environ["GEO_BENCH_DIR"] = "/mnt/home/dataset/geobench-1.0_test-zip"
-
+import zipfile
 from pathlib import Path
+
 from huggingface_hub import HfApi, hf_hub_download
 from tqdm import tqdm
-import zipfile
+
 from geobench import GEO_BENCH_DIR
 
 
