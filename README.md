@@ -32,7 +32,7 @@ pip install git+https://github.com/ServiceNow/geo-bench.git
 
 The PyPI release is still available with `pip install geobench`.
 
-Note: Python + is required.
+Note: Python 3.12+ is required.
 
 ## Downloading the data
 
