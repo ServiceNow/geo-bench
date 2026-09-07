@@ -117,7 +117,7 @@ class GeoEuroSAT(EuroSAT):
         return tensor, label, crs, bounds
 
 
-def make_sample(images: "np.typing.NDArray[np.float_]", label, sample_name: str) -> gb.Sample:
+def make_sample(images: "np.typing.NDArray[np.float64]", label, sample_name: str) -> gb.Sample:
     """Create a sample from images and label.
 
     Args:

@@ -9,7 +9,7 @@ import os
 import pathlib
 import pickle
 from collections import OrderedDict, defaultdict
-from functools import cached_property, lru_cache
+from functools import cached_property
 from pathlib import Path
 from typing import (
     Any,
@@ -355,7 +355,7 @@ landsat8_9_bands = [
     Landsat8("05 - NIR", ("5", "05", "B5", "nir"), 30, 0.8647),
     Landsat8("06 - SWIR1", ("6", "06", "B6", "swir1"), 30, 1.6089),
     Landsat8("07 - SWIR2", ("7", "07", "B7", "swir2"), 30, 2.2007),
-    Landsat8("09 - Cirrus", ("9", "09" "B9", "cirrus"), 30, 1.370),
+    Landsat8("09 - Cirrus", ("9", "09", "B9", "cirrus"), 30, 1.370),
     Landsat8("10 - Tirs1", ("10", "B10", "tirs1"), 100, 10.9),
 ]
 
@@ -432,7 +432,7 @@ class Band:
             ValueError: when values of image are not in range (-32768, 32767)
         """
         data = self.data
-        assert type(data) == np.ndarray, f"got type {type(data)}."
+        assert isinstance(data, np.ndarray), f"got type {type(data)}."
 
         if data.ndim == 2:
             data = np.expand_dims(data, 2)
@@ -674,7 +674,7 @@ class Sample(object):
                     else:
                         if band_names is not None:
                             raise ValueError(
-                                f"Missing band {band_names[j]} for date {dates[i]:s}, but fill_vlaue is None."
+                                f"Missing band {band_names[j]} for date {dates[i]}, but fill_vlaue is None."
                             )
                         else:
                             raise ValueError(f"Missing band names got {band_names}")
@@ -831,7 +831,7 @@ def write_sample_hdf5(sample: Sample, dataset_dir: str):
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.hdf5"
 
     with h5py.File(sample_path, "w") as fp:
-        bands = sample.bands
+        bands = list(sample.bands)
 
         attr_dict: Dict[str, Any] = {}
         bands_order = []
@@ -918,7 +918,7 @@ def write_sample_npz(sample: Sample, dataset_dir: str):
     sample
     sample_path = Path(dataset_dir) / f"{sample.sample_name}.npz"
 
-    bands = sample.bands
+    bands = list(sample.bands)
     band_dict: Dict[str, Any] = {}
     attr_dict: Dict[str, Any] = {}
     bands_order = []
@@ -1309,6 +1309,7 @@ class GeobenchDataset:
             active_partition_name: name of active partition
         """
         self._partition_path_dict = {}
+        self._partition_cache: dict[str, Partition] = {}
         for p in self.dataset_dir.glob("*_partition.json"):
             partition_name = p.name.split("_partition.json")[0]
             self._partition_path_dict[partition_name] = p
@@ -1365,15 +1366,16 @@ class GeobenchDataset:
         """List available partitions."""
         return list(self._partition_path_dict.keys())
 
-    @lru_cache(maxsize=3)
     def load_partition(self, partition_name: str) -> Partition:
         """Load and return partition content from json file.
 
         Args:
             partition_name: name of partition
         """
-        with open(self._partition_path_dict[partition_name], "r") as fd:
-            return Partition(json.load(fd))
+        if partition_name not in self._partition_cache:
+            with open(self._partition_path_dict[partition_name], "r") as fd:
+                self._partition_cache[partition_name] = Partition(json.load(fd))
+        return self._partition_cache[partition_name]
 
     def _load_partition(self, partition_name) -> None:
         """Load a partition.
@@ -1623,7 +1625,7 @@ def compute_stats(values) -> Stats:
 
 def compute_dataset_statistics(
     dataset: GeobenchDataset, n_value_per_image: int = 1000, n_samples: int = None
-) -> Tuple[Dict[str, "np.typing.NDArray[np.float_]"], Dict[str, Stats]]:
+) -> Tuple[Dict[str, "np.typing.NDArray[np.float64]"], Dict[str, Stats]]:
     """Compute statistics over an entire dataset.
 
     Args:
@@ -1668,7 +1670,7 @@ def compute_dataset_statistics(
         else:
             accumulator["label"].append(sample.label)
 
-    band_values: Dict[str, "np.typing.NDArray[np.float_]"] = {}
+    band_values: Dict[str, "np.typing.NDArray[np.float64]"] = {}
     band_stats: Dict[str, Stats] = {}
     for name, values in accumulator.items():
         stacked_values = np.hstack(values)
