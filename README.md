@@ -3,7 +3,7 @@
 GEO-Bench is a [ServiceNow Research](https://www.servicenow.com/research) project. 
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Language: Python](https://img.shields.io/badge/language-Python%203.9%2B-green?logo=python&logoColor=green)](https://www.python.org)
+[![Language: Python](https://img.shields.io/badge/language-Python%203.12%2B-green?logo=python&logoColor=green)](https://www.python.org)
 
 > [!IMPORTANT]
 > **We recommend using [GEO-Bench-2](https://the-ai-alliance.github.io/GEO-Bench-2/) instead of
@@ -32,7 +32,7 @@ pip install git+https://github.com/ServiceNow/geo-bench.git
 
 The PyPI release is still available with `pip install geobench`.
 
-Note: Python 3.9+ is required.
+Note: Python + is required.
 
 ## Downloading the data
 
