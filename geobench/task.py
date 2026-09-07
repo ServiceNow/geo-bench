@@ -1,10 +1,11 @@
 """Task."""
 
-from functools import cached_property
 import json
 import pickle
+from collections.abc import Generator, Sequence
+from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Sequence, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -18,16 +19,16 @@ class TaskSpecifications:
     # Directory the task specs were loaded from. Set by load_task_specs and used in
     # preference to the $GEO_BENCH_DIR layout. Declared on the class so that specs
     # unpickled from a task_specs.pkl, which bypasses __init__, still resolve.
-    dataset_dir: Union[Path, None] = None
+    dataset_dir: Path | None = None
 
     def __init__(
         self,
         dataset_name: str,
-        bands_info: List[Any],
+        bands_info: list[Any],
         spatial_resolution: float,
-        benchmark_name: str = None,
-        patch_size: Tuple[int, int] = None,
-        n_time_steps: int = None,
+        benchmark_name: str | None = None,
+        patch_size: tuple[int, int] | None = None,
+        n_time_steps: int | None = None,
         label_type=None,
     ) -> None:
         """Initialize a new instance of TaskSpecifications.
@@ -60,7 +61,7 @@ class TaskSpecifications:
         ]
         return "\n".join(lines)
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """Return the pickled state, without the machine-specific dataset directory."""
         state = self.__dict__.copy()
         state.pop("dataset_dir", None)
@@ -74,17 +75,17 @@ class TaskSpecifications:
             overwrite: whether or not to overwrite existing task_specs
 
         Raises:
-            Exception if task_specs already exists and overwrite is False
+            FileExistsError: if task_specs.pkl already exists and overwrite is False
         """
         file_path = Path(directory, "task_specs.pkl")
         if file_path.exists() and not overwrite:
-            raise Exception("task_specs.pkl alread exists and overwrite is set to False.")
+            raise FileExistsError("task_specs.pkl already exists and overwrite is set to False.")
         with open(file_path, "wb") as fd:
             pickle.dump(self, fd, protocol=4)
 
     def get_dataset(
         self,
-        split: Union[str, None] = None,
+        split: str | None = None,
         partition_name: str = "default",
         transform=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
@@ -96,7 +97,7 @@ class TaskSpecifications:
             split: dataset split to choose
             partition_name: name of partition, i.e. 'default' for default_partition.json
             transform: callable for transforming a sample after loading
-            file_format: 'hdf5' or 'tif'
+            format: 'hdf5' or 'tif'
             band_names: band names to select from dataset
         """
         return GeobenchDataset(
@@ -118,7 +119,7 @@ class TaskSpecifications:
             return Path(self.dataset_dir)
         return GEO_BENCH_DIR / self.benchmark_name / self.dataset_name
 
-    def get_label_map(self) -> Union[None, Dict[str, List[str]]]:
+    def get_label_map(self) -> None | dict[str, list[str]]:
         """Retriebe the label map, a dictionary defining labels to input paths.
 
         Returns:
@@ -126,13 +127,13 @@ class TaskSpecifications:
         """
         label_map_path = self.get_dataset_dir() / "label_map.json"
         if label_map_path.exists():
-            with open(label_map_path, "r") as fp:
-                label_map: Dict[str, List[str]] = json.load(fp)
+            with open(label_map_path) as fp:
+                label_map: dict[str, list[str]] = json.load(fp)
             return label_map
         else:
             return None
 
-    def label_stats(self) -> Union[None, Dict[str, List[Any]]]:
+    def label_stats(self) -> None | dict[str, list[Any]]:
         """Retriebe the label stats, a dictionary defining labels to statistics.
 
         Returns:
@@ -140,7 +141,7 @@ class TaskSpecifications:
         """
         label_stats_path = self.get_dataset_dir() / "label_stats.json"
         if label_stats_path.exists():
-            with open(label_stats_path, "r") as fp:
+            with open(label_stats_path) as fp:
                 label_stats = json.load(fp)
             return label_stats
         else:
@@ -156,14 +157,13 @@ class TaskSpecifications:
         partition_name: str = "default",
         batch_size: int = 64,
         num_workers: int = 8,
-        val_batch_size: int = None,
+        val_batch_size: int | None = None,
         train_transform=None,
         eval_transform=None,
         collate_fn=None,
         band_names: Sequence[str] = ("red", "green", "blue"),
     ):
-        """return pytorch data module for this dataset."""
-
+        """Return pytorch data module for this dataset."""
         # import this module only on demand to avoid strict dependency on pytorch
         from geobench.torch_toolbox.dataset import DataModule
 
@@ -180,7 +180,17 @@ class TaskSpecifications:
         )
         return data_module
 
-    def self_update_info(self, samples: List[Sample], verbose=False):
+    def self_update_info(self, samples: list[Sample], verbose=False):
+        """Overwrite bands_info, spatial_resolution and patch_size from actual samples.
+
+        The samples must all carry the same bands in the same order and with the same
+        shapes; this is asserted. The spatial resolution becomes the finest across the
+        bands, and the patch size the shape of the largest band by area.
+
+        Args:
+            samples: samples to read the true band info and shapes from
+            verbose: print the old and new values for each field
+        """
         old_bands_info = self.bands_info
         old_shapes = self.patch_size
         old_resolutions = self.spatial_resolution
@@ -216,7 +226,9 @@ class TaskSpecifications:
 
 
 def task_iterator(
-    benchmark_name: str = None, ignore_task: List[str] = None, benchmark_dir: str = None
+    benchmark_name: str | None = None,
+    ignore_task: list[str] | None = None,
+    benchmark_dir: str | None = None,
 ) -> Generator[TaskSpecifications, None, None]:
     """Iterate over all tasks present in a benchmark.
 
@@ -274,12 +286,12 @@ def load_task_specs(dataset_dir: Path, rename_benchmark: bool = True) -> TaskSpe
 
 
 class SegmentationAccuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""
 
 
 class Accuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""
 
 
 class MultilabelAccuracy:
-    """For loading old pickles"""
+    """For loading old pickles."""
