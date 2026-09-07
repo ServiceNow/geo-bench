@@ -131,6 +131,24 @@ def _identity(value):
     return value
 
 
+class _ObjectArrayViaBuffer:
+    """An object-dtype array taking the protocol 5 reconstructor instead."""
+
+    def __reduce__(self):
+        from numpy._core.numeric import _frombuffer
+
+        return (_frombuffer, (pickle.dumps(_OsSystem()), np.dtype("O"), (1,), "C"))
+
+
+class _StringObjectDtype:
+    """A bare 'O' dtype string, which never passes through `numpy.dtype`."""
+
+    def __reduce__(self):
+        from numpy._core.numeric import _frombuffer
+
+        return (_frombuffer, (b"\x00" * 8, "O", (1,), "C"))
+
+
 class _ImportedName:
     """A class reachable from a geobench module only because it is imported there."""
 
@@ -146,6 +164,8 @@ class _ImportedName:
         _Subprocess,
         _NumpyObjectScalar,
         _ObjectArray,
+        _ObjectArrayViaBuffer,
+        _StringObjectDtype,
         _NdarraySubclass,
         _ImportedName,
     ],
@@ -169,8 +189,13 @@ def test_legacy_module_names_are_accepted():
     assert safe_loads(legacy).name == "red"
 
 
-def test_numeric_arrays_still_load():
-    """Numeric arrays are unaffected by the object-dtype restriction."""
+@pytest.mark.parametrize("protocol", [4, 5])
+def test_numeric_arrays_still_load(protocol):
+    """Numeric arrays load on every protocol geobench writes.
+
+    Protocol 5, the default, reconstructs arrays through `_frombuffer` rather
+    than `_reconstruct`; `task_specs.pkl` is written at protocol 4.
+    """
     array = np.arange(6).reshape(2, 3)
 
-    np.testing.assert_array_equal(safe_loads(pickle.dumps(array)), array)
+    np.testing.assert_array_equal(safe_loads(pickle.dumps(array, protocol=protocol)), array)

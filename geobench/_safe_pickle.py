@@ -48,6 +48,18 @@ def _safe_reconstruct(subtype, shape, dtype) -> np.ndarray:
     return _np_multiarray()._reconstruct(subtype, shape, dtype)
 
 
+def _safe_frombuffer(buf, dtype, shape, order) -> np.ndarray:
+    """Restore an ndarray from an out-of-band buffer, rejecting object dtypes.
+
+    Protocol 5 pickles arrays through this reconstructor instead of
+    ``_reconstruct``. It reaches the same arrays by a different encoding, so it
+    is allowed under the same object-dtype restriction.
+    """
+    if np.dtype(dtype).hasobject:
+        raise UnsafePickleError("object-dtype arrays are not allowed")
+    return _np_numeric()._frombuffer(buf, dtype, shape, order)
+
+
 def _np_multiarray():
     """Return numpy's multiarray module across numpy 1.x and 2.x."""
     try:
@@ -55,6 +67,15 @@ def _np_multiarray():
     except ImportError:  # numpy < 2
         from numpy.core import multiarray
     return multiarray
+
+
+def _np_numeric():
+    """Return numpy's numeric module across numpy 1.x and 2.x."""
+    try:
+        from numpy._core import numeric
+    except ImportError:  # numpy < 2
+        from numpy.core import numeric
+    return numeric
 
 
 # Overridden so that pickles cannot reach the unguarded numpy reconstructors.
@@ -66,6 +87,8 @@ _NUMPY_OVERRIDES: Dict[Tuple[str, str], Callable] = {
 for _module in ("numpy.core.multiarray", "numpy._core.multiarray"):
     _NUMPY_OVERRIDES[(_module, "scalar")] = _safe_scalar
     _NUMPY_OVERRIDES[(_module, "_reconstruct")] = _safe_reconstruct
+for _module in ("numpy.core.numeric", "numpy._core.numeric"):
+    _NUMPY_OVERRIDES[(_module, "_frombuffer")] = _safe_frombuffer
 
 # Non-geobench types that appear in band metadata and task specifications.
 _ALLOWED_GLOBALS = frozenset(
