@@ -22,17 +22,22 @@ GEO-Bench is a **G**eneral **E**arth **O**bservation benchmark for evaluating th
 
 ## Installation
 
-The release on PyPI (`1.0.0`) pins outdated upper bounds on its dependencies, which conflicts with
-current versions of the scientific-Python stack ([#20](https://github.com/ServiceNow/geo-bench/pull/20)
-relaxes them on `main`). Install from `main`:
+GEO-Bench requires Python 3.12 or newer and is installed from PyPI:
 
 ```console
-pip install git+https://github.com/ServiceNow/geo-bench.git
+pip install geobench
 ```
 
-The PyPI release is still available with `pip install geobench`.
+The base install is enough to download and load the benchmark. The plotting helpers in
+`geobench.plot_tools` additionally need the `plot` extra (matplotlib, pandas, seaborn), and the
+PyTorch Lightning data module in `geobench.torch_toolbox` needs the `torch` extra:
 
-Note: Python 3.12+ is required.
+```console
+pip install "geobench[plot,torch]"
+```
+
+Release `1.0.0` capped Python below 3.13 and pinned outdated upper bounds on its dependencies.
+Release `1.1.0` removes both, so installing from `main` is no longer necessary.
 
 ## Downloading the data
 
