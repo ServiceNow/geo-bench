@@ -12,7 +12,8 @@ GEO-Bench v1.0, so existing data does not need to be regenerated.
 
 import io
 import pickle
-from typing import IO, Any, Callable, Dict, Tuple
+from collections.abc import Callable
+from typing import IO, Any
 
 import numpy as np
 
@@ -80,7 +81,7 @@ def _np_numeric():
 
 # Overridden so that pickles cannot reach the unguarded numpy reconstructors.
 # Data written by numpy 1.x names them `numpy.core.*`, numpy 2.x `numpy._core.*`.
-_NUMPY_OVERRIDES: Dict[Tuple[str, str], Callable] = {
+_NUMPY_OVERRIDES: dict[tuple[str, str], Callable] = {
     ("numpy", "dtype"): _safe_dtype,
     ("numpy", "ndarray"): np.ndarray,
 }
