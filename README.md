@@ -36,9 +36,6 @@ PyTorch Lightning data module in `geobench.torch_toolbox` needs the `torch` extr
 pip install "geobench[plot,torch]"
 ```
 
-Release `1.0.0` capped Python below 3.13 and pinned outdated upper bounds on its dependencies.
-Release `1.1.0` removes both, so installing from `main` is no longer necessary.
-
 ## Downloading the data
 
 Set `$GEO_BENCH_DIR` to your preferred location. If not set, it will be stored in `$HOME/dataset/geobench`.
